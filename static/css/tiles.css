@@ -1,0 +1,289 @@
+/* ============================================================
+   牌のスタイル（Unicode絵文字ベース + CSS描画）
+   Phase 2: AI推奨ハイライト + テンパイグロウ追加
+   ============================================================ */
+
+/* --- 基本牌 --- */
+.tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tile-width);
+    height: var(--tile-height);
+    background: linear-gradient(180deg, #faf8f0 0%, #ede8d8 100%);
+    border: 1px solid #c5bda8;
+    border-radius: 4px;
+    font-size: 22px;
+    font-weight: 700;
+    cursor: default;
+    user-select: none;
+    position: relative;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+                border-color var(--transition-fast), background var(--transition-fast);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    line-height: 1;
+    overflow: visible;
+
+.tile-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    line-height: 1;
+}
+
+.tile-number {
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.tile-suit {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+/* 萬子 */
+.tile-man .tile-number { color: #1a1a1a; }
+.tile-man .tile-suit { color: #c62828; }
+.tile-man .tile-suit::after { content: '萬'; }
+
+/* 筒子 */
+.tile-pin .tile-number { color: #1565c0; }
+.tile-pin .tile-suit { color: #1565c0; }
+.tile-pin .tile-suit::after { content: '筒'; }
+
+/* 索子 */
+.tile-sou .tile-number { color: #2e7d32; }
+.tile-sou .tile-suit { color: #2e7d32; }
+.tile-sou .tile-suit::after { content: '索'; }
+
+/* 字牌 */
+.tile-wind .tile-number {
+    font-size: 24px;
+    font-weight: 900;
+}
+.tile-wind-east .tile-number { color: #1565c0; }
+.tile-wind-south .tile-number { color: #2e7d32; }
+.tile-wind-west .tile-number { color: #6a1b9a; }
+.tile-wind-north .tile-number { color: #37474f; }
+.tile-dragon-white .tile-number { color: #666; }
+.tile-dragon-green .tile-number { color: #2e7d32; }
+.tile-dragon-red .tile-number { color: #c62828; }
+
+/* 赤ドラ */
+.tile-red {
+    background: linear-gradient(180deg, #fff0f0 0%, #ffe0e0 100%);
+}
+.tile-red .tile-number {
+    color: var(--color-tile-red) !important;
+    text-shadow: 0 0 4px rgba(204, 51, 51, 0.3);
+}
+
+/* --- 牌のインタラクション（自分の手牌のみ） --- */
+.tile-clickable {
+    cursor: pointer;
+}
+.tile-clickable:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4),
+                0 0 12px rgba(212, 168, 83, 0.3);
+    z-index: 10;
+}
+.tile-clickable.selected {
+    transform: translateY(-12px);
+    background: linear-gradient(180deg, #fff8e0 0%, #ffeaa0 100%);
+    box-shadow: 0 8px 20px rgba(212, 168, 83, 0.5);
+    border-color: var(--color-accent-gold);
+}
+
+/* --- AI推奨牌ハイライト --- */
+.tile-recommended {
+    border-color: #48c78e !important;
+    border-width: 2px !important;
+    background: linear-gradient(180deg, #e8fff4 0%, #c8f5e0 100%) !important;
+    box-shadow: 0 0 16px rgba(72, 199, 142, 0.7),
+                0 0 32px rgba(72, 199, 142, 0.4),
+                0 0 48px rgba(72, 199, 142, 0.2),
+                0 2px 3px rgba(0,0,0,0.3);
+    animation: recommendGlow 1.8s ease-in-out infinite;
+    z-index: 15;
+    transform: translateY(-4px);
+}
+.tile-recommended::before {
+    content: '★';
+    position: absolute;
+    top: -14px;
+    right: -6px;
+    font-size: 16px;
+    color: #48c78e;
+    text-shadow: 0 0 8px rgba(72, 199, 142, 0.9),
+                 0 0 16px rgba(72, 199, 142, 0.5);
+    z-index: 20;
+    animation: starBounce 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+.tile-recommended:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 8px 24px rgba(72, 199, 142, 0.7),
+                0 0 40px rgba(72, 199, 142, 0.5);
+}
+
+/* 2番候補 */
+.tile-candidate-2 {
+    border-color: rgba(212, 168, 83, 0.6) !important;
+    border-width: 2px !important;
+    background: linear-gradient(180deg, #fffcf0 0%, #faf0d0 100%) !important;
+    box-shadow: 0 0 10px rgba(212, 168, 83, 0.4),
+                0 0 20px rgba(212, 168, 83, 0.2),
+                0 2px 3px rgba(0,0,0,0.3);
+    z-index: 12;
+}
+.tile-candidate-2::before {
+    content: '②';
+    position: absolute;
+    top: -13px;
+    right: -5px;
+    font-size: 13px;
+    color: var(--color-accent-gold);
+    text-shadow: 0 0 6px rgba(212, 168, 83, 0.7);
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* 3番候補 */
+.tile-candidate-3 {
+    border-color: rgba(136, 152, 181, 0.5) !important;
+    border-width: 2px !important;
+    background: linear-gradient(180deg, #f5f5ff 0%, #e8eaf5 100%) !important;
+    box-shadow: 0 0 8px rgba(136, 152, 181, 0.3),
+                0 2px 3px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+.tile-candidate-3::before {
+    content: '③';
+    position: absolute;
+    top: -13px;
+    right: -5px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-shadow: 0 0 4px rgba(136, 152, 181, 0.5);
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* テンパイ時の待ち牌表示 */
+.tile-waiting {
+    position: relative;
+}
+.tile-waiting::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 2px solid rgba(72, 199, 142, 0.5);
+    border-radius: 6px;
+    animation: waitingPulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* --- ツモ牌（最後のツモ牌を少し離す） --- */
+.tile-tsumo {
+    margin-left: var(--space-md) !important;
+}
+
+/* --- 裏向き牌 --- */
+.tile-back {
+    background: linear-gradient(135deg, #2e5547 0%, #3a6b5a 50%, #2e5547 100%);
+    border-color: #1d3d30;
+    color: transparent;
+}
+.tile-back::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+}
+
+/* --- 小さい牌（他家・捨て牌用） --- */
+.tile-sm {
+    width: var(--tile-width-sm);
+    height: var(--tile-height-sm);
+    font-size: 14px;
+}
+.tile-sm .tile-number {
+    font-size: 14px;
+}
+.tile-sm .tile-suit {
+    font-size: 9px;
+}
+.tile-sm.tile-wind .tile-number {
+    font-size: 17px;
+}
+
+/* --- 横向き牌（チー/ポンで鳴いた牌） --- */
+.tile-rotated {
+    transform: rotate(90deg);
+    width: var(--tile-height-sm);
+    height: var(--tile-width-sm);
+    margin: 0 4px;
+}
+
+/* --- 捨て牌のリーチ宣言牌 --- */
+.tile-riichi {
+    transform: rotate(90deg) !important;
+    margin: 0 8px;
+}
+
+/* 最後に打牌された牌のハイライト */
+.tile-last-discard {
+    border-color: var(--color-accent-gold) !important;
+    box-shadow: 0 0 8px rgba(212, 168, 83, 0.4),
+                0 2px 3px rgba(0,0,0,0.3);
+}
+
+/* --- ドラ表示牌 --- */
+.dora-tiles .tile {
+    width: 28px;
+    height: 38px;
+}
+.dora-tiles .tile .tile-number {
+    font-size: 12px;
+}
+.dora-tiles .tile .tile-suit {
+    font-size: 7px;
+}
+
+/* --- キーフレーム --- */
+@keyframes recommendGlow {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(72, 199, 142, 0.6),
+                    0 0 24px rgba(72, 199, 142, 0.3),
+                    0 2px 3px rgba(0,0,0,0.3);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(72, 199, 142, 0.8),
+                    0 0 36px rgba(72, 199, 142, 0.5),
+                    0 2px 3px rgba(0,0,0,0.3);
+    }
+}
+
+@keyframes starBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-3px) scale(1.15); }
+}
+
+@keyframes waitingPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+}

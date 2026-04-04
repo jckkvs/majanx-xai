@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="麻雀AI - リーチ麻雀対局アプリ。AIが打牌の理由を解説します。">
+    <title>麻雀AI - Mahjong AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/table.css">
+    <link rel="stylesheet" href="/static/css/tiles.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+</head>
+<body>
+    <div id="app">
+        <!-- スタート画面 -->
+        <div id="start-screen" class="screen active">
+            <div class="start-container">
+                <div class="logo-container">
+                    <h1 class="logo">
+                        <span class="logo-icon">🀄</span>
+                        <span class="logo-text">麻雀AI</span>
+                    </h1>
+                    <p class="logo-subtitle">Riichi Mahjong with AI Insight</p>
+                </div>
+                <div class="start-menu">
+                    <button id="btn-start-game" class="btn btn-primary btn-lg">
+                        <span class="btn-icon">🎮</span>
+                        対局開始
+                    </button>
+                    <div class="start-options">
+                        <div class="option-group">
+                            <label>対局形式</label>
+                            <select id="game-mode">
+                                <option value="tonpu">東風戦</option>
+                                <option value="hanchan">半荘戦</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="version-info">v0.2.0 - Phase 2</div>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="screen">
+            <!-- 情報バー -->
+            <div id="info-bar" class="info-bar">
+                <div class="round-info">
+                    <span id="round-name" class="round-name">東1局</span>
+                    <span id="honba" class="honba">0本場</span>
+                </div>
+                <div class="dora-info">
+                    <span class="dora-label">ドラ</span>
+                    <div id="dora-indicators" class="dora-tiles"></div>
+                </div>
+                <div class="turn-display">
+                    <span class="turn-label">巡目</span>
+                    <span id="turn-count" class="turn-count">1</span>
+                </div>
+                <div class="remaining-info">
+                    <span class="remaining-label">残り</span>
+                    <span id="tiles-remaining" class="remaining-count">70</span>
+                </div>
+            </div>
+
+            <!-- メインテーブル -->
+            <div id="mahjong-table" class="mahjong-table">
+                <!-- 対面（上） -->
+                <div class="player-area player-top" data-seat="2">
+                    <div class="player-info">
+                        <span class="player-name">CPU 3</span>
+                        <span class="player-score" id="score-2">25000</span>
+                        <span class="player-wind" id="wind-2"></span>
+                    </div>
+                    <div class="hand-area hand-top" id="hand-2"></div>
+                    <div class="meld-area meld-top" id="melds-2"></div>
+                </div>
+
+                <!-- 左家 -->
+                <div class="player-area player-left" data-seat="3">
+                    <div class="player-info">
+                        <span class="player-name">CPU 4</span>
+                        <span class="player-score" id="score-3">25000</span>
+                        <span class="player-wind" id="wind-3"></span>
+                    </div>
+                    <div class="hand-area hand-left" id="hand-3"></div>
+                    <div class="meld-area meld-left" id="melds-3"></div>
+                </div>
+
+                <!-- 中央（卓情報 + 全捨て牌） -->
+                <div class="table-center">
+                    <div class="center-info">
+                        <div id="riichi-sticks" class="riichi-sticks"></div>
+                        <div id="action-indicator" class="action-indicator"></div>
+                    </div>
+                    <!-- 捨て牌を中央に集約 -->
+                    <div class="center-discards">
+                        <div class="center-discard-top" id="discards-2">
+                            <div class="discard-label">対面</div>
+                        </div>
+                        <div class="center-discard-left" id="discards-3">
+                            <div class="discard-label">左</div>
+                        </div>
+                        <div class="center-discard-right" id="discards-1">
+                            <div class="discard-label">右</div>
+                        </div>
+                        <div class="center-discard-bottom" id="discards-0">
+                            <div class="discard-label">自分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右家 -->
+                <div class="player-area player-right" data-seat="1">
+                    <div class="player-info">
+                        <span class="player-name">CPU 2</span>
+                        <span class="player-score" id="score-1">25000</span>
+                        <span class="player-wind" id="wind-1"></span>
+                    </div>
+                    <div class="hand-area hand-right" id="hand-1"></div>
+                    <div class="meld-area meld-right" id="melds-1"></div>
+                </div>
+
+                <!-- 自分（下） -->
+                <div class="player-area player-bottom" data-seat="0">
+                    <div class="player-info player-info-bottom">
+                        <span class="player-wind" id="wind-0"></span>
+                        <span class="player-name player-name-self">あなた</span>
+                        <span class="player-score" id="score-0">25000</span>
+                    </div>
+                    <div class="meld-area meld-bottom" id="melds-0"></div>
+                    <div class="hand-area hand-bottom" id="hand-0"></div>
+                </div>
+            </div>
+
+            <!-- アクションバー -->
+            <div id="action-bar" class="action-bar hidden">
+                <div id="action-buttons" class="action-buttons"></div>
+            </div>
+
+            <!-- AI解説パネル -->
+            <div id="ai-panel" class="ai-panel">
+                <div class="ai-panel-header">
+                    <span class="ai-panel-icon">🧠</span>
+                    <span class="ai-panel-title">AI解説</span>
+                    <button id="btn-toggle-ai" class="btn-toggle-ai" title="パネルを閉じる">▼</button>
+                </div>
+                <div id="ai-panel-body" class="ai-panel-body">
+                    <div id="ai-summary" class="ai-summary">
+                        対局開始を待っています...
+                    </div>
+                    <div id="ai-reasons" class="ai-reasons"></div>
+                    <div id="ai-candidates" class="ai-candidates"></div>
+                </div>
+            </div>
+
+            <!-- 向聴数表示 -->
+            <div id="shanten-display" class="shanten-display">
+                <span id="shanten-value"></span>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="result-overlay" class="overlay hidden">
+            <div class="result-container">
+                <div id="result-content" class="result-content"></div>
+                <button id="btn-next-round" class="btn btn-primary">次の局へ</button>
+                <button id="btn-back-to-start" class="btn btn-secondary hidden">タイトルに戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/tile-renderer.js"></script>
+    <script src="/static/js/game-client.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

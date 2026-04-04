@@ -1,0 +1,252 @@
+/* ============================================================
+   アニメーション (Phase 2: 強化版)
+   ============================================================ */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes tileAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes tileDiscard {
+    from {
+        opacity: 0;
+        transform: scale(1.2);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ツモ牌の出現 (Phase 2) */
+@keyframes tsumoAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.6);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(-5px) scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 打牌のフライアウト (Phase 2) */
+@keyframes discardFly {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-40px) scale(0.7);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.5);
+    }
+}
+
+/* テンパイフラッシュ (Phase 2) */
+@keyframes tenpaiFlash {
+    0% { opacity: 0; transform: scale(0.5); }
+    30% { opacity: 1; transform: scale(1.1); }
+    70% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* ターンインジケーター回転 (Phase 2) */
+@keyframes turnSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes riichiBanner {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes tsumoGlow {
+    0% { box-shadow: 0 0 5px rgba(212, 168, 83, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(212, 168, 83, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(212, 168, 83, 0.3); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* アニメーションクラス */
+.animate-appear {
+    animation: tileAppear 0.2s ease forwards;
+}
+.animate-discard {
+    animation: tileDiscard 0.3s ease forwards;
+}
+.animate-glow {
+    animation: tsumoGlow 1.5s ease infinite;
+}
+.animate-tsumo {
+    animation: tsumoAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-discard-fly {
+    animation: discardFly 0.4s ease forwards;
+}
+.animate-slide-right {
+    animation: slideInRight 0.3s ease forwards;
+}
+.animate-slide-left {
+    animation: slideInLeft 0.3s ease forwards;
+}
+
+/* リーチ宣言バナー */
+.riichi-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(224, 82, 82, 0.95), rgba(200, 50, 50, 0.95));
+    color: white;
+    padding: var(--space-md) var(--space-2xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-2xl);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    z-index: 500;
+    animation: riichiBanner 0.6s ease forwards;
+    box-shadow: 0 0 40px rgba(224, 82, 82, 0.5);
+    pointer-events: none;
+}
+
+/* 和了バナー */
+.hora-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(212, 168, 83, 0.95), rgba(240, 201, 107, 0.95));
+    color: #1a1a2e;
+    padding: var(--space-lg) var(--space-2xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-2xl);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    z-index: 500;
+    animation: riichiBanner 0.6s ease forwards;
+    box-shadow: 0 0 40px rgba(212, 168, 83, 0.5);
+    pointer-events: none;
+}
+
+/* テンパイバナー (Phase 2) */
+.tenpai-banner {
+    position: fixed;
+    top: 80%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(72, 199, 142, 0.9), rgba(52, 180, 122, 0.9));
+    color: white;
+    padding: var(--space-sm) var(--space-xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-lg);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    z-index: 500;
+    animation: tenpaiFlash 1.5s ease forwards;
+    box-shadow: 0 0 30px rgba(72, 199, 142, 0.4);
+    pointer-events: none;
+}
+
+/* ターンインジケーター（点滅） */
+.turn-indicator {
+    animation: pulse 1s ease infinite;
+}
+
+/* 巡目カウンターのパルス (Phase 2) */
+@keyframes turnUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); color: var(--color-accent-gold); }
+    100% { transform: scale(1); }
+}
+.animate-turn-update {
+    animation: turnUpdate 0.4s ease;
+}
