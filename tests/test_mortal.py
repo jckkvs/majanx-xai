@@ -92,10 +92,10 @@ def test_mortal_agent():
     assert res == opt1 or res is None
     
     # Mock probabilities to favor riichi
-    with patch.object(agent.mortal, 'predict_action_logits') as mock_logits:
-        logits = np.zeros(47)
-        logits[35] = 10.0 # Force riichi prob high
-        mock_logits.return_value = logits
+    with patch.object(agent, '_get_probabilities') as mock_probs:
+        probs = np.zeros(47)
+        probs[35] = 1.0 # Force riichi prob high
+        mock_probs.return_value = probs
         res_r = agent.decide_tsumo_action([opt_riichi])
         assert res_r == opt_riichi
 

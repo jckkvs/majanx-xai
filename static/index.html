@@ -38,9 +38,18 @@
                                 <option value="hanchan">半荘戦</option>
                             </select>
                         </div>
+                        
+                        <div class="option-group" style="margin-top: 15px; border-top: 1px solid #2d3748; padding-top: 15px;">
+                            <label>牌譜解析 (Replay)</label>
+                            <input type="file" id="replay-file" accept=".json,.log" style="display:block; margin: 10px auto; color: #a0aec0; font-size: 13px;">
+                            <button id="btn-start-replay" class="btn btn-secondary">
+                                <span class="btn-icon">📁</span>
+                                牌譜を開く
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="version-info">v0.2.0 - Phase 2</div>
+                <div class="version-info">v0.2.0 - Phase 1.5</div>
             </div>
         </div>
 
@@ -141,6 +150,14 @@
                 <div id="action-buttons" class="action-buttons"></div>
             </div>
 
+            <!-- リプレイ・コントロールバー -->
+            <div id="replay-bar" class="action-bar hidden" style="background: #2d3748;">
+                <div class="action-buttons" style="justify-content: center;">
+                    <button id="btn-replay-prev" class="btn btn-secondary">◀ 1手戻る</button>
+                    <button id="btn-replay-next" class="btn btn-primary">1手進む ▶</button>
+                </div>
+            </div>
+
             <!-- AI解説パネル -->
             <div id="ai-panel" class="ai-panel">
                 <div class="ai-panel-header">
@@ -149,10 +166,11 @@
                     <button id="btn-toggle-ai" class="btn-toggle-ai" title="パネルを閉じる">▼</button>
                 </div>
                 <div id="ai-panel-body" class="ai-panel-body">
-                    <div id="ai-summary" class="ai-summary">
-                        対局開始を待っています...
+                    <div class="dual-view">
+                        <div class="view-box mortal" id="mortal_view">待機中...</div>
+                        <div class="view-box rule" id="rule_view">待機中...</div>
+                        <div class="synthesis" id="synthesis">解析中...</div>
                     </div>
-                    <div id="ai-reasons" class="ai-reasons"></div>
                     <div id="ai-candidates" class="ai-candidates"></div>
                 </div>
             </div>

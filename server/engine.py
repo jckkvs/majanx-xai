@@ -754,7 +754,7 @@ class GameEngine:
                 is_tsumo=is_tsumo,
                 is_riichi=winner.is_riichi,
                 is_ippatsu=winner.is_ippatsu,
-                is_double_riichi=winner.is_double_riichi,
+                is_daburu_riichi=winner.is_double_riichi,
                 player_wind=TilesConverter.string_to_136_array(
                     honors=str(relative_seat + 1)
                 )[0] if True else None,

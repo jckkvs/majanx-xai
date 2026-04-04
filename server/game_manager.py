@@ -14,8 +14,8 @@ from .models import (
     Tile, ActionType, GameAction, GamePhase, tile_from_str,
 )
 from .engine import GameEngine
-from .cpu_player import CPUPlayer
-from .explanation import ExplanationEngine
+from .mortal.mortal_agent import MortalAgent
+from .commentator import CommentatorAI
 
 
 class GameManager:
@@ -28,8 +28,8 @@ class GameManager:
     def __init__(self, human_seat: int = 0, seed: Optional[int] = None):
         self.human_seat = human_seat
         self.engine = GameEngine(use_red_dora=True, seed=seed)
-        self.explainer = ExplanationEngine(self.engine)
-        self.cpus: dict[int, CPUPlayer] = {}
+        self.explainer = CommentatorAI(self.engine)
+        self.cpus: dict[int, MortalAgent] = {}
         self._send_to_client: Optional[Callable[[dict], Awaitable[None]]] = None
         self._waiting_for_human = False
         self._human_response: Optional[dict] = None
@@ -49,7 +49,7 @@ class GameManager:
         # CPUプレイヤー作成
         for seat in range(4):
             if seat != self.human_seat:
-                self.cpus[seat] = CPUPlayer(seat, self.engine)
+                self.cpus[seat] = MortalAgent(seat, self.engine)
 
         # イベントハンドラ設定
         self.engine.set_event_handler(lambda e: None)  # ログのみ
@@ -135,10 +135,13 @@ class GameManager:
                 "tile": a.tile.id if a.tile else None,
             })
 
-        # AI解説を生成
         try:
-            analysis = self.explainer.analyze(self.human_seat)
-            ai_data = self.explainer.to_dict(analysis)
+            mortal_probs = None
+            if hasattr(self.cpus.get(self.human_seat), "_get_probabilities"):
+                mortal_probs = self.cpus[self.human_seat]._get_probabilities()
+            
+            analysis = self.explainer.analyze(self.human_seat, mortal_probs)
+            ai_data = analysis
         except Exception as e:
             print(f"AI解説エラー: {e}")
             ai_data = None
@@ -157,7 +160,22 @@ class GameManager:
     async def _handle_cpu_turn(self, seat: int, tsumo_actions: list[GameAction]):
         """CPUプレイヤーのターン処理"""
         cpu = self.cpus[seat]
-        await asyncio.sleep(0.3)  # CPU思考時間
+        await asyncio.sleep(2.0)  # CPU思考時間（オート進行見やすくするため2秒）
+
+        # === AI解説を生成してUIへ配信（オートプレイ時の見栄え用） ===
+        try:
+            mortal_probs = None
+            if hasattr(self.cpus.get(seat), "_get_probabilities"):
+                mortal_probs = self.cpus[seat]._get_probabilities()
+                
+            analysis = self.explainer.analyze(seat, mortal_probs)
+            ai_data = analysis
+            await self._send({
+                "type": "ai_analysis",
+                "ai_analysis": ai_data,
+            })
+        except Exception as e:
+            print(f"AI解説エラー: {e}")
 
         # ツモ後アクション
         action = cpu.decide_tsumo_action(tsumo_actions)

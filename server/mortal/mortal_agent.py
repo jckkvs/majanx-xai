@@ -8,6 +8,7 @@ from typing import Optional
 from server.models import GameState, GameAction, ActionType, Tile, TileSuit
 from .feature_extractor import MortalFeatureExtractor
 from .mortal_engine import MortalEngine
+from .action_masker import ActionMasker
 
 
 class MortalAgent:
@@ -20,12 +21,55 @@ class MortalAgent:
         self.game_engine = engine
         self.extractor = MortalFeatureExtractor()
         self.mortal = MortalEngine()
+        self.masker = ActionMasker()
         self.rng = rng
 
     def _get_probabilities(self) -> np.ndarray:
         st = self.game_engine.state
         features = self.extractor.extract_features(st, self.seat)
-        return self.mortal.get_action_probabilities(features)
+        probs = self.mortal.get_action_probabilities(features)
+        
+        # Action Mask適用
+        player = st.players[self.seat]
+        hand_34 = self.game_engine._hand_to_34(player.hand)
+        
+        # ツモ番かどうか判定
+        is_my_turn = (st.current_player == self.seat)
+        if is_my_turn:
+            last_dahai = ""
+            # ツモ牌の特定: player.handの最後がツモ牌という前提
+            tsumo_idx = -1
+            if len(player.hand) % 3 == 2:
+                tsumo_idx = self.extractor._tile_to_index(player.hand[-1])
+        else:
+            last_dahai = st.last_discard.id if st.last_discard else ""
+            tsumo_idx = -1
+
+        river_34 = [0]*34
+
+        info = {
+            "turn": st.turn_count,
+            "is_riichi": player.is_riichi,
+            "dora": [t.id for t in st.dora_indicators],
+            "river_discards": [t.id for t in player.discards]
+        }
+        
+        mask = self.masker.generate_mask(
+            hand_34=hand_34,
+            tsumo_idx=tsumo_idx,
+            last_dahai=last_dahai,
+            last_dahai_actor=st.last_discard_player,
+            river_34=river_34,
+            round_info=info
+        )
+        
+        # 違法手を -1e9 にしてマスキング (softmaxをかける場合はこれ。確率の直接出力なら 0.0 にする)
+        full_mask = np.zeros(len(probs), dtype=bool)
+        n = min(len(probs), len(mask))
+        full_mask[:n] = mask[:n]
+        probs[~full_mask] = 0.0
+        
+        return probs
 
     def choose_discard(self) -> Tile:
         """打牌を選択 (出力 0-33 が各牌へのロジットと仮定)"""

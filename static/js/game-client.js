@@ -15,17 +15,24 @@ class GameClient {
         this.lastAiAnalysis = null;
         this.previousTenpai = false;
 
-        // Wind文字マップ
         this.WIND_CHARS = { 0: '東', 1: '南', 2: '西', 3: '北' };
         this.SEAT_NAMES = ['あなた', 'CPU 2', 'CPU 3', 'CPU 4'];
+        this.isReplay = false;
+        this.replaySessionId = null;
     }
 
     /**
      * WebSocket接続
      */
-    connect() {
+    connect(replaySessionId = null) {
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const url = `${protocol}//${location.host}/ws/game`;
+        let url = `${protocol}//${location.host}/ws_ui`;
+        
+        if (replaySessionId) {
+            this.isReplay = true;
+            this.replaySessionId = replaySessionId;
+            url = `${protocol}//${location.host}/ws/replay/${replaySessionId}`;
+        }
 
         this.ws = new WebSocket(url);
 
@@ -64,7 +71,8 @@ class GameClient {
 
         switch (data.type) {
             case 'game_state':
-                this.updateGameState(data.state);
+            case 'state_sync':
+                this.updateGameState(data.state || data.data);
                 break;
 
             case 'tsumo':
@@ -92,6 +100,14 @@ class GameClient {
             case 'call_option':
                 this.updateGameState(data.state);
                 this.showCallOptions(data.actions);
+                break;
+
+            case 'ai_analysis':
+                if (data.ai_analysis) {
+                    this.lastAiAnalysis = data.ai_analysis;
+                    this.showAiAnalysis(data.ai_analysis);
+                    this.highlightRecommendedTiles(data.ai_analysis);
+                }
                 break;
 
             case 'dahai':
@@ -833,130 +849,36 @@ class GameClient {
      * AI解説を表示 (強化版)
      */
     showAiAnalysis(analysis) {
-        const summaryEl = document.getElementById('ai-summary');
-        const reasonsEl = document.getElementById('ai-reasons');
+        const mortalViewEl = document.getElementById('mortal_view');
+        const ruleViewEl = document.getElementById('rule_view');
+        const synthesisEl = document.getElementById('synthesis');
         const candidatesEl = document.getElementById('ai-candidates');
 
-        if (!summaryEl || !reasonsEl || !candidatesEl) return;
+        if (!mortalViewEl || !ruleViewEl || !synthesisEl || !candidatesEl) return;
 
-        // 要約 + 押し引き状態
-        summaryEl.innerHTML = '';
-        const summaryText = document.createElement('div');
-        summaryText.textContent = analysis.summary || '解析中...';
-        summaryEl.appendChild(summaryText);
+        // 双視点解説の反映
+        mortalViewEl.textContent = analysis.mortal_view || "待機中...";
+        ruleViewEl.textContent = analysis.rule_view || "待機中...";
+        synthesisEl.textContent = analysis.synthesis || "解析中...";
+        synthesisEl.className = "synthesis " + (analysis.agreement ? "agree" : "disagree");
 
-        // 場況サマリ
-        if (analysis.situation_summary) {
-            const sitEl = document.createElement('div');
-            sitEl.classList.add('ai-situation');
-            sitEl.textContent = analysis.situation_summary;
-            summaryEl.appendChild(sitEl);
-        }
-
-        // 押し引きバー (リーチ者ありの場合)
-        if (analysis.push_fold_state && analysis.attack_ev > 0) {
-            const pfBar = document.createElement('div');
-            pfBar.classList.add('ai-pushfold-bar');
-
-            const total = Math.max(analysis.attack_ev + analysis.defense_risk, 1);
-            const atkPct = Math.round((analysis.attack_ev / total) * 100);
-            const defPct = 100 - atkPct;
-
-            pfBar.innerHTML = `
-                <div class="pf-label">攻撃EV <span>${Math.round(analysis.attack_ev)}</span></div>
-                <div class="pf-bar-container">
-                    <div class="pf-bar-atk" style="width:${atkPct}%"></div>
-                    <div class="pf-bar-def" style="width:${defPct}%"></div>
-                </div>
-                <div class="pf-label">リスク <span>${Math.round(analysis.defense_risk)}</span></div>
-            `;
-            summaryEl.appendChild(pfBar);
-        }
-
-        // 理由
-        reasonsEl.innerHTML = '';
-        const CATEGORY_ICONS = {
-            '牌効率': '📊', '受入': '🎯', '不要牌': '🗑',
-            '守備': '🛡', '注意': '⚠️', '戦略': '🧠', '打点': '💰'
-        };
-
-        (analysis.reasons || []).forEach(reason => {
-            const item = document.createElement('div');
-            item.classList.add('ai-reason-item');
-
-            const icon = document.createElement('span');
-            icon.classList.add('ai-reason-icon');
-            icon.textContent = CATEGORY_ICONS[reason.category] || '•';
-
-            const textContainer = document.createElement('div');
-            textContainer.classList.add('ai-reason-text');
-
-            const desc = document.createElement('div');
-            desc.textContent = reason.description;
-            textContainer.appendChild(desc);
-
-            if (reason.detail) {
-                const detail = document.createElement('div');
-                detail.classList.add('ai-reason-detail');
-                detail.textContent = reason.detail;
-                textContainer.appendChild(detail);
-            }
-
-            item.appendChild(icon);
-            item.appendChild(textContainer);
-            reasonsEl.appendChild(item);
-        });
-
-        // 選択肢表示 (1〜3択形式、各候補に攻め/守り両面の解説)
+        // 候補リスト
         candidatesEl.innerHTML = '';
-        const choices = analysis.choices || [];
-        if (choices.length > 0) {
-            const numLabel = choices.length === 1 ? '1択' : `${choices.length}択`;
-            const title = document.createElement('div');
-            title.classList.add('ai-candidates-title');
-            title.textContent = `選択肢: ${numLabel}`;
-            candidatesEl.appendChild(title);
-
-            choices.forEach((ch, idx) => {
+        if (analysis.mortal_top3) {
+            analysis.mortal_top3.forEach((cand, index) => {
                 const card = document.createElement('div');
-                card.classList.add('ai-choice-card');
-                if (ch.is_recommended) card.classList.add('recommended');
-
-                // ヘッダー: 牌名 + 推奨マーク
-                const header = document.createElement('div');
-                header.classList.add('ai-choice-header');
-                const marker = ch.is_recommended ? '★ ' : `${ch.rank}. `;
-                header.innerHTML = `<span class="choice-marker">${marker}</span>` +
-                    `<span class="choice-tile-name">${ch.tile_name} 切り</span>` +
-                    `<span class="choice-ukeire">受入${ch.ukeire}枚</span>`;
-                card.appendChild(header);
-
-                // 攻め面
-                if (ch.attack_analysis && ch.attack_analysis.length > 0) {
-                    const atkSection = document.createElement('div');
-                    atkSection.classList.add('ai-choice-section', 'atk-section');
-                    atkSection.innerHTML = `<span class="choice-section-icon">⚔</span>` +
-                        `<span class="choice-section-label">攻め:</span> ` +
-                        `<span class="choice-section-text">${ch.attack_analysis.join(' / ')}</span>`;
-                    card.appendChild(atkSection);
-                }
-
-                // 守り面
-                if (ch.defense_analysis && ch.defense_analysis.length > 0) {
-                    const defSection = document.createElement('div');
-                    defSection.classList.add('ai-choice-section', 'def-section');
-                    defSection.innerHTML = `<span class="choice-section-icon">🛡</span>` +
-                        `<span class="choice-section-label">守り:</span> ` +
-                        `<span class="choice-section-text">${ch.defense_analysis.join(' / ')}</span>`;
-                    card.appendChild(defSection);
-                }
-
-                // カードクリックで対応牌をハイライト & スクロール
-                card.addEventListener('click', () => {
-                    this.focusTileInHand(ch.tile);
-                });
-                card.style.cursor = 'pointer';
-
+                card.classList.add('ai-candidate-item');
+                if (index === 0) card.classList.add('recommended');
+                
+                card.innerHTML = `
+                    <div class="ai-candidate-tile">
+                        <span class="choice-marker">${index === 0 ? '★ 推奨' : '候補' + (index + 1)}</span>
+                        <strong>${cand.tile_name} 切り</strong>
+                    </div>
+                    <div class="ai-candidate-score">
+                        確率: ${(cand.prob * 100).toFixed(1)}%
+                    </div>
+                `;
                 candidatesEl.appendChild(card);
             });
         }

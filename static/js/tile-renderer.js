@@ -34,8 +34,8 @@ const TileRenderer = {
      */
     parseTileId(id) {
         if (!id || id === '?') return null;
-        const isRed = id.endsWith('r');
-        const cleanId = isRed ? id.slice(0, -1) : id;
+        const isRed = id.endsWith('r') || id.includes('0');
+        const cleanId = id.replace('r', '').replace('0', '5');
         const number = parseInt(cleanId[0]);
         const suit = cleanId[1];
         return { number, suit, isRed };
@@ -74,12 +74,28 @@ const TileRenderer = {
         }
 
         const { number, suit, isRed } = parsed;
-        const suitName = this.SUIT_NAMES[suit];
-
-        el.classList.add(`tile-${suitName}`);
+        el.dataset.suit = suit;
         el.dataset.tileId = tileId;
 
-        if (isRed) el.classList.add('tile-red');
+        if (suit === 'm') {
+            el.classList.add('manzu');
+            el.textContent = ['一','二','三','四','五','六','七','八','九'][number-1];
+        } else if (suit === 'p') {
+            el.classList.add('pinzu');
+            el.appendChild(this._createPinzuPattern(number));
+        } else if (suit === 's') {
+            el.classList.add('souzu');
+            el.appendChild(this._createSouzuPattern(number));
+        } else if (suit === 'z') {
+            el.classList.add('honor');
+            el.textContent = this.WIND_CHARS[number] || '?';
+            if (number <= 4) el.classList.add('wind');
+            else if (number === 5) el.classList.add('white');
+            else if (number === 6) el.classList.add('dragon-green');
+            else if (number === 7) el.classList.add('dragon-red');
+        }
+
+        if (isRed) el.classList.add('red-dora');
         if (small) el.classList.add('tile-sm');
         if (clickable) el.classList.add('tile-clickable');
         if (tsumo) el.classList.add('tile-tsumo');
@@ -87,31 +103,69 @@ const TileRenderer = {
         if (rotated) el.classList.add('tile-rotated');
         if (animate) el.classList.add('animate-appear');
 
-        // コンテンツ
-        const content = document.createElement('div');
-        content.classList.add('tile-content');
-
-        if (suit === 'z') {
-            // 字牌
-            const numEl = document.createElement('span');
-            numEl.classList.add('tile-number');
-            numEl.textContent = this.WIND_CHARS[number];
-            content.appendChild(numEl);
-            el.classList.add(this.WIND_CLASSES[number]);
-        } else {
-            // 数牌
-            const numEl = document.createElement('span');
-            numEl.classList.add('tile-number');
-            numEl.textContent = number;
-            content.appendChild(numEl);
-
-            const suitEl = document.createElement('span');
-            suitEl.classList.add('tile-suit');
-            content.appendChild(suitEl);
-        }
-
-        el.appendChild(content);
         return el;
+    },
+
+    /**
+     * 筒子の丸パターン生成
+     */
+    _createPinzuPattern(num) {
+        const container = document.createElement('div');
+        container.className = 'pattern';
+        
+        const patterns = {
+            1: [[1]],
+            2: [[1,0],[0,1]],
+            3: [[1,0,0],[0,1,0],[0,0,1]],
+            4: [[1,0],[0,1],[1,0],[0,1]],
+            5: [[1,0,1],[0,1,0],[1,0,1]],
+            6: [[1,0,1],[0,1,0],[1,0,1],[0,1,0]],
+            7: [[1,0,1],[0,1,0],[1,0,1],[0,1,0],[1,0,1]],
+            8: [[1,0,1],[0,1,0],[1,0,1],[0,1,0],[1,0,1],[0,1,0]],
+            9: [[1,1,1],[1,1,1],[1,1,1]]
+        };
+
+        const pattern = patterns[num] || [[1]];
+        container.style.gridTemplateColumns = `repeat(${pattern[0].length}, 1fr)`;
+        
+        pattern.forEach(row => {
+            row.forEach(val => {
+                if (val) {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    if ((num === 5 && row.length === 3 && row[1] === 1) || num === 1) {
+                        dot.classList.add('red');
+                    } else {
+                        dot.classList.add('blue');
+                    }
+                    container.appendChild(dot);
+                } else {
+                    const empty = document.createElement('div');
+                    container.appendChild(empty);
+                }
+            });
+        });
+        return container;
+    },
+
+    /**
+     * 索子の竹パターン生成
+     */
+    _createSouzuPattern(num) {
+        const container = document.createElement('div');
+        container.className = 'bamboo';
+        
+        if (num === 1) {
+            container.textContent = '🐦';
+            container.style.fontSize = '32px';
+        } else {
+            for (let i = 0; i < num; i++) {
+                const stick = document.createElement('div');
+                stick.className = 'stick';
+                container.appendChild(stick);
+            }
+        }
+        return container;
     },
 
     /**
