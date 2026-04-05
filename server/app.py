@@ -203,56 +203,105 @@ async def reset_settings():
 
 # === Fast Match WebSocket (Phase 3) ===
 
+class MockEngine:
+    def __init__(self):
+        self.wall = ["1m"] * 70
+        self.hands = {
+            0: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
+            1: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
+            2: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
+            3: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"]
+        }
+        self.dora_indicators = ["1z"]
+        self.scores = {0: 25000, 1: 25000, 2: 25000, 3: 25000}
+        self.round_info = {"wind": "東", "round": 1}
+        self.rivers = {0: [], 1: [], 2: [], 3: []}
+
+    def do_dahai(self, seat: int, tile: str):
+        if tile in self.hands[seat]:
+            self.hands[seat].remove(tile)
+        self.rivers[seat].append(tile)
+
+    def _tile_to_idx(self, tile: str) -> int:
+        return 0
+
+engine = MockEngine()
+precompute = {
+    0: {
+        "recommendation": "1z",
+        "reasoning": {
+            "reasoning": "字牌から切り出します",
+            "attack_score": 20.0,
+            "defense_score": 80.0,
+            "balance": "defensive"
+        }
+    }
+}
+
 @app.websocket("/ws")
-async def fast_websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
+async def websocket_endpoint(ws: WebSocket):
+    await ws.accept()
     
-    # 簡易ゲームモック状態
-    hand_str_list = ["1m","2m","3m","4p","5p","6p","7s","8s","9s","1z","1z","2z","2z"]
-    
-    await websocket.send_json({"type": "update", "hand": hand_str_list})
+    # 初期状態
+    await ws.send_json({
+        "type": "init",
+        "hand": engine.hands[0],
+        "dora": engine.dora_indicators,
+        "scores": engine.scores,
+        "round": f"{engine.round_info['wind']}{engine.round_info['round']}局",
+        "tile_count": len(engine.wall)
+    })
     
     try:
         while True:
-            msg = await websocket.receive_json()
+            msg = await ws.receive_json()
+            
             if msg.get("type") == "action" and msg.get("action") == "dahai":
                 tile = msg["tile"]
-                if tile in hand_str_list:
-                    hand_str_list.remove(tile)
+                seat = 0  # player
+                engine.do_dahai(seat, tile)
                 
-                # UI更新
-                await websocket.send_json({
+                # 自分打牌
+                await ws.send_json({
                     "type": "update",
-                    "hand": hand_str_list,
-                    "new_discard": tile
+                    "hand": engine.hands[0],
+                    "new_discard": tile,
+                    "discard_seat": seat,  # 0=自分
+                    "tile_count": len(engine.wall)
                 })
                 
-                # 事前計算トリガー（モック）
-                # ここで次ツモをシミュレートして推論をバックグラウンド実行する
-                hand_34 = [0]*34
-                # (簡易実装のため省略し、すぐにツモイベントを発生させる)
-                await asyncio.sleep(0.5)
+                # CPU打牌シミュレーション（簡易）
+                for cpu_seat in [1, 2, 3]:
+                    if engine.wall and len(engine.hands[cpu_seat]) > 0:
+                        cpu_tile = engine.hands[cpu_seat].pop(0)
+                        engine.rivers[cpu_seat].append(cpu_tile)
+                        
+                        # CPU打牌通知
+                        await ws.send_json({
+                            "type": "update",
+                            "new_discard": cpu_tile,
+                            "discard_seat": cpu_seat,  # 1=南, 2=西, 3=北
+                            "scores": engine.scores,
+                            "tile_count": len(engine.wall)
+                        })
+                        await asyncio.sleep(0.3)
                 
-                # ランダムに牌をツモ
-                tsumo_tile = "5r" if "5m" not in hand_str_list else "5m"
-                hand_str_list.append(tsumo_tile)
-                
-                # 事前計算結果を模倣
-                cached = {"recommendation": tsumo_tile, "explanation": "事前計算された即時回答です", "is_precomputed": True}
-                
-                import time
-                start_t = time.time()
-                await websocket.send_json({
-                    "type": "update",
-                    "hand": hand_str_list,
-                    "ai": {
-                        **cached,
-                        "response_time_ms": int((time.time()-start_t)*1000)
-                    }
-                })
-                
-    except WebSocketDisconnect:
-        pass
+                # AI推奨
+                tsumo_idx = engine._tile_to_idx(tile.rstrip('r'))
+                cached = precompute.get(tsumo_idx)
+                if cached:
+                    await ws.send_json({
+                        "type": "ai_recommendation",
+                        "recommendation": cached["recommendation"],
+                        "reasoning": cached["reasoning"]["reasoning"],
+                        "attack_score": cached["reasoning"]["attack_score"],
+                        "defense_score": cached["reasoning"]["defense_score"],
+                        "balance": cached["reasoning"]["balance"],
+                        "is_precomputed": True
+                    })
+                    
+    except Exception as e:
+        print(f"[WS] error: {e}")
 
 @app.get("/api/health")
 async def health():

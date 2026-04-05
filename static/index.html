@@ -3,290 +3,411 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>麻雀解説AI - 実戦モード</title>
-  <meta name="description" content="AIが解説する本格四人麻雀。リアルタイムAI解析付き。">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/main.css">
-  <link rel="stylesheet" href="/static/css/tiles.css">
-  <link rel="stylesheet" href="/static/css/table.css">
-  <link rel="stylesheet" href="/static/css/animations.css">
+  <title>麻雀解説AI</title>
   <style>
-    /* center-discards grid center cell */
-    .center-cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    /* replay-bar hidden override */
-    #replay-bar.hidden { display: none !important; }
-    #replay-bar { display: flex; }
+    * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
     
-    /* AI meters new CSS */
+    :root {
+      --bg: #0f1724; --panel: #1a2332; --accent: #f59e0b;
+      --tile-w: 64px; --tile-h: 88px;
+      --river-tile-w: 36px; --river-tile-h: 50px;
+    }
+    
+    body {
+      font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: linear-gradient(135deg, #1e3a5f, #0f1724);
+      color: #fff; height: 100vh; overflow: hidden;
+    }
+    
+    /* 盤面全体レイアウト */
+    .table-layout {
+      position: relative;
+      width: 100vw; height: 100vh;
+      display: grid;
+      grid-template-areas: 
+        "top-river top-river top-info"
+        "left-river center right-river"
+        "bottom-info bottom-hand bottom-hand";
+      grid-template-columns: 180px 1fr 200px;
+      grid-template-rows: 160px 1fr 180px;
+      gap: 10px;
+      padding: 10px;
+    }
+    
+    /* 上部：西家の捨て牌 */
+    .river-top {
+      grid-area: top-river;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-content: flex-start;
+      justify-content: center;
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    /* 左側：北家の捨て牌 */
+    .river-left {
+      grid-area: left-river;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-content: flex-start;
+      justify-content: flex-start;
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    /* 右側：南家の捨て牌 */
+    .river-right {
+      grid-area: right-river;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-content: flex-start;
+      justify-content: flex-start;
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    /* 中央情報パネル */
+    .center-panel {
+      grid-area: center;
+      background: linear-gradient(135deg, #2d3748, #1a202c);
+      border: 3px solid #4a5568; border-radius: 16px;
+      padding: 20px 40px; text-align: center;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      clip-path: polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%);
+      align-self: center; justify-self: center;
+    }
+    .round { font-size: 24px; color: #63b3ed; font-weight: bold; margin-bottom: 8px; }
+    .tile-count { font-size: 16px; color: #94a3b8; margin: 4px 0; }
+    .score { font-size: 32px; color: #f6ad55; font-weight: bold; margin-top: 8px; }
+    
+    /* 上部情報（ドラ・他家スコア） */
+    .top-info {
+      grid-area: top-info;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+    }
+    
+    .dora-hud {
+      display: flex; gap: 6px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px; border-radius: 8px;
+      align-items: center;
+    }
+    .dora-label { font-size: 12px; color: #fbd38d; font-weight: bold; }
+    .dora-tile {
+      width: 28px; height: 38px; background: #fefefe;
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #1a1a1a;
+    }
+    
+    .other-scores {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .player-score-card {
+      background: rgba(0,0,0,0.5);
+      padding: 6px 12px; border-radius: 6px;
+      text-align: right; font-size: 12px;
+    }
+    .player-name { color: #94a3b8; margin-bottom: 2px; }
+    .player-points { font-size: 14px; font-weight: bold; color: #fbd38d; }
+    
+    /* 下部情報エリア */
+    .bottom-info {
+      grid-area: bottom-info;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px;
+    }
+    
+    /* AI推奨オーバーレイ */
+    .ai-overlay {
+      background: rgba(15,23,42,0.95); border: 2px solid #3b82f6;
+      border-radius: 12px; padding: 10px 18px; text-align: center;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+    }
+    .ai-label { font-size: 11px; color: #64b5f6; margin-bottom: 4px; }
+    .ai-tile { font-size: 48px; font-weight: bold; margin: 4px 0; }
+    .ai-reason {
+      font-size: 11px; color: #cbd5e0; line-height: 1.4;
+      background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;
+      border-left: 2px solid #f59e0b; text-align: left;
+      max-height: 60px; overflow: hidden;
+    }
     .ai-meters {
-      display: flex; gap: 12px; margin-top: 8px; font-size: 12px;
+      display: flex; gap: 8px; margin-top: 6px; font-size: 10px;
     }
     .meter { flex: 1; }
     .meter-bar {
-      height: 6px; background: #334155; border-radius: 3px; overflow: hidden; margin-top: 4px;
+      height: 4px; background: #334155; border-radius: 2px; overflow: hidden; margin-top: 2px;
     }
-    .meter-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease-out; }
+    .meter-fill { height: 100%; border-radius: 2px; }
     .meter-fill.atk { background: linear-gradient(90deg, #ef4444, #f97316); }
     .meter-fill.def { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+    
+    /* 手牌エリア */
+    .bottom-hand {
+      grid-area: bottom-hand;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .hand-label {
+      font-size: 12px; color: #94a3b8; margin-bottom: 6px; text-align: center;
+    }
+    .hand-container {
+      display: flex; gap: 4px; justify-content: center;
+      overflow-x: auto; padding: 4px 0;
+    }
+    .tile {
+      width: var(--tile-w); height: var(--tile-h);
+      background: linear-gradient(135deg, #fefefe, #e2e8f0);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 34px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .tile:active { transform: scale(0.95); }
+    .tile.recommended {
+      border: 3px solid #fbbf24; box-shadow: 0 0 20px rgba(251,191,36,0.8);
+      transform: translateY(-10px); z-index: 10;
+    }
+    .tile.m { color: #c41e3a; }
+    .tile.p { color: #1e3a8a; }
+    .tile.p::after { content:'●'; font-size:10px; position:absolute; top:3px; right:4px; opacity:0.6; }
+    .tile.s { color: #166534; }
+    .tile.s::after { content:'🎍'; font-size:10px; position:absolute; top:3px; left:4px; opacity:0.6; }
+    .tile.z { color: #1a1a1a; }
+    .tile.z.red { color: #c41e3a; }
+    .tile.red-dora {
+      background: linear-gradient(135deg, #fff5f5, #fed7d7);
+      border: 2px solid #c41e3a;
+    }
+    
+    /* 捨て牌タイル（小型） */
+    .river-tile {
+      width: var(--river-tile-w); height: var(--river-tile-h);
+      background: linear-gradient(135deg, #fefefe, #e2e8f0);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #1a1a1a;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .river-tile.m { color: #c41e3a; }
+    .river-tile.p { color: #1e3a8a; }
+    .river-tile.s { color: #166534; }
+    .river-tile.z { color: #1a1a1a; }
+    .river-tile.red-dora {
+      background: linear-gradient(135deg, #fff5f5, #fed7d7);
+      border: 1px solid #c41e3a;
+    }
+    
+    /* プレイヤーラベル */
+    .player-label {
+      font-size: 10px; color: #64748b; text-align: center;
+      margin-bottom: 4px; font-weight: bold;
+    }
+    
+    @media (max-width: 1000px) {
+      :root { --tile-w: 52px; --tile-h: 72px; --river-tile-w: 30px; --river-tile-h: 42px; }
+      .table-layout {
+        grid-template-areas: 
+          "top-info top-info top-info"
+          "center center center"
+          "bottom-hand bottom-hand bottom-hand";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+      }
+      .river-top, .river-left, .river-right { display: none; }
+      .ai-tile { font-size: 40px; }
+    }
   </style>
 </head>
 <body>
-<div id="app">
-
-  <!-- ========== スタート画面 ========== -->
-  <div id="start-screen" class="screen active">
-    <div class="start-container">
-      <div class="logo-container">
-        <div class="logo">
-          <span class="logo-icon">🀄</span>
-          <span class="logo-text">麻雀AI</span>
-        </div>
-        <p class="logo-subtitle">EXPLAINABLE MAHJONG AI — 実戦モード</p>
+  <div class="table-layout">
+    <!-- 上部：西家の捨て牌 -->
+    <div class="river-top" id="river-top">
+      <div class="player-label">西家</div>
+    </div>
+    
+    <!-- 左側：北家の捨て牌 -->
+    <div class="river-left" id="river-left">
+      <div class="player-label">北家</div>
+    </div>
+    
+    <!-- 中央：局情報 -->
+    <div class="center-panel">
+      <div class="round" id="round">東1局</div>
+      <div class="tile-count">残り <span id="tile-count">70</span> 枚</div>
+      <div class="score" id="score">25000</div>
+    </div>
+    
+    <!-- 右側：南家の捨て牌 -->
+    <div class="river-right" id="river-right">
+      <div class="player-label">南家</div>
+    </div>
+    
+    <!-- 上部右：ドラ・他家スコア -->
+    <div class="top-info">
+      <div class="dora-hud" id="dora-hud">
+        <span class="dora-label">ドラ:</span>
       </div>
-
-      <div class="start-menu">
-        <button id="btn-start-game" class="btn btn-primary btn-lg">
-          <span class="btn-icon">▶</span> 対局を始める
-        </button>
-
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
-          <label for="replay-file" class="btn btn-secondary" style="cursor:pointer;">
-            <span class="btn-icon">📁</span> 牌譜を開く
-          </label>
-          <input type="file" id="replay-file" accept=".log,.json" style="display:none;">
-          <button id="btn-start-replay" class="btn btn-secondary">読み込み開始</button>
+      <div class="other-scores">
+        <div class="player-score-card">
+          <div class="player-name">南家</div>
+          <div class="player-points" id="score-1">25000</div>
         </div>
-
-        <a href="/settings.html" class="btn btn-secondary" style="font-size:0.9rem; text-decoration:none;">⚙ 設定</a>
+        <div class="player-score-card">
+          <div class="player-name">西家</div>
+          <div class="player-points" id="score-2">25000</div>
+        </div>
+        <div class="player-score-card">
+          <div class="player-name">北家</div>
+          <div class="player-points" id="score-3">25000</div>
+        </div>
       </div>
-
-      <div class="version-info">v3.0 Phase 3 | Explainable Mahjong AI</div>
+    </div>
+    
+    <!-- 下部左：AI推奨 -->
+    <div class="bottom-info">
+      <div class="ai-overlay">
+        <div class="ai-label">🤖 AI推奨</div>
+        <div class="ai-tile" id="ai-tile">-</div>
+        <div class="ai-reason" id="ai-reason">解析中...</div>
+        <div class="ai-meters">
+          <div class="meter">
+            <div>⚔️ <span id="atk-val">0</span></div>
+            <div class="meter-bar"><div class="meter-fill atk" id="atk-bar" style="width:0%"></div></div>
+          </div>
+          <div class="meter">
+            <div>🛡️ <span id="def-val">0</span></div>
+            <div class="meter-bar"><div class="meter-fill def" id="def-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 下部：自分の手牌 -->
+    <div class="bottom-hand">
+      <div class="hand-label">自分の手牌</div>
+      <div class="hand-container" id="hand"></div>
     </div>
   </div>
 
-  <!-- ========== ゲーム画面 ========== -->
-  <div id="game-screen" class="screen">
-
-    <!-- リプレイバー (牌譜再生時のみ表示) -->
-    <div id="replay-bar" class="hidden" style="position:fixed; top:48px; left:50%; transform:translateX(-50%); z-index:50; gap:8px; padding:4px 16px; background:rgba(10,14,23,0.95); border:1px solid rgba(255,255,255,0.1); border-radius:0 0 8px 8px;">
-      <button id="btn-replay-prev" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">← 前へ</button>
-      <button id="btn-replay-next" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">次へ →</button>
-    </div>
-
-    <!-- 左上：ドラ・赤ドラ表示 -->
-    <div class="top-hud">
-      <div class="dora-label">ドラ</div>
-      <div id="dora-indicators" class="dora-tiles"></div>
-    </div>
-
-    <!-- 左側：設定メニュー -->
-    <div class="sidebar">
-      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
-        <div class="toggle-dot on"></div>
-        <span class="sidebar-text">自動整理</span>
-      </div>
-      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
-        <div class="toggle-dot off"></div>
-        <span class="sidebar-text">自動和了</span>
-      </div>
-      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
-        <div class="toggle-dot off"></div>
-        <span class="sidebar-text">鳴きなし</span>
-      </div>
-      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
-        <div class="toggle-dot off"></div>
-        <span class="sidebar-text">ツモ切り</span>
-      </div>
-      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
-        <div class="toggle-dot on"></div>
-        <span class="sidebar-text">自動北抜き</span>
-      </div>
-    </div>
-
-    <!-- Floating Score (初期非表示) -->
-    <div id="floating-score" class="floating-score hidden">
-      <div class="score-tile z" id="fs-tile">北</div>
-      <div class="score-text"><span id="fs-count">4</span> <span id="fs-delta">+20</span></div>
-    </div>
-
-    <!-- 情報バー (Center-shieldに統合されたため削除) -->
-
-    <!-- メイン麻雀テーブル (grid: top / left + center + right / bottom) -->
-    <div class="mahjong-table">
-
-      <!-- 対面: CPU3 (seat 2) -->
-      <div class="player-area player-top">
-        <div class="player-info">
-          <span id="wind-2" class="player-wind">西</span>
-          <span class="player-name">CPU 3</span>
-          <span id="score-2" class="player-score">25000</span>
-        </div>
-        <div id="melds-2" class="meld-area"></div>
-        <div id="hand-2" class="hand-area hand-top"></div>
-      </div>
-
-      <!-- 上家: CPU4 (seat 3) -->
-      <div class="player-area player-left">
-        <div class="player-info" style="flex-direction:column; gap:8px; padding:12px 10px;">
-          <span id="wind-3" class="player-wind" style="font-size:var(--font-size-sm); width:32px; height:32px;">北</span>
-          <span class="player-name" style="font-size:var(--font-size-md); writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 4</span>
-          <span id="score-3" class="player-score" style="font-size:var(--font-size-md); writing-mode:vertical-rl;">25000</span>
-        </div>
-        <div id="hand-3" class="hand-area hand-left"></div>
-        <div id="melds-3" class="meld-area" style="flex-direction:column; gap:4px;"></div>
-      </div>
-
-      <!-- 中央: 捨て牌エリア -->
-      <div class="table-center">
-        <div class="center-discards">
-          <!-- 対面の捨て牌 (seat 2) -->
-          <div id="discards-2" class="discard-area center-discard-top">
-            <div class="discard-label">CPU3</div>
-          </div>
-          <!-- 上家の捨て牌 (seat 3) -->
-          <div id="discards-3" class="discard-area center-discard-left">
-            <div class="discard-label">CPU4</div>
-          </div>
-          <!-- 中央セル -->
-          <div class="center-cell" style="position:relative;">
-            <div class="center-shield">
-              <div class="round-info">
-                <span id="round-name" class="round-name">東1局</span>
-                <span id="honba" class="honba"></span>
-              </div>
-              <div class="tile-count">残り <span id="tiles-remaining">70</span></div>
-              <div class="turn-display" style="justify-content:center; font-size:var(--font-size-sm); margin-bottom:4px;">
-                <span class="turn-label">巡目</span>
-                <span id="turn-count" class="turn-count">-</span>
-              </div>
-              <div id="riichi-sticks" class="riichi-sticks" style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); flex-direction:row; gap:4px;"></div>
-            </div>
-            <div id="action-indicator" class="action-indicator" style="position:absolute; top: -30px; left:50%; transform:translateX(-50%);"></div>
-          </div>
-          <!-- 下家の捨て牌 (seat 1) -->
-          <div id="discards-1" class="discard-area center-discard-right">
-            <div class="discard-label">CPU2</div>
-          </div>
-          <!-- 自分の捨て牌 (seat 0) -->
-          <div id="discards-0" class="discard-area center-discard-bottom">
-            <div class="discard-label">あなた</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 下家: CPU2 (seat 1) -->
-      <div class="player-area player-right">
-        <div id="melds-1" class="meld-area" style="flex-direction:column; gap:4px;"></div>
-        <div id="hand-1" class="hand-area hand-right"></div>
-        <div class="player-info" style="flex-direction:column; gap:8px; padding:12px 10px;">
-          <span id="wind-1" class="player-wind" style="font-size:var(--font-size-sm); width:32px; height:32px;">南</span>
-          <span class="player-name" style="font-size:var(--font-size-md); writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 2</span>
-          <span id="score-1" class="player-score" style="font-size:var(--font-size-md); writing-mode:vertical-rl;">25000</span>
-        </div>
-      </div>
-
-      <!-- 自分 (seat 0) -->
-      <div class="player-area player-bottom">
-        <div id="melds-0" class="meld-area meld-bottom"></div>
-        <div id="hand-0" class="hand-area hand-bottom"></div>
-        <div class="player-info player-info-bottom">
-          <span id="wind-0" class="player-wind">東</span>
-          <span class="player-name-self">あなた</span>
-          <span id="score-0" class="player-score">25000</span>
-        </div>
-      </div>
-
-    </div><!-- /mahjong-table -->
-
-    <!-- 向聴数表示 (fixed) -->
-    <div id="shanten-display" class="shanten-display hidden">
-      <span id="shanten-value">-</span>
-    </div>
-
-    <!-- アクションバー (fixed bottom-center) -->
-    <div id="action-bar" class="action-bar hidden">
-      <div id="action-buttons" class="action-buttons"></div>
-    </div>
-
-    <!-- 最新AI推奨オーバーレイ -->
-    <div class="ai-overlay" id="ai-overlay" style="display:none;">
-      <div style="font-size:12px; color:#64b5f6;">🤖 最新AI推奨</div>
-      <div class="ai-tile" id="ai-rec-tile">-</div>
-      <div class="ai-reason" id="ai-reasoning">解析待機中...</div>
-      <div class="ai-meters">
-        <div class="meter">
-          <div>⚔️ 攻め <span id="atk-val">0</span></div>
-          <div class="meter-bar"><div class="meter-fill atk" id="atk-bar" style="width:0%"></div></div>
-        </div>
-        <div class="meter">
-          <div>🛡️ 守り <span id="def-val">0</span></div>
-          <div class="meter-bar"><div class="meter-fill def" id="def-bar" style="width:0%"></div></div>
-        </div>
-      </div>
-    </div>
-    <!-- 結果オーバーレイ -->
-    <div id="result-overlay" class="overlay hidden">
-      <div class="result-container">
-        <div id="result-content" class="result-content"></div>
-        <div style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
-          <button id="btn-next-round" class="btn btn-primary hidden">次の局へ →</button>
-          <button id="btn-back-to-start" class="btn btn-secondary hidden">タイトルへ</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 流局結果モーダル -->
-    <div id="ryukyoku-modal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>🀄 流局</h2>
-          <div class="round-info" id="ryukyoku-round">東1局</div>
-        </div>
-        
-        <!-- 手牌公開エリア -->
-        <div class="hands-reveal">
-          <div class="player-hand-reveal" id="hand-reveal-0"></div>
-          <div class="player-hand-reveal" id="hand-reveal-1"></div>
-          <div class="player-hand-reveal" id="hand-reveal-2"></div>
-          <div class="player-hand-reveal" id="hand-reveal-3"></div>
-        </div>
-        
-        <!-- 聴牌状況 -->
-        <div class="tenpai-status">
-          <div class="status-item" id="tenpai-0"></div>
-          <div class="status-item" id="tenpai-1"></div>
-          <div class="status-item" id="tenpai-2"></div>
-          <div class="status-item" id="tenpai-3"></div>
-        </div>
-        
-        <!-- 点数移動アニメーション -->
-        <div class="score-animation" id="score-anim"></div>
-        
-        <!-- 結果サマリー -->
-        <div class="result-summary">
-          <div class="summary-item total">
-            <span>最終点数</span>
-            <span id="final-score">0</span>
-          </div>
-        </div>
-        
-        <!-- 進行ボタン -->
-        <div class="modal-actions">
-          <button id="btn-ryukyoku-next" class="btn btn-primary">次の局へ →</button>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /game-screen -->
-</div><!-- /app -->
-
-<script src="/static/js/tile-renderer.js"></script>
-<script src="/static/js/game-client.js"></script>
-<script src="/static/js/main.js"></script>
+  <script>
+    function renderTile(tileStr, isRec = false, isRiver = false) {
+      const div = document.createElement('div');
+      div.className = isRiver ? 'river-tile' : 'tile';
+      if (isRec) div.classList.add('recommended');
+      
+      let suit='', num=0, text='';
+      if(tileStr.endsWith('m')){ suit='m'; num=parseInt(tileStr); text=num; }
+      else if(tileStr.endsWith('p')){ suit='p'; num=parseInt(tileStr); text=num; }
+      else if(tileStr.endsWith('s')){ suit='s'; num=parseInt(tileStr); text=num; }
+      else if(tileStr.endsWith('z')){
+        suit='z'; num=parseInt(tileStr);
+        const h=['','東','南','西','北','白','發','中']; text=h[num]||'?';
+        if([1,2,7,6].includes(num)) div.classList.add('red');
+      }
+      div.classList.add(suit); div.textContent = text;
+      if(tileStr.includes('0')||tileStr.includes('r')) div.classList.add('red-dora');
+      
+      if (!isRiver) {
+        div.onclick = () => {
+          div.style.opacity = '0.5';
+          setTimeout(() => div.remove(), 150);
+          ws.send(JSON.stringify({type:'action', action:'dahai', tile: tileStr}));
+        };
+      }
+      return div;
+    }
+    
+    function addRiverTile(seat, tileStr) {
+      const riverId = ['river-right', 'river-top', 'river-left'][seat - 1]; // 南=1, 西=2, 北=3
+      const river = document.getElementById(riverId);
+      if (river) {
+        river.appendChild(renderTile(tileStr, false, true));
+        river.scrollTop = river.scrollHeight;
+      }
+    }
+    
+    function updateUI(data) {
+      // 自分の手牌
+      if (data.hand) {
+        const h = document.getElementById('hand'); h.innerHTML = '';
+        data.hand.forEach(t => h.appendChild(renderTile(t)));
+      }
+      
+      // ドラ
+      if (data.dora) {
+        const d = document.getElementById('dora-hud');
+        // ラベル以降をクリア
+        while (d.children.length > 1) d.removeChild(d.lastChild);
+        data.dora.forEach(t => d.appendChild(renderTile(t, false, true)));
+      }
+      
+      // 捨て牌（他家）
+      if (data.new_discard && data.discard_seat !== undefined && data.discard_seat !== 0) {
+        addRiverTile(data.discard_seat, data.new_discard);
+      }
+      
+      // 局情報
+      if (data.round) document.getElementById('round').textContent = data.round;
+      if (data.scores?.[0]) document.getElementById('score').textContent = data.scores[0];
+      if (data.tile_count) document.getElementById('tile-count').textContent = data.tile_count;
+      
+      // 他家スコア
+      if (data.scores) {
+        for (let i = 1; i < 4; i++) {
+          const el = document.getElementById(`score-${i}`);
+          if (el && data.scores[i]) el.textContent = data.scores[i];
+        }
+      }
+    }
+    
+    function showAI(data) {
+      document.getElementById('ai-tile').textContent = data.recommendation?.replace(/[0r]/,'') || '-';
+      document.getElementById('ai-reason').textContent = data.reasoning || '解析中...';
+      
+      const max = Math.max(data.attack_score||0, data.defense_score||0, 1);
+      document.getElementById('atk-bar').style.width = `${(data.attack_score/max)*100}%`;
+      document.getElementById('atk-val').textContent = data.attack_score?.toFixed(1) || '0';
+      document.getElementById('def-bar').style.width = `${(data.defense_score/max)*100}%`;
+      document.getElementById('def-val').textContent = data.defense_score?.toFixed(2) || '0';
+      
+      document.querySelectorAll('.tile').forEach(t => t.classList.remove('recommended'));
+      const rec = data.recommendation?.replace(/[0r]/,'');
+      document.querySelectorAll('.tile').forEach(t => {
+        if (t.textContent === rec) t.classList.add('recommended');
+      });
+    }
+    
+    const ws = new WebSocket("ws://localhost:8000/ws");
+    ws.onmessage = e => {
+      const d = JSON.parse(e.data);
+      if (d.type === 'init' || d.type === 'update') updateUI(d);
+      if (d.type === 'ai_recommendation') showAI(d);
+    };
+    ws.onopen = () => console.log("✅ 接続完了 - 捨て牌レイアウト完了");
+  </script>
 </body>
 </html>
