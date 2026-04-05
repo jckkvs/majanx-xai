@@ -10,7 +10,7 @@ from .engine import GameEngine
 
 
 class CommentatorAI:
-    def __init__(self, engine: GameEngine):
+    def __init__(self, engine: 'GameEngine' = None):
         self.engine = engine
         self.shanten_calc = Shanten()
 

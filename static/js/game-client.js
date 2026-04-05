@@ -19,6 +19,51 @@ class GameClient {
         this.SEAT_NAMES = ['あなた', 'CPU 2', 'CPU 3', 'CPU 4'];
         this.isReplay = false;
         this.replaySessionId = null;
+
+        // Settings & Voice
+        this.settings = {};
+        this.synth = window.speechSynthesis;
+        this.lastSpoken = "";
+        
+        // Settings websocket
+        this._initSettings();
+    }
+
+    async _initSettings() {
+        try {
+            const res = await fetch('/api/settings');
+            this.settings = await res.json();
+        } catch (e) {
+            console.error('[Settings] Load error:', e);
+        }
+
+        // 簡易的な WebSocket による設定更新購読（settings.html 側で更新時に送信）
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.settingsWs = new WebSocket(`${protocol}//${location.host}/ws_ui`);
+        window.settingsWs = this.settingsWs; // settings.html から送信するため
+        this.settingsWs.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'settings_update') {
+                this.settings = { ...this.settings, ...data.settings };
+            }
+        };
+    }
+
+    speak(text) {
+        if (!this.settings.voice_enabled || !this.synth) return;
+        if (this.lastSpoken === text) return;
+        
+        this.lastSpoken = text;
+        const msg = new SpeechSynthesisUtterance(text);
+        
+        // 180 chars/min is roughly rate 1.2
+        const rate = this.settings.voice_rate ? this.settings.voice_rate / 150 : 1.2;
+        msg.rate = rate;
+        msg.volume = this.settings.voice_volume !== undefined ? this.settings.voice_volume : 0.8;
+        msg.lang = 'ja-JP';
+
+        this.synth.cancel();
+        this.synth.speak(msg);
     }
 
     /**
@@ -496,32 +541,38 @@ class GameClient {
         actionButtons.innerHTML = '';
 
         actions.forEach(action => {
-            let label = '';
+            let labelHTML = '';
             let cssClass = 'btn-action';
 
             switch (action.type) {
                 case 'hora':
-                    label = 'ロン';
+                    labelHTML = 'ロン';
                     cssClass = 'hora';
                     break;
                 case 'pon':
-                    label = 'ポン';
+                    labelHTML = 'ポン';
                     break;
-                case 'chi':
-                    label = `チー (${(action.consumed || []).join(',')})`;
+                case 'chi': {
+                    const tilesHtml = (action.consumed || []).map(id => TileRenderer.createTileElement(id, {small: true}).outerHTML).join('');
+                    labelHTML = `<div style="display:flex; align-items:center; gap:4px"><span>チー</span><div style="display:flex;">${tilesHtml}</div></div>`;
                     break;
+                }
                 case 'daiminkan':
-                    label = 'カン';
+                    labelHTML = 'カン';
                     break;
                 case 'skip':
-                    label = 'スキップ';
+                    labelHTML = 'スキップ';
                     cssClass = 'skip';
                     break;
                 default:
-                    label = action.type;
+                    labelHTML = action.type;
             }
 
-            const btn = this.createActionButton(label, cssClass, () => {
+            const btn = document.createElement('button');
+            btn.classList.add('btn', 'btn-action');
+            if (cssClass) btn.classList.add(cssClass);
+            btn.innerHTML = labelHTML;
+            btn.addEventListener('click', () => {
                 this.hideActionBar();
 
                 if (action.type === 'skip') {
@@ -555,11 +606,11 @@ class GameClient {
     /**
      * アクションボタン生成
      */
-    createActionButton(label, cssClass, onClick) {
+    createActionButton(labelHTML, cssClass, onClick) {
         const btn = document.createElement('button');
         btn.classList.add('btn', 'btn-action');
         if (cssClass) btn.classList.add(cssClass);
-        btn.textContent = label;
+        btn.innerHTML = labelHTML;
         btn.addEventListener('click', onClick);
         return btn;
     }
@@ -861,6 +912,10 @@ class GameClient {
         ruleViewEl.textContent = analysis.rule_view || "待機中...";
         synthesisEl.textContent = analysis.synthesis || "解析中...";
         synthesisEl.className = "synthesis " + (analysis.agreement ? "agree" : "disagree");
+
+        if (analysis.synthesis) {
+            this.speak(analysis.synthesis);
+        }
 
         // 候補リスト
         candidatesEl.innerHTML = '';

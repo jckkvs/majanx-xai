@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定 - 麻雀解説AI</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a1f2e;
+      --border: #334155;
+      --text: #e2e8f0;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    
+    .header h1 { font-size: 24px; font-weight: 600; }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    
+    .btn-secondary {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #252a35; }
+    
+    .section {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    
+    .setting-label {
+      flex: 1;
+    }
+    .setting-label .name { font-weight: 500; margin-bottom: 4px; }
+    .setting-label .desc { font-size: 12px; color: #94a3b8; }
+    
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    /* トグルスイッチ */
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #475569;
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px; width: 20px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    input:checked + .toggle-slider { background: var(--accent); }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
+    
+    /* セレクトボックス */
+    select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+    
+    /* スライダー */
+    input[type="range"] {
+      width: 120px;
+      accent-color: var(--accent);
+    }
+    .range-value {
+      min-width: 40px;
+      text-align: right;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    
+    /* 入力フィールド */
+    input[type="text"], input[type="number"] {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      width: 200px;
+    }
+    
+    /* 保存通知 */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--success);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* 依存関係の視覚化 */
+    .depends-on {
+      margin-left: 24px;
+      padding-left: 16px;
+      border-left: 2px dashed var(--border);
+    }
+    .disabled { opacity: 0.5; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ 設定</h1>
+      <div>
+        <button class="btn btn-secondary" onclick="resetSettings()">リセット</button>
+        <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+      </div>
+    </div>
+
+    <!-- AI設定 -->
+    <div class="section">
+      <div class="section-title">🤖 AI設定</div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">Mortal AIを使用</div>
+          <div class="desc">学習済み最強モデルによる推論を有効化</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="use_mortal" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="mortal-options">
+        <div class="setting-label">
+          <div class="name">GPU推論</div>
+          <div class="desc">CUDA/MPS対応GPUを使用（高速）</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="use_gpu" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">モデルパス</div>
+          <div class="desc">Mortal重みファイルの場所</div>
+        </div>
+        <div class="setting-control">
+          <input type="text" id="ai_model_path" value="server/mortal/weights/mortal.pth">
+        </div>
+      </div>
+    </div>
+
+    <!-- 解説設定 -->
+    <div class="section">
+      <div class="section-title">💬 解説設定</div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">解説詳細度</div>
+          <div class="desc">解説文の情報量を選択</div>
+        </div>
+        <div class="setting-control">
+          <select id="explanation_detail">
+            <option value="simple">簡潔</option>
+            <option value="medium" selected>標準</option>
+            <option value="detailed">詳細</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">上位3候補を表示</div>
+          <div class="desc">推奨牌以外の手も比較表示</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="show_top3" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">攻守メーターを表示</div>
+          <div class="desc">数値で攻め・守りのバランスを可視化</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="show_metrics" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 音声設定 -->
+    <div class="section">
+      <div class="section-title">🔊 音声解説</div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">音声解説を有効化</div>
+          <div class="desc">解説文を音声で読み上げ</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="voice_enabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="voice-options">
+        <div class="setting-label">
+          <div class="name">TTSエンジン</div>
+          <div class="desc">音声合成の方式を選択</div>
+        </div>
+        <div class="setting-control">
+          <select id="voice_engine">
+            <option value="pyttsx3">pyttsx3（オフライン・高速）</option>
+            <option value="gtts">gTTS（オンライン・高品質）</option>
+            <option value="coqui">Coqui（ローカル・最高品質）</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="voice-options">
+        <div class="setting-label">
+          <div class="name">発話速度</div>
+          <div class="desc">1分間の文字数</div>
+        </div>
+        <div class="setting-control">
+          <input type="range" id="voice_rate" min="100" max="300" value="180">
+          <span class="range-value" id="voice_rate_val">180</span>
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="voice-options">
+        <div class="setting-label">
+          <div class="name">音量</div>
+        </div>
+        <div class="setting-control">
+          <input type="range" id="voice_volume" min="0" max="1" step="0.1" value="0.8">
+          <span class="range-value" id="voice_volume_val">0.8</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表示設定 -->
+    <div class="section">
+      <div class="section-title">🎨 表示設定</div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">テーマ</div>
+        </div>
+        <div class="setting-control">
+          <select id="theme">
+            <option value="dark" selected>ダーク</option>
+            <option value="light">ライト</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">牌デザイン</div>
+          <div class="desc">牌の視覚スタイル</div>
+        </div>
+        <div class="setting-control">
+          <select id="tile_design">
+            <option value="traditional" selected>伝統的（漢字・模様）</option>
+            <option value="modern">モダン（数字＋アイコン）</option>
+            <option value="minimal">ミニマル（文字のみ）</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">赤ドラ強調表示</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="show_red_dora" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 外部連携設定 -->
+    <div class="section">
+      <div class="section-title">🔗 外部連携</div>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div class="name">画面認識を有効化</div>
+          <div class="desc">じゃんたま等の画面を自動解析</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle">
+            <input type="checkbox" id="screen_capture_enabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="capture-options">
+        <div class="setting-label">
+          <div class="name">キャプチャ領域</div>
+          <div class="desc">解析対象の画面範囲（px）</div>
+        </div>
+        <div class="setting-control">
+          <input type="number" id="capture_width" value="1920" style="width:80px">
+          <span>×</span>
+          <input type="number" id="capture_height" value="1080" style="width:80px">
+        </div>
+      </div>
+      
+      <div class="setting-row depends-on" id="capture-options">
+        <div class="setting-label">
+          <div class="name">キャプチャFPS</div>
+        </div>
+        <div class="setting-control">
+          <input type="range" id="capture_fps" min="5" max="30" value="12">
+          <span class="range-value" id="capture_fps_val">12</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 保存通知 -->
+  <div class="toast" id="toast">✅ 設定を保存しました</div>
+
+  <script>
+    // 設定の読み込み
+    let currentSettings = {};
+    
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        currentSettings = await res.json();
+        
+        // フォームに値を設定
+        Object.entries(currentSettings).forEach(([key, value]) => {
+          const el = document.getElementById(key);
+          if (!el) return;
+          
+          if (el.type === 'checkbox') {
+            el.checked = value;
+          } else {
+            el.value = value;
+          }
+          
+          // スライダー値表示の更新
+          if (key.includes('rate') || key.includes('volume') || key.includes('fps')) {
+            document.getElementById(key + '_val').textContent = value;
+          }
+        });
+        
+        // 依存関係の初期状態設定
+        updateDependencies();
+        
+      } catch (e) {
+        console.error('設定読み込みエラー:', e);
+      }
+    }
+    
+    // 設定の保存
+    async function saveSettings() {
+      const settings = {};
+      
+      // 各入力から値を取得
+      document.querySelectorAll('input, select').forEach(el => {
+        if (!el.id) return;
+        if (el.type === 'checkbox') {
+          settings[el.id] = el.checked;
+        } else if (el.type === 'range' || el.type === 'number') {
+          settings[el.id] = el.type === 'number' ? parseInt(el.value) : parseFloat(el.value);
+        } else {
+          settings[el.id] = el.value;
+        }
+      });
+      
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings)
+        });
+        
+        showToast('✅ 設定を保存しました');
+        
+        // WebSocketで設定更新を通知
+        if (window.settingsWs) {
+          window.settingsWs.send(JSON.stringify({type: 'settings_update', settings}));
+        }
+        
+      } catch (e) {
+        showToast('❌ 保存に失敗しました', 'error');
+        console.error(e);
+      }
+    }
+    
+    // 設定リセット
+    async function resetSettings() {
+      if (!confirm('設定をデフォルトに戻しますか？')) return;
+      
+      try {
+        await fetch('/api/settings/reset', {method: 'POST'});
+        loadSettings();
+        showToast('🔄 設定をリセットしました');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    // 依存関係の更新（トグルで子要素を有効/無効）
+    function updateDependencies() {
+      // Mortal依存
+      const useMortal = document.getElementById('use_mortal').checked;
+      document.getElementById('mortal-options').classList.toggle('disabled', !useMortal);
+      
+      // 音声依存
+      const voiceEnabled = document.getElementById('voice_enabled').checked;
+      document.getElementById('voice-options').classList.toggle('disabled', !voiceEnabled);
+      
+      // 画面認識依存
+      const captureEnabled = document.getElementById('screen_capture_enabled').checked;
+      document.getElementById('capture-options').classList.toggle('disabled', !captureEnabled);
+    }
+    
+    // イベントリスナー登録
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      
+      // 依存関係の更新
+      ['use_mortal', 'voice_enabled', 'screen_capture_enabled'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', updateDependencies);
+      });
+      
+      // スライダー値表示
+      ['voice_rate', 'voice_volume', 'capture_fps'].forEach(id => {
+        const el = document.getElementById(id);
+        const val = document.getElementById(id + '_val');
+        if (el && val) {
+          el.addEventListener('input', () => val.textContent = el.value);
+        }
+      });
+    });
+    
+    // Toast表示
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.background = type === 'error' ? '#ef4444' : '#22c55e';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>

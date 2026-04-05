@@ -1,158 +1,240 @@
-"""
-Mortal Agent
-Implements: F-103 | ロジットからの最善手決定ロジック
-"""
+# server/mortal/mortal_agent.py
+import torch
 import numpy as np
-from typing import Optional
+from pathlib import Path
+from typing import List, Dict, Optional, Tuple
+import sys
+import os
 
-from server.models import GameState, GameAction, ActionType, Tile, TileSuit
-from .feature_extractor import MortalFeatureExtractor
-from .mortal_engine import MortalEngine
-from .action_masker import ActionMasker
+# Mortalリポジトリのインポート用パス設定
+MORTAL_PATH = Path(__file__).parent.parent.parent / "Mortal"
+if MORTAL_PATH.exists():
+    sys.path.insert(0, str(MORTAL_PATH))
 
+try:
+    from mortal import MortalModel
+    from mortal.feature import FeatureExtractor
+    from mortal.action_mask import ActionMasker as MortalActionMasker
+    MORTAL_AVAILABLE = True
+except ImportError:
+    MortalModel = None
+    FeatureExtractor = None
+    MortalActionMasker = None
+    MORTAL_AVAILABLE = False
 
 class MortalAgent:
     """
-    ONNX出力（ロジットや確率分布）から実際のアクション (GameAction) を決定するエージェント。
+    Mortal AI の完全統合エージェント
+    mjaiイベントを受け取り、合法手マスク適用後の確率分布を返す
     """
     
-    def __init__(self, seat: int, engine, rng=None):
-        self.seat = seat
-        self.game_engine = engine
-        self.extractor = MortalFeatureExtractor()
-        self.mortal = MortalEngine()
-        self.masker = ActionMasker()
-        self.rng = rng
-
-    def _get_probabilities(self) -> np.ndarray:
-        st = self.game_engine.state
-        features = self.extractor.extract_features(st, self.seat)
-        probs = self.mortal.get_action_probabilities(features)
+    # Mortalのアクション空間定義（46次元）
+    ACTION_SPACE = {
+        'dahai': list(range(34)),      # 0-33: 打牌
+        'tsumogiri': 34,                # 34: ツモ切り
+        'chi': 35,                      # 35: チー
+        'pon': 36,                      # 36: ポン
+        'kan_daimin': 37,               # 37: 大明槓
+        'kan_ankan': 38,                # 38: 暗槓
+        'kan_kakan': 39,                # 39: 加槓
+        'hora': 40,                     # 40: 和了
+        'ryukyoku': 41,                 # 41: 流局
+        'none': 42,                     # 42: パス
+        'reserve': list(range(43, 46))  # 43-45: 予約
+    }
+    
+    def __init__(
+        self, 
+        weight_path: str = "server/mortal/weights/mortal.pth",
+        device: Optional[str] = None,
+        use_gpu: bool = True
+    ):
+        self.device = self._select_device(use_gpu, device)
+        self.model = None
+        self.feature_extractor = None
+        self.action_masker = MortalActionMasker() if MORTAL_AVAILABLE else None
+        self.is_loaded = False
         
-        # Action Mask適用
-        player = st.players[self.seat]
-        hand_34 = self.game_engine._hand_to_34(player.hand)
-        
-        # ツモ番かどうか判定
-        is_my_turn = (st.current_player == self.seat)
-        if is_my_turn:
-            last_dahai = ""
-            # ツモ牌の特定: player.handの最後がツモ牌という前提
-            tsumo_idx = -1
-            if len(player.hand) % 3 == 2:
-                tsumo_idx = self.extractor._tile_to_index(player.hand[-1])
+        if Path(weight_path).exists():
+            self._load_model(weight_path)
         else:
-            last_dahai = st.last_discard.id if st.last_discard else ""
-            tsumo_idx = -1
-
-        river_34 = [0]*34
-
-        info = {
-            "turn": st.turn_count,
-            "is_riichi": player.is_riichi,
-            "dora": [t.id for t in st.dora_indicators],
-            "river_discards": [t.id for t in player.discards]
-        }
-        
-        mask = self.masker.generate_mask(
-            hand_34=hand_34,
-            tsumo_idx=tsumo_idx,
-            last_dahai=last_dahai,
-            last_dahai_actor=st.last_discard_player,
-            river_34=river_34,
-            round_info=info
-        )
-        
-        # 違法手を -1e9 にしてマスキング (softmaxをかける場合はこれ。確率の直接出力なら 0.0 にする)
-        full_mask = np.zeros(len(probs), dtype=bool)
-        n = min(len(probs), len(mask))
-        full_mask[:n] = mask[:n]
-        probs[~full_mask] = 0.0
-        
-        return probs
-
-    def choose_discard(self) -> Tile:
-        """打牌を選択 (出力 0-33 が各牌へのロジットと仮定)"""
-        st = self.game_engine.state
-        player = st.players[self.seat]
-        
-        probs = self._get_probabilities()
-        
-        # モデル出力を 0-33 の牌の確率として扱う
-        discard_probs = probs[:34]
-        
-        # 実際に手牌にある牌だけにフィルタリングして確率を正規化
-        valid_indices = []
-        for t in player.hand:
-            valid_indices.append(self.extractor._tile_to_index(t))
+            print(f"[MortalAgent] 重みファイルが見つかりません: {weight_path}")
+            print("[MortalAgent] ルールベースフォールバックモードで起動します")
+    
+    def _select_device(self, use_gpu: bool, device: Optional[str]) -> torch.device:
+        if device:
+            return torch.device(device)
+        if use_gpu and torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
+    
+    def _load_model(self, weight_path: str):
+        """Mortalモデルと特徴量抽出器をロード"""
+        try:
+            # Mortalモデルのロード（公式実装準拠）
+            self.model = MortalModel.load_from_checkpoint(
+                weight_path, 
+                map_location=self.device
+            )
+            self.model.eval()
+            self.model.to(self.device)
             
-        best_tile = None
-        best_prob = -1.0
-        
-        for t in player.hand:
-            idx = self.extractor._tile_to_index(t)
-            p = discard_probs[idx]
-            if p > best_prob:
-                best_prob = p
-                best_tile = t
-        
-        if best_tile is None:
-            # フォールバック
-            return player.hand[-1]
+            # 特徴量抽出器の初期化
+            self.feature_extractor = FeatureExtractor()
             
-        return best_tile
-
-    def decide_tsumo_action(self, options: list[GameAction]) -> Optional[GameAction]:
-        """各種ツモ時判定 (和了, リーチ, カン)"""
-        # アクションチャネルの確率(34以降)から判断する論理。
-        # 今回は優先順で、可能な場合(和了確定など)は採用。
-        probs = self._get_probabilities()
-        action_probs = probs[34:] # ツモ, リーチ, カン, ポン, チー, (スキップ)
+            self.is_loaded = True
+            print(f"[MortalAgent] ✅ モデルロード完了: {self.device}")
+            
+        except Exception as e:
+            print(f"[MortalAgent] ❌ モデルロード失敗: {e}")
+            self.is_loaded = False
+    
+    def predict(
+        self, 
+        mjai_events: List[Dict], 
+        legal_actions: Optional[List[str]] = None,
+        return_q_values: bool = False
+    ) -> Dict:
+        """
+        mjaiイベント列から打牌確率を予測
+        """
+        if not self.is_loaded:
+            return self._fallback_predict(mjai_events, legal_actions)
         
-        # インデックス定義マッピング仮定 (34: HORA, 35: RIICHI, 36: ANKAN)
-        hora_prob = action_probs[0] if len(action_probs) > 0 else 0
-        riichi_prob = action_probs[1] if len(action_probs) > 1 else 0
-        
-        for opt in options:
-            if opt.action_type == ActionType.HORA:
-                if hora_prob > 0.05 or True: # 和了は一律許容
-                    return opt
-            if opt.action_type == ActionType.RIICHI:
-                if riichi_prob > 0.2:
-                    return opt
-        
-        return None
-
-    def decide_call(self, options: list[GameAction]) -> GameAction:
-        """鳴きの判定"""
-        probs = self._get_probabilities()
-        action_probs = probs[34:] 
-        
-        hora_prob = action_probs[0] if len(action_probs) > 0 else 0
-        pon_prob = action_probs[3] if len(action_probs) > 3 else 0
-        chi_prob = action_probs[4] if len(action_probs) > 4 else 0
-        
-        for opt in options:
-            if opt.action_type == ActionType.HORA:
-                return opt
+        try:
+            # 1. mjaiイベント -> 特徴量テンソル
+            features = self.feature_extractor.encode(mjai_events)
+            features = features.to(self.device)
+            
+            # 2. 推論実行
+            with torch.no_grad():
+                logits, q_values, value = self.model(features)
                 
-        best_call = None
-        best_val = 0.5 # 鳴き閾値
+            # 3. 確率分布に変換
+            probs = torch.softmax(logits, dim=-1).cpu().numpy()[0]  # shape: (46,)
+            
+            # 4. 合法手マスクの適用
+            if legal_actions:
+                mask = self._create_mask_from_actions(legal_actions)
+            else:
+                # mjaiイベントから自動で合法手マスク生成
+                mask = self.action_masker.create_mask(mjai_events)
+            
+            probs[~mask] = -1e9  # 違法手をマスク
+            probs = np.exp(probs) / np.sum(np.exp(probs))  # 再正規化
+            
+            # 5. 打牌確率のみ抽出（0-33）
+            tile_probs = probs[:34].copy()
+            
+            # 6. 推奨アクションの決定
+            best_idx = int(np.argmax(probs))
+            best_action = self._idx_to_action(best_idx, mjai_events)
+            
+            result = {
+                "action": best_action,
+                "probs": tile_probs.tolist(),
+                "is_mortal": True
+            }
+            
+            if return_q_values:
+                result["q_values"] = q_values.cpu().numpy()[0].tolist()
+                result["value"] = float(value.item())
+                
+            return result
+            
+        except Exception as e:
+            print(f"[MortalAgent] 推論エラー: {e}")
+            return self._fallback_predict(mjai_events, legal_actions)
+    
+    def _create_mask_from_actions(self, legal_actions: List[str]) -> np.ndarray:
+        """アクション名リストから46次元マスクを生成"""
+        mask = np.zeros(46, dtype=bool)
         
-        for opt in options:
-            if opt.action_type == ActionType.PON and pon_prob > best_val:
-                best_val = pon_prob
-                best_call = opt
-            if opt.action_type == ActionType.CHI and chi_prob > best_val:
-                best_val = chi_prob
-                best_call = opt
+        for action in legal_actions:
+            if action.startswith("dahai:"):
+                tile = action.split(":")[1]
+                idx = self._tile_to_idx(tile)
+                if 0 <= idx < 34:
+                    mask[idx] = True
+            elif action == "tsumogiri":
+                mask[self.ACTION_SPACE['tsumogiri']] = True
+            elif action == "chi":
+                mask[self.ACTION_SPACE['chi']] = True
+            elif action == "pon":
+                mask[self.ACTION_SPACE['pon']] = True
+            elif action == "kan":
+                mask[self.ACTION_SPACE['kan_daimin']] = True
+                mask[self.ACTION_SPACE['kan_ankan']] = True
+                mask[self.ACTION_SPACE['kan_kakan']] = True
+            elif action in ["hora", "ron", "tsumo"]:
+                mask[self.ACTION_SPACE['hora']] = True
+            elif action == "none":
+                mask[self.ACTION_SPACE['none']] = True
+                
+        return mask
+    
+    def _tile_to_idx(self, tile: str) -> int:
+        """牌文字列 -> 0-33インデックス変換"""
+        suits = ['m', 'p', 's', 'z']
+        tile = tile.rstrip('r')  # 赤ドラ表記を除去
         
-        if best_call:
-            return best_call
-
-        return GameAction(action_type=ActionType.SKIP, player=self.seat)
-
-    @property
-    def last_decision(self):
-        # 現在のCPUPlayerのプロパティインターフェース用互換性
-        return None
+        for suit_idx, suit in enumerate(suits):
+            if tile.endswith(suit):
+                num = int(tile[:-1])
+                if suit_idx < 3:  # 数牌
+                    return suit_idx * 9 + (num - 1)
+                else:  # 字牌
+                    return 27 + (num - 1)
+        return -1
+    
+    def _idx_to_action(self, idx: int, events: List[Dict]) -> Dict:
+        """インデックス -> mjaiアクション変換"""
+        if 0 <= idx < 34:
+            suits = ['m', 'p', 's', 'z']
+            if idx < 27:
+                suit = suits[idx // 9]
+                num = (idx % 9) + 1
+                tile = f"{num}{suit}"
+            else:
+                num = (idx - 27) + 1
+                tile = f"{num}z"
+            return {"type": "dahai", "pai": tile}
+        elif idx == 34:
+            return {"type": "dahai", "tsumogiri": True}
+        elif idx == 35:
+            return {"type": "chi"}
+        elif idx == 36:
+            return {"type": "pon"}
+        elif idx in [37, 38, 39]:
+            return {"type": "kan"}
+        elif idx == 40:
+            return {"type": "hora"}
+        else:
+            return {"type": "none"}
+    
+    def _fallback_predict(self, mjai_events: List[Dict], legal_actions: Optional[List[str]]) -> Dict:
+        """Mortal未ロード時のフォールバック（均等確率）"""
+        probs = np.zeros(34)
+        if legal_actions:
+            for action in legal_actions:
+                if action.startswith("dahai:"):
+                    idx = self._tile_to_idx(action.split(":")[1])
+                    if 0 <= idx < 34:
+                        probs[idx] = 1.0
+        else:
+            probs[:] = 1.0
+        
+        if probs.sum() > 0:
+            probs = probs / probs.sum()
+            
+        return {
+            "action": {"type": "dahai", "pai": "5m"},  # ダミー
+            "probs": probs.tolist(),
+            "is_mortal": False
+        }
+    
+    def get_feature_dim(self) -> int:
+        """特徴量の次元数を返す"""
+        return 196 if self.feature_extractor else 0

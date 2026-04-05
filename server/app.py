@@ -17,9 +17,27 @@ from fastapi.responses import FileResponse
 import uuid
 
 from .game_manager import GameManager
+from .models import GamePhase
 from .replay_manager import ReplayManager
 from .tenhou_to_mjai import TenhouToMjaiConverter
 from .mortal.mortal_agent import MortalAgent
+from .settings_manager import SettingsManager
+from .voice_commentator import VoiceCommentator
+from .precompute_engine import PrecomputeEngine
+from .commentator import CommentatorAI
+
+# グローバル初期化
+settings_mgr = SettingsManager()
+voice_mgr = VoiceCommentator(**settings_mgr.get_voice_config())
+# Mortal Agent 初期化（設定ファイルから）
+try:
+    mortal_agent_global = MortalAgent(**settings_mgr.get_ai_config())
+except Exception as e:
+    print(f"MortalAgent initialization error: {e}")
+    mortal_agent_global = None
+
+rule_ai_global = CommentatorAI(engine=None)
+precompute_global = PrecomputeEngine(mortal_agent=mortal_agent_global, rule_engine=rule_ai_global)
 
 app = FastAPI(title="麻雀AI - Mahjong AI")
 
@@ -36,6 +54,17 @@ _active_connections = set()
 def get_active_connections():
     return _active_connections.copy()
 
+@app.on_event("startup")
+async def startup():
+    """アプリ起動時の初期化"""
+    voice_mgr.start()
+    print("[App] ✅ 起動完了")
+
+@app.on_event("shutdown")
+async def shutdown():
+    """アプリ終了時のクリーンアップ"""
+    voice_mgr.stop()
+
 async def broadcast_event(event: Dict[str, Any]):
     """全接続クライアントにイベント送信"""
     for conn in get_active_connections():
@@ -49,31 +78,38 @@ async def ui_ws(ws: WebSocket):
     """UI用WebSocketエンドポイント"""
     await ws.accept()
     _active_connections.add(ws)
-    
-    # クライアント接続時に初回のみゲーム開始
-    # 本番では別のトリガーでGameManagerをキックするが、Phase1では接続時に起動
-    if not hasattr(app.state, "game_manager"):
-        app.state.game_manager = GameManager(human_seat=-1) # -1でフルオート
+
+    gm = getattr(app.state, "game_manager", None)
+    needs_new_game = (
+        gm is None or
+        gm.engine.state.phase == GamePhase.GAME_END
+    )
+
+    if needs_new_game:
+        app.state.game_manager = GameManager(human_seat=0)
         app.state.game_manager.set_client_handler(broadcast_event)
-        
-        # プレイヤーをMortalAgentに差し替え（1人だけMortal、他はランダムCPUにするなど可能）
-        # 今回は全員MortalAgentにする
-        for seat in range(4):
-            app.state.game_manager.cpus[seat] = MortalAgent(seat, app.state.game_manager.engine)
-            
         asyncio.create_task(app.state.game_manager.start_game())
     else:
         # 進行中の状態同期
-        await ws.send_json({
-            "type": "state_sync",
-            "data": app.state.game_manager.engine.to_state_dict(for_player=None)
-        })
+        try:
+            await ws.send_json({
+                "type": "state_sync",
+                "data": app.state.game_manager.engine.to_state_dict(for_player=None)
+            })
+        except Exception:
+            pass
 
     try:
         while True:
             data = await ws.receive_json()
-            # UIからのインタラクション処理
-            if app.state.game_manager.human_seat != -1:
+            action = data.get("action")
+            if action == "next_round":
+                asyncio.create_task(app.state.game_manager.next_round())
+            elif action == "new_game":
+                app.state.game_manager = GameManager(human_seat=0)
+                app.state.game_manager.set_client_handler(broadcast_event)
+                asyncio.create_task(app.state.game_manager.start_game())
+            elif app.state.game_manager.human_seat != -1:
                 app.state.game_manager.receive_human_input(data)
     except WebSocketDisconnect:
         _active_connections.discard(ws)
@@ -145,6 +181,78 @@ async def replay_ws(ws: WebSocket, session_id: str):
         pass
     except Exception as e:
         print(f"[Replay] WS Error: {e}")
+
+# === Settings API ===
+
+@app.get("/api/settings")
+async def get_settings():
+    return settings_mgr.get()
+
+@app.post("/api/settings")
+async def update_settings(new_settings: dict):
+    settings_mgr.update(**new_settings)
+    if any(k in new_settings for k in ["voice_enabled", "voice_engine", "voice_rate", "voice_volume"]):
+        voice_mgr.update_settings(**settings_mgr.get_voice_config())
+    return {"status": "ok"}
+
+@app.post("/api/settings/reset")
+async def reset_settings():
+    global settings_mgr
+    settings_mgr = SettingsManager()
+    return settings_mgr.get()
+
+# === Fast Match WebSocket (Phase 3) ===
+
+@app.websocket("/ws")
+async def fast_websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    
+    # 簡易ゲームモック状態
+    hand_str_list = ["1m","2m","3m","4p","5p","6p","7s","8s","9s","1z","1z","2z","2z"]
+    
+    await websocket.send_json({"type": "update", "hand": hand_str_list})
+    
+    try:
+        while True:
+            msg = await websocket.receive_json()
+            if msg.get("type") == "action" and msg.get("action") == "dahai":
+                tile = msg["tile"]
+                if tile in hand_str_list:
+                    hand_str_list.remove(tile)
+                
+                # UI更新
+                await websocket.send_json({
+                    "type": "update",
+                    "hand": hand_str_list,
+                    "new_discard": tile
+                })
+                
+                # 事前計算トリガー（モック）
+                # ここで次ツモをシミュレートして推論をバックグラウンド実行する
+                hand_34 = [0]*34
+                # (簡易実装のため省略し、すぐにツモイベントを発生させる)
+                await asyncio.sleep(0.5)
+                
+                # ランダムに牌をツモ
+                tsumo_tile = "5r" if "5m" not in hand_str_list else "5m"
+                hand_str_list.append(tsumo_tile)
+                
+                # 事前計算結果を模倣
+                cached = {"recommendation": tsumo_tile, "explanation": "事前計算された即時回答です", "is_precomputed": True}
+                
+                import time
+                start_t = time.time()
+                await websocket.send_json({
+                    "type": "update",
+                    "hand": hand_str_list,
+                    "ai": {
+                        **cached,
+                        "response_time_ms": int((time.time()-start_t)*1000)
+                    }
+                })
+                
+    except WebSocketDisconnect:
+        pass
 
 @app.get("/api/health")
 async def health():

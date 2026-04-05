@@ -1,198 +1,217 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="麻雀AI - リーチ麻雀対局アプリ。AIが打牌の理由を解説します。">
-    <title>麻雀AI - Mahjong AI</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/table.css">
-    <link rel="stylesheet" href="/static/css/tiles.css">
-    <link rel="stylesheet" href="/static/css/animations.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>麻雀解説AI - 実戦モード</title>
+  <meta name="description" content="AIが解説する本格四人麻雀。リアルタイムAI解析付き。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/tiles.css">
+  <link rel="stylesheet" href="/static/css/table.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <style>
+    /* center-discards grid center cell */
+    .center-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* replay-bar hidden override */
+    #replay-bar.hidden { display: none !important; }
+    #replay-bar { display: flex; }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <!-- スタート画面 -->
-        <div id="start-screen" class="screen active">
-            <div class="start-container">
-                <div class="logo-container">
-                    <h1 class="logo">
-                        <span class="logo-icon">🀄</span>
-                        <span class="logo-text">麻雀AI</span>
-                    </h1>
-                    <p class="logo-subtitle">Riichi Mahjong with AI Insight</p>
-                </div>
-                <div class="start-menu">
-                    <button id="btn-start-game" class="btn btn-primary btn-lg">
-                        <span class="btn-icon">🎮</span>
-                        対局開始
-                    </button>
-                    <div class="start-options">
-                        <div class="option-group">
-                            <label>対局形式</label>
-                            <select id="game-mode">
-                                <option value="tonpu">東風戦</option>
-                                <option value="hanchan">半荘戦</option>
-                            </select>
-                        </div>
-                        
-                        <div class="option-group" style="margin-top: 15px; border-top: 1px solid #2d3748; padding-top: 15px;">
-                            <label>牌譜解析 (Replay)</label>
-                            <input type="file" id="replay-file" accept=".json,.log" style="display:block; margin: 10px auto; color: #a0aec0; font-size: 13px;">
-                            <button id="btn-start-replay" class="btn btn-secondary">
-                                <span class="btn-icon">📁</span>
-                                牌譜を開く
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="version-info">v0.2.0 - Phase 1.5</div>
-            </div>
+<div id="app">
+
+  <!-- ========== スタート画面 ========== -->
+  <div id="start-screen" class="screen active">
+    <div class="start-container">
+      <div class="logo-container">
+        <div class="logo">
+          <span class="logo-icon">🀄</span>
+          <span class="logo-text">麻雀AI</span>
+        </div>
+        <p class="logo-subtitle">EXPLAINABLE MAHJONG AI — 実戦モード</p>
+      </div>
+
+      <div class="start-menu">
+        <button id="btn-start-game" class="btn btn-primary btn-lg">
+          <span class="btn-icon">▶</span> 対局を始める
+        </button>
+
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
+          <label for="replay-file" class="btn btn-secondary" style="cursor:pointer;">
+            <span class="btn-icon">📁</span> 牌譜を開く
+          </label>
+          <input type="file" id="replay-file" accept=".log,.json" style="display:none;">
+          <button id="btn-start-replay" class="btn btn-secondary">読み込み開始</button>
         </div>
 
-        <!-- ゲーム画面 -->
-        <div id="game-screen" class="screen">
-            <!-- 情報バー -->
-            <div id="info-bar" class="info-bar">
-                <div class="round-info">
-                    <span id="round-name" class="round-name">東1局</span>
-                    <span id="honba" class="honba">0本場</span>
-                </div>
-                <div class="dora-info">
-                    <span class="dora-label">ドラ</span>
-                    <div id="dora-indicators" class="dora-tiles"></div>
-                </div>
-                <div class="turn-display">
-                    <span class="turn-label">巡目</span>
-                    <span id="turn-count" class="turn-count">1</span>
-                </div>
-                <div class="remaining-info">
-                    <span class="remaining-label">残り</span>
-                    <span id="tiles-remaining" class="remaining-count">70</span>
-                </div>
-            </div>
+        <a href="/settings.html" class="btn btn-secondary" style="font-size:0.9rem; text-decoration:none;">⚙ 設定</a>
+      </div>
 
-            <!-- メインテーブル -->
-            <div id="mahjong-table" class="mahjong-table">
-                <!-- 対面（上） -->
-                <div class="player-area player-top" data-seat="2">
-                    <div class="player-info">
-                        <span class="player-name">CPU 3</span>
-                        <span class="player-score" id="score-2">25000</span>
-                        <span class="player-wind" id="wind-2"></span>
-                    </div>
-                    <div class="hand-area hand-top" id="hand-2"></div>
-                    <div class="meld-area meld-top" id="melds-2"></div>
-                </div>
+      <div class="version-info">v3.0 Phase 3 | Explainable Mahjong AI</div>
+    </div>
+  </div>
 
-                <!-- 左家 -->
-                <div class="player-area player-left" data-seat="3">
-                    <div class="player-info">
-                        <span class="player-name">CPU 4</span>
-                        <span class="player-score" id="score-3">25000</span>
-                        <span class="player-wind" id="wind-3"></span>
-                    </div>
-                    <div class="hand-area hand-left" id="hand-3"></div>
-                    <div class="meld-area meld-left" id="melds-3"></div>
-                </div>
+  <!-- ========== ゲーム画面 ========== -->
+  <div id="game-screen" class="screen">
 
-                <!-- 中央（卓情報 + 全捨て牌） -->
-                <div class="table-center">
-                    <div class="center-info">
-                        <div id="riichi-sticks" class="riichi-sticks"></div>
-                        <div id="action-indicator" class="action-indicator"></div>
-                    </div>
-                    <!-- 捨て牌を中央に集約 -->
-                    <div class="center-discards">
-                        <div class="center-discard-top" id="discards-2">
-                            <div class="discard-label">対面</div>
-                        </div>
-                        <div class="center-discard-left" id="discards-3">
-                            <div class="discard-label">左</div>
-                        </div>
-                        <div class="center-discard-right" id="discards-1">
-                            <div class="discard-label">右</div>
-                        </div>
-                        <div class="center-discard-bottom" id="discards-0">
-                            <div class="discard-label">自分</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 右家 -->
-                <div class="player-area player-right" data-seat="1">
-                    <div class="player-info">
-                        <span class="player-name">CPU 2</span>
-                        <span class="player-score" id="score-1">25000</span>
-                        <span class="player-wind" id="wind-1"></span>
-                    </div>
-                    <div class="hand-area hand-right" id="hand-1"></div>
-                    <div class="meld-area meld-right" id="melds-1"></div>
-                </div>
-
-                <!-- 自分（下） -->
-                <div class="player-area player-bottom" data-seat="0">
-                    <div class="player-info player-info-bottom">
-                        <span class="player-wind" id="wind-0"></span>
-                        <span class="player-name player-name-self">あなた</span>
-                        <span class="player-score" id="score-0">25000</span>
-                    </div>
-                    <div class="meld-area meld-bottom" id="melds-0"></div>
-                    <div class="hand-area hand-bottom" id="hand-0"></div>
-                </div>
-            </div>
-
-            <!-- アクションバー -->
-            <div id="action-bar" class="action-bar hidden">
-                <div id="action-buttons" class="action-buttons"></div>
-            </div>
-
-            <!-- リプレイ・コントロールバー -->
-            <div id="replay-bar" class="action-bar hidden" style="background: #2d3748;">
-                <div class="action-buttons" style="justify-content: center;">
-                    <button id="btn-replay-prev" class="btn btn-secondary">◀ 1手戻る</button>
-                    <button id="btn-replay-next" class="btn btn-primary">1手進む ▶</button>
-                </div>
-            </div>
-
-            <!-- AI解説パネル -->
-            <div id="ai-panel" class="ai-panel">
-                <div class="ai-panel-header">
-                    <span class="ai-panel-icon">🧠</span>
-                    <span class="ai-panel-title">AI解説</span>
-                    <button id="btn-toggle-ai" class="btn-toggle-ai" title="パネルを閉じる">▼</button>
-                </div>
-                <div id="ai-panel-body" class="ai-panel-body">
-                    <div class="dual-view">
-                        <div class="view-box mortal" id="mortal_view">待機中...</div>
-                        <div class="view-box rule" id="rule_view">待機中...</div>
-                        <div class="synthesis" id="synthesis">解析中...</div>
-                    </div>
-                    <div id="ai-candidates" class="ai-candidates"></div>
-                </div>
-            </div>
-
-            <!-- 向聴数表示 -->
-            <div id="shanten-display" class="shanten-display">
-                <span id="shanten-value"></span>
-            </div>
-        </div>
-
-        <!-- 結果画面 -->
-        <div id="result-overlay" class="overlay hidden">
-            <div class="result-container">
-                <div id="result-content" class="result-content"></div>
-                <button id="btn-next-round" class="btn btn-primary">次の局へ</button>
-                <button id="btn-back-to-start" class="btn btn-secondary hidden">タイトルに戻る</button>
-            </div>
-        </div>
+    <!-- リプレイバー (牌譜再生時のみ表示) -->
+    <div id="replay-bar" class="hidden" style="position:fixed; top:48px; left:50%; transform:translateX(-50%); z-index:50; gap:8px; padding:4px 16px; background:rgba(10,14,23,0.95); border:1px solid rgba(255,255,255,0.1); border-radius:0 0 8px 8px;">
+      <button id="btn-replay-prev" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">← 前へ</button>
+      <button id="btn-replay-next" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">次へ →</button>
     </div>
 
-    <script src="/static/js/tile-renderer.js"></script>
-    <script src="/static/js/game-client.js"></script>
-    <script src="/static/js/main.js"></script>
+    <!-- 情報バー -->
+    <div class="info-bar">
+      <div class="round-info">
+        <span id="round-name" class="round-name">東1局</span>
+        <span id="honba" class="honba"></span>
+        <div id="riichi-sticks" class="riichi-sticks" style="flex-direction:row; gap:4px;"></div>
+      </div>
+      <div class="dora-info">
+        <span class="dora-label">ドラ</span>
+        <div id="dora-indicators" class="dora-tiles"></div>
+      </div>
+      <div class="turn-display">
+        <span class="turn-label">巡目</span>
+        <span id="turn-count" class="turn-count">-</span>
+      </div>
+      <div class="remaining-info">
+        <span class="remaining-label">残牌</span>
+        <span id="tiles-remaining" class="remaining-count">70</span>
+      </div>
+    </div>
+
+    <!-- メイン麻雀テーブル (grid: top / left + center + right / bottom) -->
+    <div class="mahjong-table">
+
+      <!-- 対面: CPU3 (seat 2) -->
+      <div class="player-area player-top">
+        <div class="player-info">
+          <span id="wind-2" class="player-wind">西</span>
+          <span class="player-name">CPU 3</span>
+          <span id="score-2" class="player-score">25000</span>
+        </div>
+        <div id="melds-2" class="meld-area"></div>
+        <div id="hand-2" class="hand-area hand-top"></div>
+      </div>
+
+      <!-- 上家: CPU4 (seat 3) -->
+      <div class="player-area player-left">
+        <div class="player-info" style="flex-direction:column; gap:4px; padding:8px 6px;">
+          <span id="wind-3" class="player-wind" style="font-size:10px; width:22px; height:22px;">北</span>
+          <span class="player-name" style="font-size:10px; writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 4</span>
+          <span id="score-3" class="player-score" style="font-size:11px; writing-mode:vertical-rl;">25000</span>
+        </div>
+        <div id="hand-3" class="hand-area hand-left"></div>
+        <div id="melds-3" class="meld-area" style="flex-direction:column; gap:4px;"></div>
+      </div>
+
+      <!-- 中央: 捨て牌エリア -->
+      <div class="table-center">
+        <div class="center-discards">
+          <!-- 対面の捨て牌 (seat 2) -->
+          <div id="discards-2" class="discard-area center-discard-top">
+            <div class="discard-label">CPU3</div>
+          </div>
+          <!-- 上家の捨て牌 (seat 3) -->
+          <div id="discards-3" class="discard-area center-discard-left">
+            <div class="discard-label">CPU4</div>
+          </div>
+          <!-- 中央セル -->
+          <div class="center-cell">
+            <div id="action-indicator" class="action-indicator"></div>
+          </div>
+          <!-- 下家の捨て牌 (seat 1) -->
+          <div id="discards-1" class="discard-area center-discard-right">
+            <div class="discard-label">CPU2</div>
+          </div>
+          <!-- 自分の捨て牌 (seat 0) -->
+          <div id="discards-0" class="discard-area center-discard-bottom">
+            <div class="discard-label">あなた</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下家: CPU2 (seat 1) -->
+      <div class="player-area player-right">
+        <div id="melds-1" class="meld-area" style="flex-direction:column; gap:4px;"></div>
+        <div id="hand-1" class="hand-area hand-right"></div>
+        <div class="player-info" style="flex-direction:column; gap:4px; padding:8px 6px;">
+          <span id="wind-1" class="player-wind" style="font-size:10px; width:22px; height:22px;">南</span>
+          <span class="player-name" style="font-size:10px; writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 2</span>
+          <span id="score-1" class="player-score" style="font-size:11px; writing-mode:vertical-rl;">25000</span>
+        </div>
+      </div>
+
+      <!-- 自分 (seat 0) -->
+      <div class="player-area player-bottom">
+        <div id="melds-0" class="meld-area meld-bottom"></div>
+        <div id="hand-0" class="hand-area hand-bottom"></div>
+        <div class="player-info player-info-bottom">
+          <span id="wind-0" class="player-wind">東</span>
+          <span class="player-name-self">あなた</span>
+          <span id="score-0" class="player-score">25000</span>
+        </div>
+      </div>
+
+    </div><!-- /mahjong-table -->
+
+    <!-- 向聴数表示 (fixed) -->
+    <div id="shanten-display" class="shanten-display hidden">
+      <span id="shanten-value">-</span>
+    </div>
+
+    <!-- アクションバー (fixed bottom-center) -->
+    <div id="action-bar" class="action-bar hidden">
+      <div id="action-buttons" class="action-buttons"></div>
+    </div>
+
+    <!-- AI解説パネル (fixed right) -->
+    <div id="ai-panel" class="ai-panel collapsed">
+      <div class="ai-panel-header">
+        <span class="ai-panel-icon">🤖</span>
+        <span class="ai-panel-title">AI解説</span>
+        <button id="btn-toggle-ai" class="btn-toggle-ai">▲</button>
+      </div>
+      <div class="ai-panel-body">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px; font-size:12px;">
+          <div>
+            <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:2px; font-weight:700; letter-spacing:0.1em;">🧠 MORTAL AI</div>
+            <div id="mortal_view" style="color:var(--color-text-secondary); line-height:1.5;">待機中...</div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
+            <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:2px; font-weight:700; letter-spacing:0.1em;">📖 RULE AI</div>
+            <div id="rule_view" style="color:var(--color-text-secondary); line-height:1.5;">待機中...</div>
+          </div>
+        </div>
+        <div id="synthesis" class="synthesis" style="font-size:13px; font-weight:700; color:var(--color-text-primary); background:rgba(255,255,255,0.04); border-radius:6px; padding:8px; margin-bottom:8px; border-left:3px solid var(--color-accent-gold);">解析中...</div>
+        <div class="ai-candidates-title">候補牌</div>
+        <div id="ai-candidates" class="ai-candidates"></div>
+      </div>
+    </div>
+
+    <!-- 結果オーバーレイ -->
+    <div id="result-overlay" class="overlay hidden">
+      <div class="result-container">
+        <div id="result-content" class="result-content"></div>
+        <div style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
+          <button id="btn-next-round" class="btn btn-primary hidden">次の局へ →</button>
+          <button id="btn-back-to-start" class="btn btn-secondary hidden">タイトルへ</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /game-screen -->
+</div><!-- /app -->
+
+<script src="/static/js/tile-renderer.js"></script>
+<script src="/static/js/game-client.js"></script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>

@@ -14,7 +14,31 @@ from .models import (
     Tile, ActionType, GameAction, GamePhase, tile_from_str,
 )
 from .engine import GameEngine
-from .mortal.mortal_agent import MortalAgent
+class SimpleCPU:
+    def __init__(self, seat: int, engine: GameEngine):
+        self.seat = seat
+        self.engine = engine
+
+    def _get_probabilities(self):
+        return None
+
+    def decide_tsumo_action(self, options: list[GameAction]) -> Optional[GameAction]:
+        for opt in options:
+            if opt.action_type == ActionType.HORA:
+                return opt
+        return None
+
+    def choose_discard(self) -> Tile:
+        player = self.engine.state.players[self.seat]
+        if player.hand:
+            return player.hand[-1]
+        raise ValueError("Empty hand")
+
+    def decide_call(self, options: list[GameAction]) -> GameAction:
+        for opt in options:
+            if opt.action_type == ActionType.HORA:
+                return opt
+        return GameAction(action_type=ActionType.SKIP, player=self.seat)
 from .commentator import CommentatorAI
 
 
@@ -29,7 +53,7 @@ class GameManager:
         self.human_seat = human_seat
         self.engine = GameEngine(use_red_dora=True, seed=seed)
         self.explainer = CommentatorAI(self.engine)
-        self.cpus: dict[int, MortalAgent] = {}
+        self.cpus: dict[int, SimpleCPU] = {}
         self._send_to_client: Optional[Callable[[dict], Awaitable[None]]] = None
         self._waiting_for_human = False
         self._human_response: Optional[dict] = None
@@ -49,7 +73,7 @@ class GameManager:
         # CPUプレイヤー作成
         for seat in range(4):
             if seat != self.human_seat:
-                self.cpus[seat] = MortalAgent(seat, self.engine)
+                self.cpus[seat] = SimpleCPU(seat, self.engine)
 
         # イベントハンドラ設定
         self.engine.set_event_handler(lambda e: None)  # ログのみ
