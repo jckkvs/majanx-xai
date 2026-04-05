@@ -19,9 +19,9 @@
         ".     top    ."
         "left  center right"
         ".     bottom .";
-    grid-template-columns: 140px 1fr 140px;
-    grid-template-rows: 120px 1fr 200px;
-    padding: var(--space-sm);
+    grid-template-columns: 200px 1fr 200px;
+    grid-template-rows: auto 1fr auto;
+    padding: var(--space-md);
     background: radial-gradient(ellipse at center,
         var(--color-bg-table-felt) 0%,
         var(--color-bg-table) 60%,

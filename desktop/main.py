@@ -26,13 +26,7 @@ class CaptureThread(QThread):
             def __init__(self):
                 self.state = GameState()
                 self.state.players = [PlayerState(seat=i) for i in range(4)]
-            def _hand_to_34(self, hand):
-                arr = [0]*34
-                for t in hand:
-                    idx = t.suit.value * 9 + t.number - 1 if t.suit.value < 3 else 27 + t.number - 1
-                    arr[idx] += 1
-                return arr
-                
+
         self.mock_engine = MockEngine()
         self.commentator = CommentatorAI(self.mock_engine)
         self.mortal = MortalAgent(0, self.mock_engine)
@@ -45,12 +39,19 @@ class CaptureThread(QThread):
             # TODO: 本格的な動作時は YOLOの出力を `self.mock_engine.state.players[0].hand` 等に変換する
             
             if state and state.get("status") == "stable":
-                # AIから解説取得のダミー呼び出し
+                # CommentatorAIに手牌を設定
+                hand_tiles = state["hand_guess"]  # tile_id list
+                # Mortalは模筞があれば推論 (フォールバック: None)
+                mortal_probs = None
                 try:
-                    mortal_probs = self.mortal._get_probabilities()
+                    if self.mortal.is_loaded and hand_tiles:
+                        mjai_events = [{"type": "tsumo", "actor": 0, "pai": hand_tiles[-1]}]
+                        result = self.mortal.predict(mjai_events)
+                        import numpy as np
+                        mortal_probs = np.array(result.get("probs", [0]*34))
                 except Exception:
                     mortal_probs = None
-                
+
                 # 双視点解説を取得
                 analysis = self.commentator.analyze(0, mortal_probs)
                 

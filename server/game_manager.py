@@ -76,8 +76,27 @@ class GameManager:
                 self.cpus[seat] = SimpleCPU(seat, self.engine)
 
         # イベントハンドラ設定
-        self.engine.set_event_handler(lambda e: None)  # ログのみ
+        def _engine_handler(e):
+            if e["type"] in ["ryukyoku", "agari"]:
+                
+                # 名前の付与
+                players = []
+                for i in range(4):
+                    if i == self.human_seat: players.append({"name": "Player"})
+                    elif i == (self.human_seat + 1) % 4: players.append({"name": "下家"})
+                    elif i == (self.human_seat + 2) % 4: players.append({"name": "対面"})
+                    else: players.append({"name": "上家"})
+                
+                if e["type"] == "ryukyoku":
+                    if "tenpai_info" in e:
+                        for info in e["tenpai_info"]:
+                            info["name"] = players[info["seat"]]["name"]
 
+                e["players"] = players
+                
+                asyncio.create_task(self._send(e))
+
+        self.engine.set_event_handler(_engine_handler)
         # ゲーム開始
         self.engine.start_game()
 
@@ -160,14 +179,15 @@ class GameManager:
             })
 
         try:
+            # Mortal確率は将来的に MortalAgent 統合時に渡す。
+            # 現時点ではルールベース解説のみで動作。
             mortal_probs = None
-            if hasattr(self.cpus.get(self.human_seat), "_get_probabilities"):
-                mortal_probs = self.cpus[self.human_seat]._get_probabilities()
-            
             analysis = self.explainer.analyze(self.human_seat, mortal_probs)
             ai_data = analysis
         except Exception as e:
+            import traceback
             print(f"AI解説エラー: {e}")
+            traceback.print_exc()
             ai_data = None
 
         await self._send({
@@ -189,9 +209,6 @@ class GameManager:
         # === AI解説を生成してUIへ配信（オートプレイ時の見栄え用） ===
         try:
             mortal_probs = None
-            if hasattr(self.cpus.get(seat), "_get_probabilities"):
-                mortal_probs = self.cpus[seat]._get_probabilities()
-                
             analysis = self.explainer.analyze(seat, mortal_probs)
             ai_data = analysis
             await self._send({
@@ -199,7 +216,9 @@ class GameManager:
                 "ai_analysis": ai_data,
             })
         except Exception as e:
+            import traceback
             print(f"AI解説エラー: {e}")
+            traceback.print_exc()
 
         # ツモ後アクション
         action = cpu.decide_tsumo_action(tsumo_actions)

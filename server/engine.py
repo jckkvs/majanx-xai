@@ -587,19 +587,36 @@ class GameEngine:
                 noten.append(p.seat)
 
         # ノーテン罰符
+        tenpai_info = []
+        score_changes = []
+        
+        for i in range(4):
+            tenpai_info.append({"seat": i, "tenpai": False, "delta": 0})
+            
         if 0 < len(tenpai) < 4:
             penalty_total = 3000
             pay_each = penalty_total // len(noten)
             get_each = penalty_total // len(tenpai)
             for seat in noten:
                 st.players[seat].score -= pay_each
+                tenpai_info[seat]["delta"] = -pay_each
+                score_changes.append({"player": seat, "delta": -pay_each})
             for seat in tenpai:
                 st.players[seat].score += get_each
+                tenpai_info[seat]["delta"] = get_each
+                score_changes.append({"player": seat, "delta": get_each})
+                
+        for seat in tenpai:
+            tenpai_info[seat]["tenpai"] = True
 
         self._emit({
             "type": "ryukyoku",
             "tenpai": tenpai,
+            "tenpai_info": tenpai_info,
+            "score_changes": score_changes,
+            "hands": [[t.id for t in p.hand] for p in st.players],
             "scores": [p.score for p in st.players],
+            "round": st.round_name_ja,
         })
 
         # 次局へ

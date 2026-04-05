@@ -21,6 +21,18 @@
     /* replay-bar hidden override */
     #replay-bar.hidden { display: none !important; }
     #replay-bar { display: flex; }
+    
+    /* AI meters new CSS */
+    .ai-meters {
+      display: flex; gap: 12px; margin-top: 8px; font-size: 12px;
+    }
+    .meter { flex: 1; }
+    .meter-bar {
+      height: 6px; background: #334155; border-radius: 3px; overflow: hidden; margin-top: 4px;
+    }
+    .meter-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease-out; }
+    .meter-fill.atk { background: linear-gradient(90deg, #ef4444, #f97316); }
+    .meter-fill.def { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
   </style>
 </head>
 <body>
@@ -66,26 +78,43 @@
       <button id="btn-replay-next" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">次へ →</button>
     </div>
 
-    <!-- 情報バー -->
-    <div class="info-bar">
-      <div class="round-info">
-        <span id="round-name" class="round-name">東1局</span>
-        <span id="honba" class="honba"></span>
-        <div id="riichi-sticks" class="riichi-sticks" style="flex-direction:row; gap:4px;"></div>
+    <!-- 左上：ドラ・赤ドラ表示 -->
+    <div class="top-hud">
+      <div class="dora-label">ドラ</div>
+      <div id="dora-indicators" class="dora-tiles"></div>
+    </div>
+
+    <!-- 左側：設定メニュー -->
+    <div class="sidebar">
+      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
+        <div class="toggle-dot on"></div>
+        <span class="sidebar-text">自動整理</span>
       </div>
-      <div class="dora-info">
-        <span class="dora-label">ドラ</span>
-        <div id="dora-indicators" class="dora-tiles"></div>
+      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
+        <div class="toggle-dot off"></div>
+        <span class="sidebar-text">自動和了</span>
       </div>
-      <div class="turn-display">
-        <span class="turn-label">巡目</span>
-        <span id="turn-count" class="turn-count">-</span>
+      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
+        <div class="toggle-dot off"></div>
+        <span class="sidebar-text">鳴きなし</span>
       </div>
-      <div class="remaining-info">
-        <span class="remaining-label">残牌</span>
-        <span id="tiles-remaining" class="remaining-count">70</span>
+      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
+        <div class="toggle-dot off"></div>
+        <span class="sidebar-text">ツモ切り</span>
+      </div>
+      <div class="sidebar-item" onclick="this.querySelector('.toggle-dot').classList.toggle('off'); this.querySelector('.toggle-dot').classList.toggle('on');">
+        <div class="toggle-dot on"></div>
+        <span class="sidebar-text">自動北抜き</span>
       </div>
     </div>
+
+    <!-- Floating Score (初期非表示) -->
+    <div id="floating-score" class="floating-score hidden">
+      <div class="score-tile z" id="fs-tile">北</div>
+      <div class="score-text"><span id="fs-count">4</span> <span id="fs-delta">+20</span></div>
+    </div>
+
+    <!-- 情報バー (Center-shieldに統合されたため削除) -->
 
     <!-- メイン麻雀テーブル (grid: top / left + center + right / bottom) -->
     <div class="mahjong-table">
@@ -103,10 +132,10 @@
 
       <!-- 上家: CPU4 (seat 3) -->
       <div class="player-area player-left">
-        <div class="player-info" style="flex-direction:column; gap:4px; padding:8px 6px;">
-          <span id="wind-3" class="player-wind" style="font-size:10px; width:22px; height:22px;">北</span>
-          <span class="player-name" style="font-size:10px; writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 4</span>
-          <span id="score-3" class="player-score" style="font-size:11px; writing-mode:vertical-rl;">25000</span>
+        <div class="player-info" style="flex-direction:column; gap:8px; padding:12px 10px;">
+          <span id="wind-3" class="player-wind" style="font-size:var(--font-size-sm); width:32px; height:32px;">北</span>
+          <span class="player-name" style="font-size:var(--font-size-md); writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 4</span>
+          <span id="score-3" class="player-score" style="font-size:var(--font-size-md); writing-mode:vertical-rl;">25000</span>
         </div>
         <div id="hand-3" class="hand-area hand-left"></div>
         <div id="melds-3" class="meld-area" style="flex-direction:column; gap:4px;"></div>
@@ -124,8 +153,20 @@
             <div class="discard-label">CPU4</div>
           </div>
           <!-- 中央セル -->
-          <div class="center-cell">
-            <div id="action-indicator" class="action-indicator"></div>
+          <div class="center-cell" style="position:relative;">
+            <div class="center-shield">
+              <div class="round-info">
+                <span id="round-name" class="round-name">東1局</span>
+                <span id="honba" class="honba"></span>
+              </div>
+              <div class="tile-count">残り <span id="tiles-remaining">70</span></div>
+              <div class="turn-display" style="justify-content:center; font-size:var(--font-size-sm); margin-bottom:4px;">
+                <span class="turn-label">巡目</span>
+                <span id="turn-count" class="turn-count">-</span>
+              </div>
+              <div id="riichi-sticks" class="riichi-sticks" style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); flex-direction:row; gap:4px;"></div>
+            </div>
+            <div id="action-indicator" class="action-indicator" style="position:absolute; top: -30px; left:50%; transform:translateX(-50%);"></div>
           </div>
           <!-- 下家の捨て牌 (seat 1) -->
           <div id="discards-1" class="discard-area center-discard-right">
@@ -142,10 +183,10 @@
       <div class="player-area player-right">
         <div id="melds-1" class="meld-area" style="flex-direction:column; gap:4px;"></div>
         <div id="hand-1" class="hand-area hand-right"></div>
-        <div class="player-info" style="flex-direction:column; gap:4px; padding:8px 6px;">
-          <span id="wind-1" class="player-wind" style="font-size:10px; width:22px; height:22px;">南</span>
-          <span class="player-name" style="font-size:10px; writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 2</span>
-          <span id="score-1" class="player-score" style="font-size:11px; writing-mode:vertical-rl;">25000</span>
+        <div class="player-info" style="flex-direction:column; gap:8px; padding:12px 10px;">
+          <span id="wind-1" class="player-wind" style="font-size:var(--font-size-sm); width:32px; height:32px;">南</span>
+          <span class="player-name" style="font-size:var(--font-size-md); writing-mode:vertical-rl; letter-spacing:0.1em;">CPU 2</span>
+          <span id="score-1" class="player-score" style="font-size:var(--font-size-md); writing-mode:vertical-rl;">25000</span>
         </div>
       </div>
 
@@ -172,30 +213,22 @@
       <div id="action-buttons" class="action-buttons"></div>
     </div>
 
-    <!-- AI解説パネル (fixed right) -->
-    <div id="ai-panel" class="ai-panel collapsed">
-      <div class="ai-panel-header">
-        <span class="ai-panel-icon">🤖</span>
-        <span class="ai-panel-title">AI解説</span>
-        <button id="btn-toggle-ai" class="btn-toggle-ai">▲</button>
-      </div>
-      <div class="ai-panel-body">
-        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px; font-size:12px;">
-          <div>
-            <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:2px; font-weight:700; letter-spacing:0.1em;">🧠 MORTAL AI</div>
-            <div id="mortal_view" style="color:var(--color-text-secondary); line-height:1.5;">待機中...</div>
-          </div>
-          <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
-            <div style="font-size:10px; color:var(--color-text-muted); margin-bottom:2px; font-weight:700; letter-spacing:0.1em;">📖 RULE AI</div>
-            <div id="rule_view" style="color:var(--color-text-secondary); line-height:1.5;">待機中...</div>
-          </div>
+    <!-- 最新AI推奨オーバーレイ -->
+    <div class="ai-overlay" id="ai-overlay" style="display:none;">
+      <div style="font-size:12px; color:#64b5f6;">🤖 最新AI推奨</div>
+      <div class="ai-tile" id="ai-rec-tile">-</div>
+      <div class="ai-reason" id="ai-reasoning">解析待機中...</div>
+      <div class="ai-meters">
+        <div class="meter">
+          <div>⚔️ 攻め <span id="atk-val">0</span></div>
+          <div class="meter-bar"><div class="meter-fill atk" id="atk-bar" style="width:0%"></div></div>
         </div>
-        <div id="synthesis" class="synthesis" style="font-size:13px; font-weight:700; color:var(--color-text-primary); background:rgba(255,255,255,0.04); border-radius:6px; padding:8px; margin-bottom:8px; border-left:3px solid var(--color-accent-gold);">解析中...</div>
-        <div class="ai-candidates-title">候補牌</div>
-        <div id="ai-candidates" class="ai-candidates"></div>
+        <div class="meter">
+          <div>🛡️ 守り <span id="def-val">0</span></div>
+          <div class="meter-bar"><div class="meter-fill def" id="def-bar" style="width:0%"></div></div>
+        </div>
       </div>
     </div>
-
     <!-- 結果オーバーレイ -->
     <div id="result-overlay" class="overlay hidden">
       <div class="result-container">
@@ -203,6 +236,48 @@
         <div style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
           <button id="btn-next-round" class="btn btn-primary hidden">次の局へ →</button>
           <button id="btn-back-to-start" class="btn btn-secondary hidden">タイトルへ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 流局結果モーダル -->
+    <div id="ryukyoku-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🀄 流局</h2>
+          <div class="round-info" id="ryukyoku-round">東1局</div>
+        </div>
+        
+        <!-- 手牌公開エリア -->
+        <div class="hands-reveal">
+          <div class="player-hand-reveal" id="hand-reveal-0"></div>
+          <div class="player-hand-reveal" id="hand-reveal-1"></div>
+          <div class="player-hand-reveal" id="hand-reveal-2"></div>
+          <div class="player-hand-reveal" id="hand-reveal-3"></div>
+        </div>
+        
+        <!-- 聴牌状況 -->
+        <div class="tenpai-status">
+          <div class="status-item" id="tenpai-0"></div>
+          <div class="status-item" id="tenpai-1"></div>
+          <div class="status-item" id="tenpai-2"></div>
+          <div class="status-item" id="tenpai-3"></div>
+        </div>
+        
+        <!-- 点数移動アニメーション -->
+        <div class="score-animation" id="score-anim"></div>
+        
+        <!-- 結果サマリー -->
+        <div class="result-summary">
+          <div class="summary-item total">
+            <span>最終点数</span>
+            <span id="final-score">0</span>
+          </div>
+        </div>
+        
+        <!-- 進行ボタン -->
+        <div class="modal-actions">
+          <button id="btn-ryukyoku-next" class="btn btn-primary">次の局へ →</button>
         </div>
       </div>
     </div>

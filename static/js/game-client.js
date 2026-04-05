@@ -170,6 +170,10 @@ class GameClient {
                 this.updateGameState(data.state);
                 break;
 
+            case 'ryukyoku':
+                this.showRyukyokuResult(data);
+                break;
+
             case 'waiting_next_round':
                 this.showNextRoundButton();
                 break;
@@ -316,26 +320,16 @@ class GameClient {
     }
 
     /**
-     * 他家の手牌を描画（裏向き）
+     * 他家の手牌を描画（裏向きすら描画せず、完全に隠蔽）
      */
     renderOtherHand(container, player) {
         container.innerHTML = '';
-        // 手牌が公開されている場合（和了時）
+        // 手牌が公開されている場合（和了時・流局時など）
         if (player.hand) {
             player.hand.forEach(id => {
                 const el = TileRenderer.createTileElement(id, { small: true });
                 container.appendChild(el);
             });
-        } else {
-            // 裏向き
-            const count = player.hand_count || 13;
-            for (let i = 0; i < count; i++) {
-                const el = TileRenderer.createTileElement(null, {
-                    small: true,
-                    back: true,
-                });
-                container.appendChild(el);
-            }
         }
     }
 
@@ -363,24 +357,10 @@ class GameClient {
     }
 
     /**
-     * 牌クリック時の処理
+     * 牌クリック時の処理（ワンクリック打牌）
      */
     onTileClick(tileId, element) {
-        // 既に選択中の牌をクリック → 打牌実行
-        if (this.selectedTile === tileId &&
-            element.classList.contains('selected')) {
-            this.discardTile(tileId);
-            return;
-        }
-
-        // 選択解除
-        document.querySelectorAll('.tile-clickable.selected').forEach(el => {
-            el.classList.remove('selected');
-        });
-
-        // 新しい牌を選択
-        this.selectedTile = tileId;
-        element.classList.add('selected');
+        this.discardTile(tileId);
     }
 
     /**
@@ -409,14 +389,25 @@ class GameClient {
     highlightRecommendedTiles(analysis) {
         this.clearTileHighlights();
 
-        if (!analysis || !analysis.choices || analysis.choices.length === 0) return;
+        if (!analysis) return;
+
+        // choices がない場合 mortal_top3 からフォールバック生成
+        let choices = analysis.choices;
+        if (!choices && analysis.mortal_top3) {
+            choices = analysis.mortal_top3.map(c => ({
+                tile: c.tile_name,
+                prob: c.prob,
+                acceptance: c.acceptance
+            }));
+        }
+        if (!choices || choices.length === 0) return;
 
         const handContainer = document.getElementById(`hand-${this.humanSeat}`);
         if (!handContainer) return;
 
         const tiles = handContainer.querySelectorAll('.tile-clickable');
 
-        analysis.choices.forEach((choice, idx) => {
+        choices.forEach((choice, idx) => {
             // 牌IDで手牌要素を検索
             const tileId = choice.tile;
             for (const tileEl of tiles) {
@@ -900,66 +891,121 @@ class GameClient {
      * AI解説を表示 (強化版)
      */
     showAiAnalysis(analysis) {
-        const mortalViewEl = document.getElementById('mortal_view');
-        const ruleViewEl = document.getElementById('rule_view');
-        const synthesisEl = document.getElementById('synthesis');
-        const candidatesEl = document.getElementById('ai-candidates');
+        if (!analysis) return;
+        
+        const ov = document.getElementById('ai-overlay');
+        if (ov) {
+            ov.style.display = 'block';
+            
+            const recTile = document.getElementById('ai-tile') || document.getElementById('ai-rec-tile');
+            if (recTile) recTile.textContent = (analysis.recommendation || '').replace(/[0r]/g, '') || '-';
+            
+            const reason = document.getElementById('ai-reason') || document.getElementById('ai-reasoning');
+            if (reason) reason.textContent = analysis.reasoning || "解析待機中...";
 
-        if (!mortalViewEl || !ruleViewEl || !synthesisEl || !candidatesEl) return;
-
-        // 双視点解説の反映
-        mortalViewEl.textContent = analysis.mortal_view || "待機中...";
-        ruleViewEl.textContent = analysis.rule_view || "待機中...";
-        synthesisEl.textContent = analysis.synthesis || "解析中...";
-        synthesisEl.className = "synthesis " + (analysis.agreement ? "agree" : "disagree");
-
-        if (analysis.synthesis) {
-            this.speak(analysis.synthesis);
+            const max = Math.max(analysis.attack_score || 0, analysis.defense_score || 0, 1);
+            const atkBar = document.getElementById('atk-bar');
+            if (atkBar) atkBar.style.width = `${((analysis.attack_score || 0) / max) * 100}%`;
+            
+            const atkVal = document.getElementById('atk-val');
+            if (atkVal) atkVal.textContent = (analysis.attack_score || 0).toFixed(1);
+            
+            const defBar = document.getElementById('def-bar');
+            if (defBar) defBar.style.width = `${((analysis.defense_score || 0) / max) * 100}%`;
+            
+            const defVal = document.getElementById('def-val');
+            if (defVal) defVal.textContent = (analysis.defense_score || 0).toFixed(2);
         }
 
-        // 候補リスト
-        candidatesEl.innerHTML = '';
-        if (analysis.mortal_top3) {
-            analysis.mortal_top3.forEach((cand, index) => {
-                const card = document.createElement('div');
-                card.classList.add('ai-candidate-item');
-                if (index === 0) card.classList.add('recommended');
-                
-                card.innerHTML = `
-                    <div class="ai-candidate-tile">
-                        <span class="choice-marker">${index === 0 ? '★ 推奨' : '候補' + (index + 1)}</span>
-                        <strong>${cand.tile_name} 切り</strong>
-                    </div>
-                    <div class="ai-candidate-score">
-                        確率: ${(cand.prob * 100).toFixed(1)}%
-                    </div>
-                `;
-                candidatesEl.appendChild(card);
-            });
+        if (analysis.reasoning) {
+            this.speak(analysis.reasoning);
         }
     }
 
     /**
-     * 候補カードクリック → 手牌の対応牌をフォーカス
+     * 流局結果表示
      */
-    focusTileInHand(tileId) {
-        const handContainer = document.getElementById(`hand-${this.humanSeat}`);
-        if (!handContainer) return;
-
-        // 既存の選択をクリア
-        document.querySelectorAll('.tile-clickable.selected').forEach(el => {
-            el.classList.remove('selected');
-        });
-
-        // 対応する牌を見つけて選択状態にする
-        const tiles = handContainer.querySelectorAll('.tile-clickable');
-        for (const tileEl of tiles) {
-            if (tileEl.dataset.tileId === tileId) {
-                tileEl.classList.add('selected');
-                this.selectedTile = tileId;
-                tileEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                break;
+    showRyukyokuResult(data) {
+        const modal = document.getElementById('ryukyoku-modal');
+        if (!modal) return;
+        
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        
+        // 局情報
+        const rRound = document.getElementById('ryukyoku-round');
+        if (rRound) rRound.textContent = data.round || '東1局';
+        
+        // 各プレイヤーの手牌公開
+        if (data.hands) {
+            data.hands.forEach((hand, idx) => {
+                const container = document.getElementById(`hand-reveal-${idx}`);
+                if (container && hand) {
+                    const tilesHtml = hand.map(id => TileRenderer.createTileElement(id, { small: true }).outerHTML).join('');
+                    container.innerHTML = `
+                        <div class="player-label">${data.players && data.players[idx] ? data.players[idx].name : this.SEAT_NAMES[idx]}</div>
+                        <div class="tiles" style="display:flex; flex-wrap:wrap; gap:4px;">
+                            ${tilesHtml}
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        // 聴牌状況
+        if (data.tenpai_info) {
+            data.tenpai_info.forEach((info, idx) => {
+                const el = document.getElementById(`tenpai-${idx}`);
+                if (el) {
+                    const isTenpai = info.tenpai;
+                    el.className = `status-item ${isTenpai ? 'tenpai' : 'noten'}`;
+                    el.innerHTML = `
+                        <span class="player-name">${info.name || this.SEAT_NAMES[idx]}</span>
+                        <span class="tenpai-badge ${isTenpai ? '' : 'noten'}">
+                            ${isTenpai ? '聴牌' : 'ノーテン'}
+                        </span>
+                        <span class="penalty ${info.delta >= 0 ? '' : 'negative'}">
+                            ${info.delta >= 0 ? '+' : ''}${info.delta}
+                        </span>
+                    `;
+                }
+            });
+        }
+        
+        // 点数移動アニメーション
+        if (data.score_changes) {
+            const container = document.getElementById('score-anim');
+            if (container) {
+                container.innerHTML = '';
+                data.score_changes.forEach((change, idx) => {
+                    setTimeout(() => {
+                        const arrow = document.createElement('div');
+                        arrow.className = 'score-arrow';
+                        arrow.textContent = change.delta >= 0 ? `↑ +${change.delta}` : `↓ ${change.delta}`;
+                        arrow.style.color = change.delta >= 0 ? '#48bb78' : '#f56565';
+                        arrow.style.left = `${50 + (idx - 1.5) * 30}%`;
+                        container.appendChild(arrow);
+                        
+                        setTimeout(() => arrow.remove(), 1500);
+                    }, idx * 500);
+                });
             }
+        }
+        
+        // 最終点数表示
+        if (data.scores) {
+            const fs = document.getElementById('final-score');
+            if (fs) fs.textContent = data.scores[this.humanSeat] || 0;
+        }
+
+        const btnNext = document.getElementById('btn-ryukyoku-next') || document.getElementById('btn-next-round');
+        if (btnNext) {
+            btnNext.onclick = () => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                this.previousTenpai = false;
+                this.send({ action: 'next_round' });
+            };
         }
     }
 }

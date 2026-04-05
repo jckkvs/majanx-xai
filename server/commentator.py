@@ -7,12 +7,31 @@ from mahjong.shanten import Shanten
 from mahjong.tile import TilesConverter
 
 from .engine import GameEngine
-
+from .ai_reasoning import AIReasoningEngine
 
 class CommentatorAI:
     def __init__(self, engine: 'GameEngine' = None):
         self.engine = engine
         self.shanten_calc = Shanten()
+        self.reasoning = AIReasoningEngine()
+
+    def _tile_to_34(self, tile) -> int:
+        """Tileオブジェクト -> 0-33インデックス変換"""
+        suit_to_idx = {"m": 0, "p": 1, "s": 2, "z": 3}
+        suit_idx = suit_to_idx.get(tile.suit.value, 3)
+        if suit_idx < 3:
+            return suit_idx * 9 + tile.number - 1
+        else:
+            return 27 + tile.number - 1
+
+    def _hand_to_34(self, hand: list) -> List[int]:
+        """手牌リスト -> 34要素カウント配列に変換"""
+        result = [0] * 34
+        for tile in hand:
+            idx = self._tile_to_34(tile)
+            if 0 <= idx < 34:
+                result[idx] += 1
+        return result
 
     def analyze(self, seat: int, mortal_probs: np.ndarray = None) -> Dict:
         """
@@ -21,11 +40,9 @@ class CommentatorAI:
         st = self.engine.state
         player = st.players[seat]
         
-        # 34配列の作成
-        hand_34 = self.engine._hand_to_34(player.hand)
+        # 34配列の作成（ローカルメソッドで変換）
+        hand_34 = self._hand_to_34(player.hand)
         
-        # ツモ牌の切り出し(最後がツモ牌と仮定)
-        # ※既に手牌に組み込まれているため、別途結合の必要なし
         full_34 = hand_34.copy()
         
         # 見えている牌の集計
@@ -90,21 +107,52 @@ class CommentatorAI:
         candidates.sort(key=lambda x: x["prob"], reverse=True)
         mortal_top3 = candidates[:3]
 
-        # 双視点解説文生成
-        explanation_data = self._generate_dual_commentary(mortal_top3, rule_top3, round_info)
+        probs = [0.0] * 34
+        q_values = [0.0] * 34
+        top3_indices = []
+        for x in candidates:
+            probs[x["tile_idx"]] = x["prob"]
+            # 簡易ルールベースの場合はattack_scoreなどをqの代わりに活用
+            q_values[x["tile_idx"]] = x.get("balance_score", 0.0) / 10.0
+            
+        for t in mortal_top3:
+            top3_indices.append(t["tile_idx"])
+
+        board_state = round_info
+        
+        reasoning_data = self.reasoning.interpret(
+            probs, q_values, board_state, top3_indices,
+            is_mortal=(mortal_probs is not None),
+            current_shanten=current_shanten
+        )
+        
+        # 不要になった双視点解説文生成を削除し、AIReasoningEngineの出力を使用
+
+        # フロントエンド用 choices 形式に変換（tile_name -> tile へマッピング）
+        choices = [
+            {"tile": c["tile_name"], "tile_name": c["tile_name"],
+             "prob": c.get("prob", 0), "acceptance": c.get("acceptance", 0),
+             "shanten": c.get("shanten", -1)}
+            for c in mortal_top3
+        ]
 
         return {
             # 汎用互換用
             "top3": mortal_top3,
-            "explanation": explanation_data["synthesis"],
+            "explanation": reasoning_data["reasoning"],
             "current_shanten": current_shanten,
             
-            # 双視点用データ
-            "recommendation": mortal_top3[0]["tile_name"],
-            "agreement": explanation_data["is_agree"],
-            "mortal_view": explanation_data["mortal_view"],
-            "rule_view": explanation_data["rule_view"],
-            "synthesis": explanation_data["synthesis"],
+            # フロントエンド用（highlightRecommendedTiles が参照）
+            "choices": choices,
+            
+            # 新しいAI推論データ (UIオーバーレイ用)
+            "recommendation": mortal_top3[0]["tile_name"] if mortal_top3 else "",
+            "reasoning": reasoning_data["reasoning"],
+            "attack_score": reasoning_data.get("attack_score", 0),
+            "defense_score": reasoning_data.get("defense_score", 0),
+            "balance": reasoning_data.get("balance", ""),
+            
+            # 双視点用データ互換
             "mortal_top3": mortal_top3,
             "rule_top3": rule_top3,
         }
@@ -157,7 +205,8 @@ class CommentatorAI:
             rule_view += f"受入確保と危険度抑制の交差点。"
 
         # 3. 統合(Synthesis)
-        phase = "序盤" if round_info.get("turn") < 10 else "中盤" if round_info.get("turn") < 25 else "終盤"
+        turn = round_info.get("turn") or 0
+        phase = "序盤" if turn < 10 else "中盤" if turn < 25 else "終盤"
         
         if is_agree:
             synthesis = f"✅ 両視点一致（{phase}）\nAIの期待値最適と、牌効率・攻守バランスの論理的根拠が揃っているため、自信度高く「{mort['tile_name']}」切りを推奨。"
@@ -178,7 +227,7 @@ class CommentatorAI:
         }
 
     def _tile_obj_to_34(self, tile) -> int:
-        return tile.suit.value * 9 + tile.number - 1 if tile.suit.value < 3 else 27 + tile.number - 1
+        return self._tile_to_34(tile)
 
     def _idx_to_name(self, idx: int) -> str:
         suits = ["m", "p", "s", "z"]
