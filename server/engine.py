@@ -953,7 +953,13 @@ class GameEngine:
                 "hand_count": len(p.hand),
             }
             if for_player is None or p.seat == for_player:
-                pd["hand"] = [t.id for t in sorted(p.hand, key=lambda x: x.sort_key)]
+                # ツモ番で手牌が14(11,8..)枚の場合、引いた牌(末尾)はソートせずに右端へ
+                is_tsumo_phase = st.phase == GamePhase.PLAYER_TURN and st.current_player == p.seat and len(p.hand) % 3 == 2
+                if is_tsumo_phase:
+                    sorted_base = sorted(p.hand[:-1], key=lambda x: x.sort_key)
+                    pd["hand"] = [t.id for t in sorted_base] + [p.hand[-1].id]
+                else:
+                    pd["hand"] = [t.id for t in sorted(p.hand, key=lambda x: x.sort_key)]
             else:
                 pd["hand"] = None  # 非公開
             players_data.append(pd)

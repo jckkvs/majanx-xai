@@ -13,12 +13,14 @@ class GameClient {
         this.isMyTurn = false;
         this.pendingActions = [];
         this.lastAiAnalysis = null;
-        this.previousTenpai = false;
-
         this.WIND_CHARS = { 0: '東', 1: '南', 2: '西', 3: '北' };
         this.SEAT_NAMES = ['あなた', 'CPU 2', 'CPU 3', 'CPU 4'];
         this.isReplay = false;
         this.replaySessionId = null;
+
+        // 情報隠蔽(手出しのランダム化)用クライアントステート
+        this.riverTiles = { 0: [], 1: [], 2: [], 3: [] };
+        this.currentRoundStr = null;
 
         // Settings & Voice
         this.settings = {};
@@ -156,6 +158,7 @@ class GameClient {
                 break;
 
             case 'dahai':
+                this.recordDiscard(data);
                 this.updateGameState(data.state);
                 if (data.actor !== this.humanSeat) {
                     this.showDiscardAnimation(data.actor, data.pai);
@@ -193,6 +196,13 @@ class GameClient {
     updateGameState(state) {
         if (!state) return;
         this.state = state;
+
+        // 局が変わったら履歴をリセット
+        const roundStr = `${state.round}-${state.honba}`;
+        if (this.currentRoundStr !== roundStr) {
+            this.currentRoundStr = roundStr;
+            this.riverTiles = { 0: [], 1: [], 2: [], 3: [] };
+        }
 
         // 情報バー
         this.updateInfoBar(state);
@@ -335,6 +345,7 @@ class GameClient {
 
     /**
      * 捨て牌を描画（全牌同サイズで見やすく）
+     * 隠蔽ロジック（手出しのランダム化）を適用した河を使用する
      */
     renderDiscards(container, player, isSelf) {
         // ラベルを保持
@@ -342,18 +353,60 @@ class GameClient {
         container.innerHTML = '';
         if (label) container.appendChild(label);
 
-        (player.discards || []).forEach((id, idx) => {
-            const isLast = idx === (player.discards || []).length - 1;
-            const el = TileRenderer.createTileElement(id, {
+        // クライアントで管理しているランダム化済みの河配列を使用する
+        const riverArray = this.riverTiles[player.seat] || [];
+
+        riverArray.forEach((tileData, idx) => {
+            const isLast = idx === riverArray.length - 1;
+            const el = TileRenderer.createTileElement(tileData.id, {
                 small: true,
             });
-            el.classList.add('animate-appear');
+            el.classList.add('animate-appear', 'river-tile');
+            
+            // ツモ切り・手出しのクラス付与
+            if (tileData.isTsumogiri) {
+                el.classList.add('is-tsumogiri');
+                el.title = "ツモ切り";
+            } else {
+                el.classList.add('is-tedashi');
+                el.title = "手出し";
+            }
+
             // 最後の打牌をハイライト
             if (isLast) {
                 el.classList.add('tile-last-discard');
             }
             container.appendChild(el);
         });
+    }
+
+    /**
+     * 相手の手出し牌を隠蔽するための河ランダム化処理
+     * dahai コール時に記録される
+     */
+    recordDiscard(data) {
+        const actor = data.actor;
+        const tileId = data.pai;
+        const isTsumogiri = data.tsumogiri;
+
+        if (!this.riverTiles[actor]) {
+            this.riverTiles[actor] = [];
+        }
+
+        const tileData = {
+            id: tileId,
+            isTsumogiri: isTsumogiri,
+            timestamp: Date.now()
+        };
+
+        if (isTsumogiri) {
+            // ツモ切りの場合：時系列通り末尾に追加
+            this.riverTiles[actor].push(tileData);
+        } else {
+            // 手出しの場合：情報隠蔽のためランダムな位置に挿入
+            const randomIndex = Math.floor(Math.random() * (this.riverTiles[actor].length + 1));
+            this.riverTiles[actor].splice(randomIndex, 0, tileData);
+        }
     }
 
     /**

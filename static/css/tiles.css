@@ -16,112 +16,76 @@
   --honor-blue: #1e3a8a;
 }
 
-/* --- 基本牌 --- */
+/* --- 基本牌 (Nyanco Style) --- */
 .tile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--tile-width);
-    height: var(--tile-height);
-    background: #fefefe;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    cursor: default;
-    user-select: none;
     position: relative;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 46px;
+    height: 64px;
+    background: #fdfdfd; /* 純白ではなくややオフホワイト */
+    border: none;        /* 枠線撤廃 */
+    border-radius: 8px;  /* 角を丸く */
+    
+    /* 3D 立体表現：牌の厚みと卓上の影 */
     box-shadow: 
-        0 4px 8px rgba(0,0,0,0.3),
-        inset 0 1px 0 rgba(255,255,255,0.8),
-        inset 0 -1px 0 rgba(0,0,0,0.1);
+        1px 1px 0px #ccc, /* 側面の厚み */
+        2px 3px 5px rgba(0, 0, 0, 0.25); /* 卓上の影 */
+    
+    font-family: "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
+    font-size: 30px;
+    font-weight: bold;
+    user-select: none;
+    transition: all 0.2s ease;
+    cursor: default;
     flex-shrink: 0;
     line-height: 1;
-    font-weight: bold;
 }
 
 /* --- Unicode牌描画用 --- */
 .tile-unicode {
-    font-size: 100px;
-    font-family: "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    /* デフォルトは黒色ベース */
     color: #1a1a1a;
 }
-.tile.red-dora.tile-unicode {
-    color: #cc3333;
-}
 .tile-sm.tile-unicode {
-    font-size: 76px;
+    font-size: 34px;
 }
 .dora-tiles .tile.tile-unicode {
-    font-size: 50px;
+    font-size: 40px;
 }
 
-/* 萬子 - 赤色 */
-.tile.manzu {
-    color: var(--manzu-red);
-    font-size: 38px;
-}
-.tile.manzu::after {
-    content: '萬';
-    font-size: 16px;
-    position: absolute;
-    bottom: 6px;
+/* --- スート別カラーリング (Nyanco 調) --- */
+/* 萬子 (m): 赤色 */
+.tile.suit-wan { color: #d32f2f; }
+/* 筒子 (p): 青色 */
+.tile.suit-pin { color: #1976d2; }
+/* 索子 (s): 緑色 */
+.tile.suit-sou { color: #388e3c; }
+/* 字牌 (z): 黒色（基本） */
+.tile.suit-zi { color: #212121; }
+
+/* 三元牌の特定色 */
+.tile.dragon-red { color: #d32f2f; }   /* 中 */
+.tile.dragon-green { color: #388e3c; } /* 發 */
+
+/* 赤ドラ強調 */
+.tile.is-red {
+    color: #ff1744 !important;
 }
 
-/* 筒子 - 円形模様 */
-.tile.pinzu {
-    font-size: 0;
+/* --- 河 (River) の特殊表現 --- */
+.river-tile {
+    /* river-tileにも基本のtransitionが効くようにする */
+    transition: all 0.2s ease;
 }
-.tile.pinzu .pattern {
-    display: grid;
-    gap: 4px;
-    width: 100%;
-    height: 100%;
-    padding: 6px;
-    align-content: center;
-    justify-content: center;
+.river-tile.is-tsumogiri {
+    margin-top: -2px; /* 少し上にずらす */
+    opacity: 0.85;    /* 少し薄くする */
+    transform: scale(0.95); /* 少し小さくする */
 }
-.tile.pinzu .dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,0,0,0.2);
-}
-.tile.pinzu .dot.red { background: var(--pinzu-red); }
-.tile.pinzu .dot.blue { background: var(--pinzu-blue); }
-
-/* 索子 - 竹の棒 */
-.tile.souzu {
-    color: var(--souzu-green);
-    font-size: 30px;
-    font-family: 'MS Gothic', monospace;
-}
-.tile.souzu .bamboo {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    align-items: center;
-}
-.tile.souzu .stick {
-    width: 7px;
-    height: 22px;
-    background: var(--souzu-green);
-    border-radius: 1px;
-}
-
-/* 字牌 */
-.tile.honor {
-    font-size: 38px;
-    font-family: 'Hiragino Mincho ProN', serif;
-}
-.tile.honor.wind { color: var(--honor-black); }
-.tile.honor.dragon-red { color: var(--honor-red); }
-.tile.honor.dragon-green { color: var(--honor-green); }
-.tile.honor.white { border: 2px solid var(--honor-blue); }
-
-/* 赤ドラ */
-.tile.red-dora {
-    background: linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%);
-    border: 2px solid var(--manzu-red);
+.river-tile.is-tedashi {
+    /* 通常配置 */
 }
 
 /* --- 牌のインタラクション（自分の手牌のみ） --- */
@@ -129,16 +93,18 @@
     cursor: pointer;
 }
 .tile-clickable:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.4),
-                0 0 12px rgba(212, 168, 83, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 
+        2px 6px 0px #5c7468, 
+        3px 7px 8px rgba(0, 0, 0, 0.3);
     z-index: 10;
 }
 .tile-clickable.selected {
-    transform: translateY(-12px);
+    transform: translateY(-8px);
     background: linear-gradient(180deg, #fff8e0 0%, #ffeaa0 100%);
-    box-shadow: 0 8px 20px rgba(212, 168, 83, 0.5);
-    border-color: var(--color-accent-gold);
+    box-shadow: 
+        2px 10px 0px #d4a853, 
+        3px 11px 12px rgba(212, 168, 83, 0.5);
 }
 
 /* --- AI推奨牌ハイライト --- */
@@ -238,11 +204,14 @@
     margin-left: var(--space-md) !important;
 }
 
-/* --- 裏向き牌 --- */
+/* --- 裏向き牌 (CPU手牌や山など) --- */
 .tile-back {
     background: linear-gradient(135deg, #2e5547 0%, #3a6b5a 50%, #2e5547 100%);
-    border-color: #1d3d30;
+    border: none;
     color: transparent;
+    box-shadow: 
+        2px 2px 0px #1d3d30, 
+        3px 3px 6px rgba(0, 0, 0, 0.4);
 }
 .tile-back::after {
     content: '';
@@ -257,16 +226,13 @@
 
 /* --- 小さい牌（他家・捨て牌用） --- */
 .tile-sm {
-    width: var(--tile-width-sm);
-    height: var(--tile-height-sm);
+    width: 36px;
+    height: 50px;
+    font-size: 38px;
+    box-shadow: 
+        1.5px 1.5px 0px #5c7468, 
+        2px 2px 4px rgba(0, 0, 0, 0.3);
 }
-.tile-sm.manzu { font-size: 28px; }
-.tile-sm.manzu::after { font-size: 12px; bottom: 4px; }
-
-.tile-sm.pinzu .dot { width: 8px; height: 8px; }
-.tile-sm.souzu { font-size: 24px; }
-.tile-sm.souzu .stick { width: 5px; height: 14px; }
-.tile-sm.honor { font-size: 28px; }
 
 /* --- 横向き牌（チー/ポンで鳴いた牌） --- */
 .tile-rotated {

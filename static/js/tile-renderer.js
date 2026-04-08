@@ -98,6 +98,26 @@ const TileRenderer = {
         if (clickable) el.classList.add('tile-clickable');
         if (tsumo) el.classList.add('tile-tsumo');
         if (riichi) el.classList.add('tile-riichi');
+
+        // デザイン仕様 (v3): スート・ドラ別の色分けクラス追加
+        if (suit === 'm') {
+            el.classList.add('suit-wan');
+        } else if (suit === 'p') {
+            el.classList.add('suit-pin');
+        } else if (suit === 's') {
+            el.classList.add('suit-sou');
+        } else if (suit === 'z') {
+            el.classList.add('suit-zi');
+        }
+
+        if (isRed || cleanId === '7z') {
+            el.classList.add('is-red');
+            el.classList.add('dragon-red'); // 中(7z)を赤指定
+        }
+        
+        if (cleanId === '6z') { // 發(6z)
+            el.classList.add('dragon-green');
+        }
         if (rotated) el.classList.add('tile-rotated');
 
         return el;
