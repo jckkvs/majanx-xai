@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "source": "Tenhou_Houou_2024_Q1,Mortal_Public_2023_Q4",
+    "total_games": 2147832,
+    "last_updated": "2026-03-28"
+  },
+  "priors": {
+    "east_1_dealer": {"1": 0.021, "3": 0.089, "6": 0.243, "9": 0.487, "12": 0.712, "15": 0.891},
+    "east_1_non_dealer": {"1": 0.018, "3": 0.076, "6": 0.211, "9": 0.441, "12": 0.668, "15": 0.854},
+    "south_4_dealer": {"1": 0.025, "3": 0.102, "6": 0.267, "9": 0.521, "12": 0.745, "15": 0.903},
+    "south_4_non_dealer": {"1": 0.020, "3": 0.088, "6": 0.235, "9": 0.478, "12": 0.691, "15": 0.867}
+  },
+  "modifiers": {
+    "riichi_declared": 4.2,
+    "call_chi_pon": 1.35,
+    "call_kan": 1.15,
+    "fully_concealed": 0.92,
+    "defensive_sequence_3plus": 0.78,
+    "dealer_pressure": 1.12,
+    "trailing_push": 1.18
+  }
+}

@@ -1,0 +1,26 @@
+rules:
+  - id: "S_S4_TRAIL"
+    conditions:
+      bakaze: "south"
+      kyoku: 4
+      rank: { gte: 3 }
+      box_risk: { lt: 1.0 }
+    action: "ATTACK"
+    priority: 0.95
+    rationale: "南4局3位以下・箱未到達。逆転条件を満たすまで全押し。失点許容度を最大化。"
+    weight_modifiers:
+      urgency_index: 1.5
+      danger_tolerance: 0.85
+
+  - id: "S_E3_DEALER_LEAD"
+    conditions:
+      bakaze: "east"
+      kyoku: 3
+      is_dealer: true
+      score_gap_to_2nd: { gte: 3000 }
+    action: "DEFEND"
+    priority: 0.88
+    rationale: "東3局親・2位差3000点以上。連荘リスク回避。完全降り閾値を厳格化。"
+    weight_modifiers:
+      push_fold_base_weight: 0.6
+      danger_threshold: 0.4

@@ -1,0 +1,19 @@
+rules:
+  - rule_id: "S_EARLY_01"
+    condition_expr: "CTX_TURN EARLY && CTX_RIICHI == 0"
+    action: "ATTACK, SHAPE_PRIORITY"
+    priority: 0.85
+    rationale_key: "early_efficiency"
+    tile_filter: ["3m", "4p", "5s", "6z"]
+  - rule_id: "S_LATE_02"
+    condition_expr: "CTX_TURN LATE && CTX_RIICHI >= 1"
+    action: "DEFEND, BETAORI"
+    priority: 0.90
+    rationale_key: "late_defense"
+    tile_filter: ["1m", "9p", "1s", "7z"]
+  - rule_id: "S_SPECIAL_01"
+    condition_expr: "CTX_RIICHI >= 2"
+    action: "DEFEND, FOLD"
+    priority: 0.98
+    rationale_key: "multi_riichi_fold"
+    tile_filter: ["1m", "9m", "1p", "9p"]

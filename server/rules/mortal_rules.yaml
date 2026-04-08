@@ -1,0 +1,16 @@
+rules:
+  - rule_id: "I_EFF_01"
+    tile_pattern: "5m"
+    context_filter: "CTX_TURN <= 6"
+    template: "「{tile}」切りは両面構造の維持を優先。将来の三面待ち創出に向けた牌効率最適化と判断"
+    confidence: 0.85
+  - rule_id: "I_DEF_01"
+    tile_pattern: "4s"
+    context_filter: "CTX_RIICHI >= 1 && CTX_DANGER >= 0.6"
+    template: "他家リーチ下での「{tile}」切りは確実な降り選択。筋牌回避による失点防止意図が顕著"
+    confidence: 0.95
+  - rule_id: "I_VAL_02"
+    tile_pattern: "5pr"
+    context_filter: "CTX_TURN >= 8"
+    template: "ドラ「{tile}」の保留は逆転条件の確保。受け入れが狭くとも打点形成の余地を残す終盤判断"
+    confidence: 0.78

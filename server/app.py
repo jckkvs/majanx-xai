@@ -203,16 +203,27 @@ async def reset_settings():
 
 # === Fast Match WebSocket (Phase 3) ===
 
+import random
+
 class MockEngine:
     def __init__(self):
-        self.wall = ["1m"] * 70
-        self.hands = {
-            0: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
-            1: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
-            2: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"],
-            3: ["1m", "2m", "3m", "4p", "5p", "6p", "7s", "8s", "9s", "1z", "1z", "2z", "2z"]
-        }
-        self.dora_indicators = ["1z"]
+        pool = []
+        for s in ['m', 'p', 's']:
+            for n in range(1, 10):
+                pool.extend([f"{n}{s}"] * 4)
+        for n in range(1, 8):
+            pool.extend([f"{n}z"] * 4)
+            
+        random.shuffle(pool)
+        self.wall = pool
+        
+        self.hands = {}
+        for i in range(4):
+            # Deal 13 tiles, sort them, keeping red fives/0 out (just raw tiles)
+            self.hands[i] = [self.wall.pop() for _ in range(13)]
+            self.hands[i].sort()
+            
+        self.dora_indicators = [self.wall.pop()]
         self.scores = {0: 25000, 1: 25000, 2: 25000, 3: 25000}
         self.round_info = {"wind": "東", "round": 1}
         self.rivers = {0: [], 1: [], 2: [], 3: []}

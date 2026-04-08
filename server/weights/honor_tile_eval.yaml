@@ -1,0 +1,12 @@
+weights:
+  alpha: 0.35   # Ukeire
+  beta: 1.2     # Yaku_Guarantee (base)
+  gamma: 0.8    # Dora_Value
+  delta: 0.6    # Call_Speed
+  epsilon: 0.4  # Defensive (base)
+  zeta: 0.5     # Shape_Cost
+
+multipliers:
+  beta_late_turn: 1.5
+  epsilon_late_turn: 0.6
+  beta_dealer_honor: 1.35

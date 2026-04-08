@@ -1,0 +1,15 @@
+{
+  "base_distribution": {
+    "ryanmen": 0.42,
+    "kanchan": 0.18,
+    "tanki": 0.15,
+    "shanpon": 0.12,
+    "multi": 0.13
+  },
+  "condition_modifiers": {
+    "mid_tile_cuts_3plus": {"multi": 0.15, "ryanmen": 0.05},
+    "terminal_keeps_2plus": {"tanki": 0.12, "shanpon": 0.08},
+    "riichi_under": {"multi": 0.08, "kanchan": -0.05},
+    "late_turn_push": {"tanki": 0.10, "ryanmen": -0.03}
+  }
+}

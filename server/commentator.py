@@ -79,7 +79,8 @@ class CommentatorAI:
             danger = self._estimate_danger(i, visible_34, round_info)
 
             # 攻守スコア計算
-            attack = acceptance * (1.0 if sh_after <= 1 else 0.5) * (1.5 if sh_after < current_shanten else 1.0)
+            shanten_penalty = 0.001 if sh_after > current_shanten else 1.0
+            attack = acceptance * (1.0 if sh_after <= 1 else 0.5) * shanten_penalty
             defense = max(0.1, 1.0 - danger)
             balance = attack * defense  # 攻守最適化指標
 
@@ -146,7 +147,7 @@ class CommentatorAI:
             "choices": choices,
             
             # 新しいAI推論データ (UIオーバーレイ用)
-            "recommendation": mortal_top3[0]["tile_name"] if mortal_top3 else "",
+            "recommendation": self._idx_to_ja_name(mortal_top3[0]["tile_idx"]) if mortal_top3 else "",
             "reasoning": reasoning_data["reasoning"],
             "attack_score": reasoning_data.get("attack_score", 0),
             "defense_score": reasoning_data.get("defense_score", 0),
@@ -234,3 +235,15 @@ class CommentatorAI:
         if idx < 27:
             return f"{idx % 9 + 1}{suits[idx // 9]}"
         return f"{idx - 27 + 1}{suits[3]}"
+
+    def _idx_to_ja_name(self, idx: int) -> str:
+        nums = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
+        if idx < 9:
+            return f"{nums[idx]}萬"
+        elif idx < 18:
+            return f"{nums[idx - 9]}筒"
+        elif idx < 27:
+            return f"{nums[idx - 18]}索"
+        else:
+            z_names = ["東", "南", "西", "北", "白", "發", "中"]
+            return z_names[idx - 27]

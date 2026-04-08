@@ -1,0 +1,16 @@
+yaku_probabilities:
+  yakuman_base: 0.05
+  yakuman_threshold_late: 0.05
+  iipeiko_base: 0.20
+  iipeiko_weight: 0.35
+
+shape_stability:
+  ryanmen: 1.0
+  kanchan: 0.7
+  excess_shape: 0.6  # 3456m等の過剰形
+  collapsed_shape: 0.4
+
+risk_weights:
+  supply_risk_base: 0.4
+  danger_multiplier_pinhu: 1.2
+  honba_penalty_rate: 0.05

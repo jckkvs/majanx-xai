@@ -276,6 +276,7 @@ class GameState:
     turn_count: int = 0                  # 全体の巡目
     last_discard: Optional[Tile] = None  # 最後に捨てられた牌
     last_discard_player: int = -1        # 最後に捨てたプレイヤー
+    last_drawn_tile: Optional[Tile] = None # 最後にツモられた牌
 
     @property
     def tiles_remaining(self) -> int:
@@ -296,7 +297,33 @@ class GameState:
             doras.append(_next_tile(indicator))
         return doras
 
+    def to_mjai_events(self) -> list[dict]:
+        """ダミーイベント出力（特徴量抽出用途互換用）"""
+        return [{"type": "start_game"}]
 
+    def get_player_shanten(self, seat: int) -> int:
+        """プレイヤーの手牌向聴数を計算"""
+        if seat < 0 or seat >= len(self.players):
+            return 6
+        from mahjong.shanten import Shanten
+        try:
+            shanten_calc = Shanten()
+            hand = self.players[seat].hand
+            
+            result = [0] * 34
+            for t in hand:
+                suit_to_idx = {"m": 0, "p": 1, "s": 2, "z": 3}
+                suit_idx = suit_to_idx.get(t.suit.value, 3)
+                if suit_idx < 3:
+                    idx = suit_idx * 9 + t.number - 1
+                else:
+                    idx = 27 + t.number - 1
+                if 0 <= idx < 34:
+                    result[idx] += 1
+                    
+            return shanten_calc.calculate_shanten(result)
+        except Exception:
+            return 6
 def _next_tile(tile: Tile) -> Tile:
     """ドラ表示牌の次の牌を返す"""
     if tile.suit == TileSuit.WIND:
