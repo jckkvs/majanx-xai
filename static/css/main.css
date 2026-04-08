@@ -974,3 +974,24 @@ html, body {
 .agree { color: #34d399; }
 .disagree { color: #fbbf24; }
 
+#ai-panel {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: rgba(20, 24, 35, 0.92);
+    border: 1px solid #3a3f4b;
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 220px;
+    color: #e2e8f0;
+    font-size: 13px;
+    backdrop-filter: blur(4px);
+    display: none;
+    z-index: 1000;
+}
+.ai-title { font-weight: 600; margin-bottom: 8px; color: #a5b4fc; }
+.ai-row { display: flex; align-items: center; margin: 6px 0; gap: 8px; }
+.ai-rank { width: 24px; font-weight: bold; }
+.ai-tile { width: 36px; font-family: serif; font-size: 16px; }
+.ai-bar-bg { flex: 1; height: 6px; background: #2d3748; border-radius: 3px; overflow: hidden; }
+.ai-bar-fill { height: 100%; transition: width 0.3s ease; }
+.ai-prob { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }

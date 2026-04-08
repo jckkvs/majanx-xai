@@ -179,14 +179,68 @@ class GameManager:
             })
 
         try:
-            # Mortal確率は将来的に MortalAgent 統合時に渡す。
-            # 現時点ではルールベース解説のみで動作。
-            mortal_probs = None
-            analysis = self.explainer.analyze(self.human_seat, mortal_probs)
-            ai_data = analysis
+            from server.app import AI_AVAILABLE, feature_extractor_global, ai_engine_global, orchestrator_global
+            if AI_AVAILABLE and self.engine.state:
+                feat = feature_extractor_global.extract(self.engine.state, self.human_seat)
+                recs = ai_engine_global.predict(feat, top_k=3)
+                
+                # generate() (旧仕様)ではなく run() を呼び出す。
+                # contextの抽出は簡易的な辞書で行う
+                players_sorted = sorted(self.engine.state.players, key=lambda p: getattr(p, 'score', 0), reverse=True) if hasattr(self.engine.state, 'players') else []
+                human_score = self.engine.state.players[self.human_seat].score if hasattr(self.engine.state, 'players') else 25000
+                rank = next((i + 1 for i, p in enumerate(players_sorted) if getattr(p, 'seat', -1) == self.human_seat), 1)
+
+                ctx = {
+                    "turn": getattr(self.engine.state, 'turn_count', 0),
+                    "dealer_status": getattr(self.engine.state, 'dealer', 0) == self.human_seat,
+                    "riichi": sum(1 for p in self.engine.state.players if getattr(p, 'is_riichi', False)),
+                    "score_diff": human_score - 25000,
+                    "rank": rank,
+                    "honba": getattr(self.engine.state, 'honba', 0),
+                    "danger": "low"
+                }
+                
+                if recs:
+                    tile = recs[0].tile
+                    prob = recs[0].probability
+                    # アクション空間マッピングのインデックスはMortal推論内で消失しているため仮引数を渡す
+                    # (本質的にはXAIAnalyzerでしか使わずモック実装なので問題ない)
+                    idx = 0 
+                else:
+                    tile = "default"
+                    prob = 0.0
+                    idx = 0
+
+                triple_rec = await orchestrator_global.run(
+                    features=feat, 
+                    ai_idx=idx, 
+                    ai_prob=prob, 
+                    ai_tile=tile, 
+                    ctx=ctx, 
+                    model=getattr(ai_engine_global, 'model', None)
+                )
+                
+                # 指定された WebSocket 送信ペイロード構造
+                await self._send({
+                    "type": "triple_recommendation",
+                    "data": {
+                        "xai": triple_rec.xai,
+                        "strategy": triple_rec.strategy,
+                        "interpretation": triple_rec.interpret,
+                        "meta": triple_rec.meta,
+                        # 元々のMortal推論結果（alternativesなど）もUIで表示するため追加
+                        "ai": {
+                            "primary": {"tile": recs[0].tile, "prob": recs[0].probability, "q_val": recs[0].q_value} if recs else {},
+                            "alternatives": [{"tile": alt.tile, "prob": alt.probability, "q_val": alt.q_value} for alt in (recs[1:] if recs else [])]
+                        }
+                    }
+                })
+            
+            ai_data = None
         except Exception as e:
             import traceback
-            print(f"AI解説エラー: {e}")
+            import logging
+            logging.error(f"AI inference failed: {e}")
             traceback.print_exc()
             ai_data = None
 
@@ -194,7 +248,7 @@ class GameManager:
             "type": "your_turn",
             "actions": actions_data,
             "state": self.engine.to_state_dict(for_player=self.human_seat),
-            "ai_analysis": ai_data,
+            "ai_analysis": ai_data,  # 互換性のため残すが中身はNone
         })
 
         # 人間の入力待ち

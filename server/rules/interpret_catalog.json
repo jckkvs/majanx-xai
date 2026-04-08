@@ -1,0 +1,49 @@
+[
+  {
+    "id": "SPEC-READ-001",
+    "target": "any",
+    "danger_cond": [
+      "med",
+      "high"
+    ],
+    "intent": "スジ罠警戒",
+    "tpl": "{tile}切りの意図: リーチ後の中張切りに対する逆スジ（スジ罠）警戒"
+  },
+  {
+    "id": "SPEC-READ-002",
+    "target": "any",
+    "danger_cond": [
+      "low",
+      "med"
+    ],
+    "intent": "壁崩れ読み",
+    "tpl": "{tile}の推奨: 場に見えた壁崩れ周辺ターツの危険度上昇を先読み"
+  },
+  {
+    "id": "SPEC-READ-003",
+    "target": "any",
+    "danger_cond": [
+      "high"
+    ],
+    "intent": "フリテン誘導回避",
+    "tpl": "{tile}ツモ切り: 自身フリテン時の戦略的ツモ切り（放銃回避優先）"
+  },
+  {
+    "id": "SPEC-READ-004",
+    "target": "z",
+    "danger_cond": [
+      "high"
+    ],
+    "intent": "終盤単騎警戒",
+    "tpl": "終盤端牌・字牌の単騎待ちピンポイント警戒"
+  },
+  {
+    "id": "SPEC-READ-005",
+    "target": "safe",
+    "danger_cond": [
+      "low"
+    ],
+    "intent": "見逃し戦略",
+    "tpl": "順位不変時の見逃し・放銃リスク回避の判断"
+  }
+]

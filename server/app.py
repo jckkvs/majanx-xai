@@ -22,22 +22,46 @@ from .replay_manager import ReplayManager
 from .tenhou_to_mjai import TenhouToMjaiConverter
 from .mortal.mortal_agent import MortalAgent
 from .settings_manager import SettingsManager
+
 from .voice_commentator import VoiceCommentator
 from .precompute_engine import PrecomputeEngine
 from .commentator import CommentatorAI
 
-# グローバル初期化
+from .feature_extractor import MortalFeatureExtractor
+from .mortal_engine import MortalEngine
+
+from .engines.xai_analyzer import XAIAnalyzer
+from .engines.strategy_judge import StrategyJudge
+from .engines.mortal_interpreter import MortalInterpreter
+from .orchestrator import Orchestrator
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+# グローバル初期化ブロック
+try:
+    feature_extractor_global = MortalFeatureExtractor()
+    ai_engine_global = MortalEngine(model_path="server/models/mortal_jit.pt")
+    
+    xai_eng_global = XAIAnalyzer()
+    strat_eng_global = StrategyJudge()
+    interp_eng_global = MortalInterpreter()
+    
+    orchestrator_global = Orchestrator(xai_eng_global, strat_eng_global, interp_eng_global)
+    AI_AVAILABLE = True
+except Exception as e:
+    logger.warning(f"AI Engine fallback mode: {e}")
+    AI_AVAILABLE = False
+    feature_extractor_global = None
+    ai_engine_global = None
+    orchestrator_global = None
+
 settings_mgr = SettingsManager()
 voice_mgr = VoiceCommentator(**settings_mgr.get_voice_config())
-# Mortal Agent 初期化（設定ファイルから）
-try:
-    mortal_agent_global = MortalAgent(**settings_mgr.get_ai_config())
-except Exception as e:
-    print(f"MortalAgent initialization error: {e}")
-    mortal_agent_global = None
 
 rule_ai_global = CommentatorAI(engine=None)
-precompute_global = PrecomputeEngine(mortal_agent=mortal_agent_global, rule_engine=rule_ai_global)
+precompute_global = PrecomputeEngine(mortal_agent=None, rule_engine=rule_ai_global)
 
 app = FastAPI(title="麻雀AI - Mahjong AI")
 
@@ -94,7 +118,7 @@ async def ui_ws(ws: WebSocket):
         try:
             await ws.send_json({
                 "type": "state_sync",
-                "data": app.state.game_manager.engine.to_state_dict(for_player=None)
+                "data": app.state.game_manager.engine.to_state_dict(for_player=app.state.game_manager.human_seat)
             })
         except Exception:
             pass

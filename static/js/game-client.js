@@ -157,6 +157,10 @@ class GameClient {
                 }
                 break;
 
+            case 'triple_recommendation':
+                this._renderTripleRecommendations(data.data);
+                break;
+
             case 'dahai':
                 this.recordDiscard(data);
                 this.updateGameState(data.state);
@@ -1060,5 +1064,68 @@ class GameClient {
                 this.send({ action: 'next_round' });
             };
         }
+    }
+
+    _renderTripleRecommendations(tripleData) {
+        let panel = document.getElementById("ai-panel");
+        if (!panel) {
+            panel = document.createElement("div");
+            panel.id = "ai-panel";
+            document.body.appendChild(panel);
+        }
+        
+        const ai = tripleData.ai;
+        const strat = tripleData.strategy;
+        const xai = tripleData.xai;
+        const interp = tripleData.interpretation;
+        const meta = tripleData.meta;
+        
+        let html = `<div class="ai-title">3系統推論統合 (${meta.latency_ms.toFixed(0)}ms)</div>`;
+        
+        // 1. Mortal AI 分布 (xaiに含まれない独自の補足グラフ)
+        if (ai && ai.primary) {
+            html += `<div style="margin-bottom:8px;"><strong>1. Mortal AI 分布</strong></div>`;
+            const recs = [ai.primary, ...(ai.alternatives || [])];
+            recs.forEach((r, i) => {
+                const width = (r.prob * 100).toFixed(1);
+                const color = i === 0 ? "#ff4757" : i === 1 ? "#ffa502" : "#2ed573";
+                html += `
+                    <div class="ai-row">
+                        <span class="ai-rank">#${i+1}</span>
+                        <span class="ai-tile">${r.tile}</span>
+                        <div class="ai-bar-bg">
+                            <div class="ai-bar-fill" style="width:${width}%; background:${color}"></div>
+                        </div>
+                        <span class="ai-prob">${(r.prob*100).toFixed(1)}%</span>
+                    </div>
+                `;
+            });
+        }
+        
+        // 方向性1: XAI解析
+        html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性1: XAI解析</strong></div>`;
+        html += `<div style="color:#a5b4fc; font-size:11px; margin-bottom:4px;">[${xai.keywords.join(", ")}]</div>`;
+        html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${xai.reasoning}</div>`;
+
+        // 方向性2: 戦略判断
+        html += `<div style="margin-top:12px; margin-bottom:8px;"><strong>方向性2: 戦略ルール</strong></div>`;
+        html += `<div style="color:#fbbf24; font-size:12px;">区分: ${strat.type} (ATT:${strat.scores.attack.toFixed(2)}, DEF:${strat.scores.defense.toFixed(2)})</div>`;
+        html += `<div style="color:#e2e8f0; font-size:12px;">推奨: <span style="font-weight:bold; color:white;">${strat.tile}</span></div>`;
+        html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${strat.judgment}</div>`;
+        
+        // 方向性3: 解釈ルール
+        html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性3: 逆推論</strong></div>`;
+        html += `<div style="color:#a5b4fc; font-size:11px; margin-bottom:4px;">意図: ${interp.intents.join(", ")}</div>`;
+        html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${interp.text}</div>`;
+        
+        // 4. メタ注記
+        const consColor = meta.consistency === "一致" ? "#10b981" : meta.consistency === "部分一致" ? "#f59e0b" : "#ef4444";
+        html += `<div style="margin-top:12px; padding:6px; background:#374151; border-radius:4px; font-size:11px; color:#9ca3af; border-left: 3px solid ${consColor}">
+            <strong style="color:${consColor}">${meta.consistency}</strong><br/>
+            ${meta.note}
+        </div>`;
+        
+        panel.innerHTML = html;
+        panel.style.display = "block";
     }
 }

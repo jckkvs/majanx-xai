@@ -1,0 +1,72 @@
+{
+  "version": "3.0",
+  "rules": [
+    {
+      "id": "S1_LATE_RIICHI_DEFENSE",
+      "priority": 100,
+      "conditions": {
+        "turn": {"gte": 10},
+        "any_riichi": true,
+        "is_dealer": false
+      },
+      "modifiers": {
+        "defense_weight": 5.0,
+        "offense_weight": 0.5,
+        "situation_weight": 1.0
+      },
+      "strategy": "DEFEND",
+      "rationale": "他家リーチ下・終盤は守備優先"
+    },
+    {
+      "id": "S2_DEALER_SPEED",
+      "priority": 80,
+      "conditions": {
+        "turn": {"lte": 6},
+        "is_dealer": true,
+        "any_riichi": false
+      },
+      "modifiers": {
+        "defense_weight": 0.5,
+        "offense_weight": 2.0,
+        "situation_weight": 1.0
+      },
+      "strategy": "SPEED",
+      "rationale": "親番・序盤は速度と攻撃優先"
+    },
+    {
+      "id": "S3_TOP_FOLD",
+      "priority": 90,
+      "conditions": {
+        "is_top": true,
+        "dealer_riichi": true
+      },
+      "modifiers": {
+        "defense_weight": 3.0,
+        "offense_weight": 0.5,
+        "situation_weight": 1.5
+      },
+      "strategy": "DEFEND",
+      "rationale": "トップ目の親リーチへの放銃回避"
+    },
+    {
+      "id": "S4_LAST_PLACE_PUSH",
+      "priority": 85,
+      "conditions": {
+        "is_last": true,
+        "kyoku": 4
+      },
+      "modifiers": {
+        "defense_weight": 0.2,
+        "offense_weight": 3.0,
+        "situation_weight": 2.0
+      },
+      "strategy": "ATTACK",
+      "rationale": "オーラス・ラス目の全ツッパ"
+    }
+  ],
+  "default_weights": {
+    "defense": 1.0,
+    "offense": 1.0,
+    "situation": 1.0
+  }
+}
