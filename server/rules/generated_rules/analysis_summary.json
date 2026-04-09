@@ -1,0 +1,13 @@
+{
+  "analysis_timestamp": "2026-04-10T02:05:25.748929",
+  "input_directory": "server\\data_ingestion\\logs",
+  "total_rounds_analyzed": 20380,
+  "pattern_type": "kagi_cut",
+  "statistics": {
+    "sample_size": 52,
+    "trigger_count": 52,
+    "target_occurrence": 0,
+    "target_rate": 0.0,
+    "conclusion": "inconclusive"
+  }
+}

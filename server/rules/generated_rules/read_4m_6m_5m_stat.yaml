@@ -5,12 +5,12 @@ trigger_conditions:
 - 他家が4mと6mを連続して切っている
 reverse_inference_logic: '4mと6mの連続切りは、標準的には「5mを中心とした両面搭子の解体」を意味する。
 
-  しかし鳳凰位では、この順序で切る行為が「5mを単騎・別スート転換」の意図である割合が0.0%（95%CI: 0.0%〜100.0%）と統計的に確認された。
+  本分析では、このパターンが観測された52局中、5mが危険牌として機能した割合は0.0%（95%CI: 0.0%〜0.0%）であった。
 
-  したがって「4m-6m切り＝5mは比較的安全」という標準読みは逆転する可能性がある。
+  したがって、標準的なスジ読みを盲目的に適用せず、物理的枚数分布と形状意図を併せて評価することが推奨される。
 
 
-  【統計的結論】統計的結論: inconclusive'
+  【統計的結論】inconclusive'
 practical_heuristic: '【実戦チェックリスト】
 
   □ 4m-6m切りが「手切り」か？（ツモ切り偶発なら適用外）
@@ -26,12 +26,18 @@ boundary_conditions:
 - 他家が鳴いている場合は適用外（メンゼン形状に限定）
 - 巡目7-12以外では適用外（中盤に限定）
 statistical_claim:
-  status: PENDING
-  sample_size: 51
-  trigger_count: 51
+  status: INCONCLUSIVE
+  sample_size: 52
+  trigger_count: 52
   target_occurrence: 0
   target_rate: 0.0
-  analysis_timestamp: '2026-04-10T02:01:50.359118'
+  control_rate: null
+  p_value: null
+  confidence_interval_95:
+  - 0.0
+  - 0.0
+  analysis_timestamp: '2026-04-10T02:05:25.745642'
+  disclaimer: 本数値は指定されたデータセットからの実測値です。
 metadata:
   generated_by: rule_generator.py
   pattern_type: kagi_cut
