@@ -1,0 +1,41 @@
+# config/ai_integrations.yaml
+# 複数麻雀AI統合エンドポイントと設定
+
+ai_engines:
+  - name: "Mortal"
+    type: "websocket"
+    enable: true
+    endpoint: "ws://127.0.0.1:8080"
+    model: "oracle" # または 4.1b 等
+    timeout: 3.0
+    weight: 1.0     # 統合推奨時などの意見の重み
+    description: "確率分布に基づくMJAI準拠AI (AGPL-3.0)"
+
+  - name: "Rulebase"
+    type: "in-process"
+    enable: true
+    engine_module: "server.rules.direction2_engine.StrategyEngine"
+    weight: 2.0     # 定性フレームを提示するため重みを高くするなど
+    description: "中・初心者向け説明特化型の定性推論エンジン"
+
+  - name: "Phoenix"
+    type: "mjai-container"
+    enable: false   # 任意でDocker等が立ち上がった際に有効化
+    endpoint: "ws://127.0.0.1:8081"
+    model: "v1"
+    timeout: 5.0
+    weight: 1.0
+    description: "Suphxベース・解釈可能性重視 (MIT)"
+
+  - name: "akochan"
+    type: "mjai-container"
+    enable: false
+    endpoint: "ws://127.0.0.1:8082"
+    timeout: 5.0
+    weight: 1.0
+    description: "古典的強豪 (要確認)"
+
+# 統合アグリゲータ用設定
+aggregator:
+  consensus_threshold: 0.5  # 半数以上の支持でコンセンサスとする
+  fallback_ai: "Rulebase"   # その他AIが全てタイムアウトした場合のフォールバック

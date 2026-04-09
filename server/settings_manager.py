@@ -7,7 +7,9 @@ class Settings(BaseModel):
     """アプリケーション設定スキーマ"""
     
     # AI設定
+    engine_type: str = Field(default="phoenix", description="推論エンジン: phoenix/mortal")
     ai_model_path: str = Field(default="server/mortal/weights/mortal.pth", description="Mortal重みファイルパス")
+    phoenix_model_path: str = Field(default="server/mortal/weights/phoenix.pth", description="Phoenix重みファイルパス")
     use_mortal: bool = Field(default=True, description="Mortal AIを使用する")
     use_gpu: bool = Field(default=True, description="GPU推論を使用")
     
@@ -84,7 +86,9 @@ class SettingsManager:
     def get_ai_config(self) -> Dict:
         """AI関連設定のみ取得"""
         return {
+            "engine_type": self.settings.engine_type,
             "weight_path": self.settings.ai_model_path,
+            "phoenix_path": self.settings.phoenix_model_path,
             "use_gpu": self.settings.use_gpu
         }
     

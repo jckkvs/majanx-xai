@@ -1,124 +1,127 @@
-/**
- * メインエントリーポイント
- * Implements: F-008 | アプリケーション起動・画面制御
- */
+// static/js/main.js
 
-document.addEventListener('DOMContentLoaded', () => {
-    const startScreen = document.getElementById('start-screen');
-    const gameScreen = document.getElementById('game-screen');
-    const btnStart = document.getElementById('btn-start-game');
+let ws;
+const playerId = "p1";
+let mySeat = 0;
 
-    let client = null;
+function log(msg) {
+  const logDiv = document.getElementById('debug-log');
+  const d = new Date();
+  logDiv.innerHTML += `[${d.toLocaleTimeString()}] ${msg}<br>`;
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
 
-    /**
-     * 画面切り替え
-     */
-    function showScreen(screen) {
-        document.querySelectorAll('.screen').forEach(s => {
-            s.classList.remove('active');
-        });
-        screen.classList.add('active');
+function connect() {
+  ws = new WebSocket("ws://127.0.0.1:8000/ws_ui");
+  
+  ws.onopen = () => {
+    log("WebSocket connected.");
+    ws.send(JSON.stringify({ type: "join", player_id: playerId, seat: 0 }));
+  };
+  
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "state_update") {
+      updateUI(data);
+    } else if (data.type === "error") {
+      log(`Error: ${data.message}`);
     }
+  };
+  
+  ws.onclose = () => {
+    log("WebSocket disconnected. Reconnecting in 3s...");
+    setTimeout(connect, 3000);
+  };
+}
 
-    /**
-     * 対局開始
-     */
-    btnStart.addEventListener('click', () => {
-        showScreen(gameScreen);
+function getSuitClass(tileStr) {
+  if (tileStr.includes('m')) return 'tile-m';
+  if (tileStr.includes('p')) return 'tile-p';
+  if (tileStr.includes('s')) return 'tile-s';
+  return 'tile-z';
+}
 
-        // WebSocket接続
-        client = new GameClient();
-        client.connect();
+function renderTiles(containerId, tilesArray, isHand = false) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  
+  tilesArray.forEach(t => {
+    const div = document.createElement('div');
+    div.className = `tile ${getSuitClass(t)}`;
+    div.innerText = t;
+    
+    if (isHand) {
+      div.onclick = () => {
+        // Send discard action
+        ws.send(JSON.stringify({
+          type: "action_request",
+          player_id: playerId,
+          action: "discard",
+          tile: t,
+          timestamp: Date.now()
+        }));
+      };
+    }
+    
+    container.appendChild(div);
+  });
+}
+
+function updateUI(state) {
+  document.getElementById('turn-info').innerText = `State: ${state.game_state} | Turn: ${state.turn}`;
+  document.getElementById('score-display').innerText = state.scores.join(" / ");
+  
+  // Render Hands
+  if (state.hand) renderTiles('hand-area', state.hand, true);
+  
+  // Render Discards
+  if (state.discards) {
+    state.discards.forEach((dlist, idx) => {
+      renderTiles(`discards-p${idx}`, dlist);
+    });
+  }
+  
+  // Update Buttons
+  const buttons = ['reach', 'pon', 'chi', 'kan', 'ron', 'pass'];
+  buttons.forEach(b => {
+    const btn = document.getElementById(`btn-${b}`);
+    if (btn) btn.style.display = 'none';
+  });
+  
+  if (state.available_actions) {
+    state.available_actions.forEach(act => {
+      if (act.type === 'reach') {
+        const btn = document.getElementById('btn-reach');
+        btn.style.display = 'inline-block';
+        btn.disabled = false;
+        btn.onclick = () => {
+          ws.send(JSON.stringify({type: "action_request", action: "reach", player_id: playerId}));
+        };
+      } else if (act.type !== 'discard') {
+        const btn = document.getElementById(`btn-${act.type}`);
+        if (btn) {
+           btn.style.display = 'inline-block';
+           btn.onclick = () => {
+             ws.send(JSON.stringify({type: "action_request", action: act.type, player_id: playerId}));
+           };
+        }
+      }
     });
 
-    /**
-     * リプレイ開始
-     */
-    const btnReplay = document.getElementById('btn-start-replay');
-    const fileInput = document.getElementById('replay-file');
-    const replayBar = document.getElementById('replay-bar');
-
-    if (btnReplay && fileInput) {
-        btnReplay.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('ファイルを選択してください (.log または .json)');
-                return;
-            }
-
-            btnReplay.disabled = true;
-            btnReplay.textContent = "アップロード中...";
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const res = await fetch('/api/replay/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                
-                if (data.session_id) {
-                    showScreen(gameScreen);
-                    if (replayBar) replayBar.classList.remove('hidden');
-
-                    client = new GameClient();
-                    client.connect(data.session_id);
-
-                    // Replay control buttons
-                    document.getElementById('btn-replay-prev').onclick = () => {
-                        client.send({ action: 'prev' });
-                    };
-                    document.getElementById('btn-replay-next').onclick = () => {
-                        client.send({ action: 'next' });
-                    };
-                } else {
-                    alert('エラー: セッションが作成できませんでした');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('通信エラー');
-            } finally {
-                btnReplay.disabled = false;
-                btnReplay.innerHTML = '<span class="btn-icon">📁</span> 牌譜を開く';
-            }
-        });
+    // If there are actions other than discard, show pass
+    if (state.available_actions.some(a => a.type !== 'discard')) {
+      const btn = document.getElementById('btn-pass');
+      if (btn) {
+         btn.style.display = 'inline-block';
+         btn.onclick = () => {
+           ws.send(JSON.stringify({type: "action_request", action: "pass", player_id: playerId}));
+         };
+      }
     }
+  }
+}
 
-    /**
-     * AIパネル開閉トグル
-     */
-    const aiPanel = document.getElementById('ai-panel');
-    const btnToggle = document.getElementById('btn-toggle-ai');
-    if (aiPanel && btnToggle) {
-        aiPanel.querySelector('.ai-panel-header').addEventListener('click', () => {
-            aiPanel.classList.toggle('collapsed');
-        });
-    }
-
-    /**
-     * キーボードショートカット
-     */
-    document.addEventListener('keydown', (e) => {
-        if (!client) return;
-
-        // Escでアクションバーを隠す
-        if (e.key === 'Escape') {
-            if (client.isMyTurn) {
-                client.hideActionBar();
-                client.selectedTile = null;
-                document.querySelectorAll('.tile-clickable.selected').forEach(el => {
-                    el.classList.remove('selected');
-                });
-            }
-        }
-
-        // 'a' でAIパネルのトグル
-        if (e.key === 'a' && !e.ctrlKey && !e.metaKey) {
-            if (aiPanel) {
-                aiPanel.classList.toggle('collapsed');
-            }
-        }
-    });
-});
+// Init
+window.onload = () => {
+  connect();
+};

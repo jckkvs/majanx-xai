@@ -1,0 +1,161 @@
+[
+  {
+    "id": "READ_SUJI_RYAN_SUGI_5",
+    "category": "SUJI_TRAP",
+    "priority": 95,
+    "confidence": 0.85,
+    "cond": {"riichi_min": 1, "turn_min": 6},
+    "danger_override": {"target_tiles": "28_same_suit", "danger_level": 0.90},
+    "intent": "5切りリーチのモロヒッカケ。135/579リャンカン外しからの2-8直撃待ち",
+    "explanation_template": "{suit}5切りリーチは135/579リャンカン外しの可能性が高く、{suit}2・{suit}8がモロヒッカケ(直接当たり牌)です",
+    "reference": "天鳳鳳凰位統計「5切りリーチの待ち分布」"
+  },
+  {
+    "id": "READ_SUJI_GYAKU_SUGI",
+    "category": "SUJI_TRAP",
+    "priority": 88,
+    "confidence": 0.75,
+    "cond": {"riichi_min": 1, "turn_min": 8},
+    "danger_override": {"target_tiles": "reverse_suji", "danger_level": 0.70},
+    "intent": "3/7切りリーチの逆スジ(1-4-7/3-6-9)カモフラージュ待ちの可能性",
+    "reference": "麻雀Station「逆スジ罠の統計発生率」"
+  },
+  {
+    "id": "READ_URA_SUJI",
+    "category": "URA_SUJI",
+    "priority": 82,
+    "confidence": 0.72,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "ura_suji_line", "danger_level": 0.75},
+    "intent": "裏スジ検出：カンチャン→リャンメン変化の痕跡。序盤切りほど信頼度高",
+    "explanation_template": "河に{discard_tile}があるため、{ura_target}が裏スジ(カンチャン→リャンメン変化の痕跡)として危険度が上昇しています",
+    "reference": "近代麻雀「裏スジの統計的危険度」"
+  },
+  {
+    "id": "READ_MATAGI_SUJI",
+    "category": "MATAGI_SUJI",
+    "priority": 85,
+    "confidence": 0.78,
+    "cond": {"riichi_min": 1, "turn_min": 5},
+    "danger_override": {"target_tiles": "matagi_adjacent", "danger_level": 0.75},
+    "intent": "またぎスジ：捨て牌を跨ぐリャンメン待ちの危険牌。テンパイ直前の手出し牌ほど極めて危険",
+    "explanation_template": "{discard_tile}切りリーチのまたぎスジ({matagi_list})を高危険域としてマークしています",
+    "reference": "近代麻雀「マタギスジは意識的罠確率>35%」"
+  },
+  {
+    "id": "READ_AIDA_YONKEN",
+    "category": "AIDA_YONKEN",
+    "priority": 98,
+    "confidence": 0.88,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "aida_yonken_line", "danger_level": 0.90, "risk_multiplier": 2.5},
+    "intent": "間四軒(あいだよんけん)：2つの裏スジが完全に一致する致命的パターン。放銃率を通常の2.5倍に引き上げ",
+    "explanation_template": "河に{tile_a}と{tile_b}が捨てられているため、{target_suji}のラインを『間四軒』と認識し、警戒度を極限まで引き上げています。これは2つの裏スジが完全に複合したシグナルであり、放銃率が跳ね上がるポイントです",
+    "reference": "鳳凰位統計「間四軒の放銃率」"
+  },
+  {
+    "id": "READ_SUJI_37_WARNING",
+    "category": "SUJI_RISK",
+    "priority": 70,
+    "confidence": 0.65,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "suji_3_7", "danger_level": 0.65},
+    "intent": "スジ3・7の危険度警告：スジであってもカンチャン・ペンチャン・シャボ等4パターンの待ちに該当するため、Dランクの危険牌として評価",
+    "explanation_template": "この牌はスジ（表スジ）ですが、3・7牌のスジはカンチャンやシャボなど様々な愚形に当たるリスクが残るため、Dランクの危険牌として評価されています",
+    "reference": "ウザク式牌効率「スジ3/7は最も危険なスジ」"
+  },
+  {
+    "id": "READ_SAFE_TILE_RIICHI_KOUKEI",
+    "category": "RIICHI_ANALYSIS",
+    "priority": 88,
+    "confidence": 0.80,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "all_no_suji", "danger_level": 0.65},
+    "intent": "安全牌切りリーチの好形推測。安全牌を抱える余裕があった完全一向聴からの好形リーチと読み、すべての無スジの防御スコアを上昇",
+    "explanation_template": "安全牌の{declaration_tile}を手出ししてリーチしました。安全牌を抱える余裕があった完全一向聴からの好形（リャンメン）リーチと読み、すべての無スジに対する防御スコアを上昇させています",
+    "reference": "天鳳統計「安全牌切りリーチの待ち形状分布」"
+  },
+  {
+    "id": "READ_KABE_NOCHANCE",
+    "category": "WALL_ANALYSIS",
+    "priority": 90,
+    "confidence": 0.95,
+    "cond": {},
+    "danger_override": {"target_tiles": "4_visible_neighbors", "danger_level": 0.02},
+    "intent": "ノーチャンス(4枚見え)→両隣は両面待ちのあたり牌にならない。安全度Sランク",
+    "explanation_template": "{visible_tile}が4枚見えているため、{safe_tile}の両面待ちは物理的にあり得ないという壁理論（ノーチャンス）に基づく完全防御です",
+    "reference": "井出洋介「壁理論完全版」"
+  },
+  {
+    "id": "READ_ONE_CHANCE",
+    "category": "WALL_ANALYSIS",
+    "priority": 70,
+    "confidence": 0.70,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "3_visible_safe_side", "danger_level": 0.25},
+    "intent": "ワンチャンス(3枚見え)→片側安全度Bランク。現物不在時の次善安全牌",
+    "reference": "天鳳統計「ワンチャンスの安全率」"
+  },
+  {
+    "id": "READ_KABE_COLLAPSE",
+    "category": "WALL_ANALYSIS",
+    "priority": 90,
+    "confidence": 0.78,
+    "cond": {"riichi_min": 1, "turn_min": 5},
+    "danger_override": {"target_tiles": "kabe_adjacent", "danger_level": 0.65},
+    "intent": "壁崩れ待ち検知。壁隣接牌が切られた直後、壁牌自体が待ち牌に。放銃率+22%",
+    "reference": "統計麻雀「壁崩れ直後の和了牌分布」"
+  },
+  {
+    "id": "READ_FURO_HONITSU",
+    "category": "MELD_ANALYSIS",
+    "priority": 82,
+    "confidence": 0.75,
+    "cond": {},
+    "danger_override": {"target_tiles": "meld_suit_mid", "danger_level": 0.75},
+    "intent": "同一スート鳴き集中→混一色/清一色移行。対象スート中張は高危険",
+    "explanation_template": "副露が{dominant_suit}スートに集中(80%以上)しています。混一色/清一色の可能性が高く、対象スートの中張牌は高危険、他スートは安全度が上昇しています",
+    "reference": "近代麻雀「色手はスート集中・他スート撤退」"
+  },
+  {
+    "id": "READ_MIDZANG_COMP",
+    "category": "DISCARD_PATTERN",
+    "priority": 75,
+    "confidence": 0.72,
+    "cond": {"turn_min": 5, "turn_max": 12},
+    "danger_override": {"target_tiles": "mid_suit_no_suji", "danger_level": 0.75},
+    "intent": "中張連続切り後の聴牌移行確率+35%。当該スートの無スジ牌は高危険",
+    "reference": "天鳳統計「中張処理完了後の聴牌率推移」"
+  },
+  {
+    "id": "READ_RIICHI_DECL_TERM",
+    "category": "RIICHI_ANALYSIS",
+    "priority": 78,
+    "confidence": 0.68,
+    "cond": {"riichi_min": 1},
+    "danger_override": {"target_tiles": "decl_tile_tanki", "danger_level": 0.50},
+    "intent": "端牌/字牌リーチ宣言は単騎待ちまたはペンチャン待ちの可能性が高い",
+    "reference": "近代麻雀「単騎・ペンチャン待ちの宣言牌パターン」"
+  },
+  {
+    "id": "READ_LATE_TENPAI",
+    "category": "DISCARD_PATTERN",
+    "priority": 85,
+    "confidence": 0.82,
+    "cond": {"turn_min": 12},
+    "danger_override": {"target_tiles": "remaining_low_count", "danger_level": 0.70},
+    "intent": "終盤安全牌優先切り出し→聴牌確率>85%。ダマテン聴牌維持行動の検知",
+    "reference": "鳳凰位終盤打牌傾向統計"
+  },
+  {
+    "id": "READ_MULTI_RIICHI",
+    "category": "MULTI_THREAT",
+    "priority": 98,
+    "confidence": 0.92,
+    "cond": {"riichi_min": 2},
+    "danger_override": {"target_tiles": "non_common_genbutsu", "danger_level": 0.85},
+    "intent": "複数リーチ→共通現物が最安全。片方のスジのみは安全度0.5に低下",
+    "explanation_template": "複数リーチ下では共通現物のみが絶対安全です。片方のリーチ者のスジのみでは安全とは言えません",
+    "reference": "天鳳統計「両リーチの放銃率」"
+  }
+]

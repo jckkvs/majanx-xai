@@ -334,7 +334,7 @@ class GameClient {
     }
 
     /**
-     * 他家の手牌を描画（裏向きすら描画せず、完全に隠蔽）
+     * 他家の手牌を描画（裏向き表示）
      */
     renderOtherHand(container, player) {
         container.innerHTML = '';
@@ -344,6 +344,12 @@ class GameClient {
                 const el = TileRenderer.createTileElement(id, { small: true });
                 container.appendChild(el);
             });
+        } else if (player.hand_count > 0) {
+            // 手牌が隠蔽されている場合（プレイ中）
+            for (let i = 0; i < player.hand_count; i++) {
+                const el = TileRenderer.createTileElement('?', { small: true, back: true });
+                container.appendChild(el);
+            }
         }
     }
 
@@ -1082,9 +1088,9 @@ class GameClient {
         
         let html = `<div class="ai-title">3系統推論統合 (${meta.latency_ms.toFixed(0)}ms)</div>`;
         
-        // 1. Mortal AI 分布 (xaiに含まれない独自の補足グラフ)
+        // ── Mortal AI 確率分布 ──
         if (ai && ai.primary) {
-            html += `<div style="margin-bottom:8px;"><strong>1. Mortal AI 分布</strong></div>`;
+            html += `<div style="margin-bottom:8px;"><strong>Mortal AI 分布</strong></div>`;
             const recs = [ai.primary, ...(ai.alternatives || [])];
             recs.forEach((r, i) => {
                 const width = (r.prob * 100).toFixed(1);
@@ -1102,26 +1108,60 @@ class GameClient {
             });
         }
         
-        // 方向性1: XAI解析
+        // ── 方向性1: XAI解析 ──
         html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性1: XAI解析</strong></div>`;
         html += `<div style="color:#a5b4fc; font-size:11px; margin-bottom:4px;">[${xai.keywords.join(", ")}]</div>`;
         html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${xai.reasoning}</div>`;
 
-        // 方向性2: 戦略判断
-        html += `<div style="margin-top:12px; margin-bottom:8px;"><strong>方向性2: 戦略ルール</strong></div>`;
-        html += `<div style="color:#fbbf24; font-size:12px;">区分: ${strat.type} (ATT:${strat.scores.attack.toFixed(2)}, DEF:${strat.scores.defense.toFixed(2)})</div>`;
-        html += `<div style="color:#e2e8f0; font-size:12px;">推奨: <span style="font-weight:bold; color:white;">${strat.tile}</span></div>`;
-        html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${strat.judgment}</div>`;
+        // ── 方向性2: 戦略判断 ──
+        const stratColor = strat.type === "ATTACK" ? "#ef4444" : strat.type === "DEFENSE" ? "#3b82f6" : "#a3a3a3";
+        html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性2: 戦略判断</strong>
+            <span style="color:${stratColor}; font-size:11px; margin-left:6px; padding:1px 6px; border:1px solid ${stratColor}; border-radius:3px;">${strat.type}</span>
+        </div>`;
         
-        // 方向性3: 解釈ルール
-        html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性3: 逆推論</strong></div>`;
+        // 信頼度バー
+        const confWidth = ((strat.confidence || 0) * 100).toFixed(0);
+        const confColor = strat.confidence > 0.7 ? "#10b981" : strat.confidence > 0.4 ? "#f59e0b" : "#ef4444";
+        html += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            <span style="color:#9ca3af; font-size:10px; min-width:45px;">信頼度</span>
+            <div style="flex:1; height:4px; background:#374151; border-radius:2px;">
+                <div style="width:${confWidth}%; height:100%; background:${confColor}; border-radius:2px;"></div>
+            </div>
+            <span style="color:${confColor}; font-size:10px; font-weight:bold;">${confWidth}%</span>
+        </div>`;
+        
+        // 翻数評価
+        if (strat.han_evaluation && strat.han_evaluation.current > 0) {
+            const he = strat.han_evaluation;
+            html += `<div style="color:#fbbf24; font-size:11px; margin-bottom:2px;">翻数: ${he.current}翻→${he.potential}翻 ${he.mangan_reachable ? "🀄満貫到達可能" : ""} (${he.points_if_agari}点)</div>`;
+        }
+        
+        html += `<div style="color:#e2e8f0; font-size:12px;">推奨: <span style="font-weight:bold; color:white;">${strat.tile}</span></div>`;
+        html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${strat.reasoning || strat.judgment}</div>`;
+        
+        if (strat.rules && strat.rules.length > 0) {
+            html += `<div style="color:#6b7280; font-size:10px; margin-top:2px;">適用ルール: ${strat.rules.join(", ")}</div>`;
+        }
+        
+        // ── 方向性3: 逆推論 ──
+        const catLabel = interp.category === "DEFENSE" ? "🛡防御" : interp.category === "VALUE" ? "💰打点" : "📐効率";
+        html += `<div style="margin-top:12px; margin-bottom:4px;"><strong>方向性3: 逆推論</strong>
+            <span style="font-size:11px; margin-left:6px;">${catLabel}</span>
+        </div>`;
         html += `<div style="color:#a5b4fc; font-size:11px; margin-bottom:4px;">意図: ${interp.intents.join(", ")}</div>`;
         html += `<div style="color:#cbd5e1; font-size:12px; line-height:1.3;">${interp.text}</div>`;
         
-        // 4. メタ注記
-        const consColor = meta.consistency === "一致" ? "#10b981" : meta.consistency === "部分一致" ? "#f59e0b" : "#ef4444";
+        // 逆推論の信頼度
+        if (interp.confidence_score) {
+            const iConf = (interp.confidence_score * 100).toFixed(0);
+            html += `<div style="color:#6b7280; font-size:10px; margin-top:2px;">確信度: ${interp.confidence}(${iConf}%) | パターン: ${(interp.rules || []).join(", ")}</div>`;
+        }
+        
+        // ── メタ注記 ──
+        const consColor = meta.consistency === "完全一致" ? "#10b981" : meta.consistency === "部分一致" ? "#f59e0b" : "#ef4444";
         html += `<div style="margin-top:12px; padding:6px; background:#374151; border-radius:4px; font-size:11px; color:#9ca3af; border-left: 3px solid ${consColor}">
-            <strong style="color:${consColor}">${meta.consistency}</strong><br/>
+            <strong style="color:${consColor}">${meta.consistency}</strong>
+            <span style="margin-left:8px;">統合信頼度: ${((meta.integrated_confidence || 0) * 100).toFixed(0)}%</span><br/>
             ${meta.note}
         </div>`;
         

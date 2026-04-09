@@ -184,21 +184,9 @@ class GameManager:
                 feat = feature_extractor_global.extract(self.engine.state, self.human_seat)
                 recs = ai_engine_global.predict(feat, top_k=3)
                 
-                # generate() (旧仕様)ではなく run() を呼び出す。
-                # contextの抽出は簡易的な辞書で行う
-                players_sorted = sorted(self.engine.state.players, key=lambda p: getattr(p, 'score', 0), reverse=True) if hasattr(self.engine.state, 'players') else []
-                human_score = self.engine.state.players[self.human_seat].score if hasattr(self.engine.state, 'players') else 25000
-                rank = next((i + 1 for i, p in enumerate(players_sorted) if getattr(p, 'seat', -1) == self.human_seat), 1)
-
-                ctx = {
-                    "turn": getattr(self.engine.state, 'turn_count', 0),
-                    "dealer_status": getattr(self.engine.state, 'dealer', 0) == self.human_seat,
-                    "riichi": sum(1 for p in self.engine.state.players if getattr(p, 'is_riichi', False)),
-                    "score_diff": human_score - 25000,
-                    "rank": rank,
-                    "honba": getattr(self.engine.state, 'honba', 0),
-                    "danger": "low"
-                }
+                # コンテキスト抽出（実計算ロジック使用）
+                from server.utils.mahjong_logic import build_full_context
+                ctx = build_full_context(self.engine.state, self.human_seat)
                 
                 if recs:
                     tile = recs[0].tile
@@ -227,6 +215,8 @@ class GameManager:
                         "xai": triple_rec.xai,
                         "strategy": triple_rec.strategy,
                         "interpretation": triple_rec.interpret,
+                        "reading": triple_rec.reading,
+                        "four_layer": triple_rec.four_layer,
                         "meta": triple_rec.meta,
                         # 元々のMortal推論結果（alternativesなど）もUIで表示するため追加
                         "ai": {

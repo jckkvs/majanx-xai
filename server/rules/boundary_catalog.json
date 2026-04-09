@@ -1,0 +1,82 @@
+[
+  {
+    "id": "BOUNDARY_TILE_EXHAUST",
+    "change_axis": "枚数枯れ",
+    "detection_param": "対象牌の場見え枚数",
+    "flip_trigger": "残り枚数≤1",
+    "template": "{tile}が場に見えて{visible}枚（残り{remaining}枚）になれば、受入が物理的に消滅。{current_paradigm}の前提が崩れ、{flip_paradigm}へ即座に反転する。",
+    "check_instruction": "切る前に{tile}の場見え枚数を最初にカウントすること",
+    "priority": 95,
+    "flip_to": "PAR_DEF"
+  },
+  {
+    "id": "BOUNDARY_TURN_ADVANCE",
+    "change_axis": "巡目進行",
+    "detection_param": "現在巡目+2",
+    "flip_trigger": "12巡目到達",
+    "template": "あと{delta}巡進めば終盤防御閾値（12巡目）に到達。速度優先から安全優先へ反転する。",
+    "check_instruction": "現在の巡目と残り牌山の厚さを確認すること",
+    "priority": 85,
+    "flip_to": "PAR_DEF"
+  },
+  {
+    "id": "BOUNDARY_RIICHI_ADD",
+    "change_axis": "他家状態",
+    "detection_param": "リーチ宣言数",
+    "flip_trigger": "リーチ0本→1本",
+    "template": "他家がリーチすれば、無スジの放銃率が跳ね上がる。速度・打点優先から防御・読み優先へ反転する。",
+    "check_instruction": "他家の打牌に注意し、リーチ宣言を見逃さないこと",
+    "priority": 90,
+    "flip_to": "PAR_DEF"
+  },
+  {
+    "id": "BOUNDARY_RANK_PRESSURE",
+    "change_axis": "順位圧力",
+    "detection_param": "2位との点差",
+    "flip_trigger": "点差8000pt以上",
+    "template": "点差が{threshold}点以上開けば、ラス回避期待値が防御コストを下回る。危険牌を切ってでも聴牌維持・和了優先へ判断が反転する。",
+    "check_instruction": "現在の順位と2位との点差を確認すること",
+    "priority": 80,
+    "flip_to": "PAR_POS"
+  },
+  {
+    "id": "BOUNDARY_WALL_COLLAPSE",
+    "change_axis": "枚数枯れ",
+    "detection_param": "壁牌隣接の切り出し",
+    "flip_trigger": "壁隣接牌が切られた直後",
+    "template": "壁が崩れた。{wall_tile}の壁が崩れたことで、隣接牌{adj_tile}が待ち牌として復活する可能性がある。安全度を再評価せよ。",
+    "check_instruction": "壁牌の隣接が切られたとき、安全度の前提を更新すること",
+    "priority": 75,
+    "flip_to": "PAR_READ"
+  },
+  {
+    "id": "BOUNDARY_ANKO_SUJI_TRAP",
+    "change_axis": "手牌構成",
+    "detection_param": "暗刻保有とスジの関係",
+    "flip_trigger": "スジの元牌を3枚保有",
+    "template": "あなたが{anko_tile}を暗刻で持っているため、{suji_tile}は通常のスジではなく暗刻スジ。他家の待ちがシャンポン・単騎に固定されやすく、放銃率が無スジ以上に上昇する。",
+    "check_instruction": "スジを切る前に、そのスジの元牌を自分が何枚持っているか確認すること",
+    "priority": 88,
+    "flip_to": "PAR_DEF"
+  },
+  {
+    "id": "BOUNDARY_EARLY_5_CUT",
+    "change_axis": "他家状態",
+    "detection_param": "他家の序盤5切り",
+    "flip_trigger": "相手の序盤捨て牌に5がある",
+    "template": "相手が序盤に{five_tile}を切っている。1・3・5や5・7・9のリャンカン外しの可能性があり、同色の1・9牌の危険度が無スジ以上に跳ね上がる。端牌だから安全という前提が崩れる。",
+    "check_instruction": "端牌を切る前に、同色の5が相手の序盤捨て牌にないか確認すること",
+    "priority": 85,
+    "flip_to": "PAR_DEF"
+  },
+  {
+    "id": "BOUNDARY_TENPAI_NEAR_RYUUKYOKU",
+    "change_axis": "巡目進行",
+    "detection_param": "残り牌山≤10枚",
+    "flip_trigger": "16巡目以降",
+    "template": "流局が近い。テンパイ維持で聴牌料（+1000〜4500点）を確保する価値が高い。速度・打点よりテンパイ維持へ反転。",
+    "check_instruction": "残り牌山の厚さとテンパイ状態を確認すること",
+    "priority": 70,
+    "flip_to": "PAR_POS"
+  }
+]

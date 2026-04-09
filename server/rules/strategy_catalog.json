@@ -1,238 +1,491 @@
 [
   {
-    "id": "DEF-READ-001",
-    "cond": {
-      "turn_min": 8,
-      "turn_max": 24,
-      "target_action": "riichi_5"
-    },
-    "w": {
-      "attack": 0.1,
-      "defense": 0.9,
-      "situation": 0.8
-    },
-    "rec": "safe_or_ori",
-    "intent": "両スジ罠警戒（2/8高危険）"
+    "id": "SHAPE_4RENKEI",
+    "category": "ATTACK",
+    "priority": 70,
+    "confidence": 0.82,
+    "cond": {"turn_min": 1, "turn_max": 12},
+    "w": {"attack": 0.7, "defense": 0.2, "situation": 0.5},
+    "phase1_tag": "BALANCED_SHAPE",
+    "phase2_filter": "PROTECT_4RENKEI",
+    "intent": "4連形(2345等)維持。両面2つ分の受入12枚以上を崩さず孤立牌処理で回避",
+    "reference": "ウザク式「複合形の価値」、平澤元気「4連形の項」"
   },
   {
-    "id": "DEF-READ-002",
-    "cond": {
-      "turn_min": 8,
-      "turn_max": 24,
-      "target_action": "middle_to_terminal"
-    },
-    "w": {
-      "attack": 0.2,
-      "defense": 0.8,
-      "situation": 0.7
-    },
-    "rec": "safe_or_ori",
-    "intent": "聴牌移行シグナル警戒"
+    "id": "SHAPE_NAKAFUKURE",
+    "category": "ATTACK",
+    "priority": 65,
+    "confidence": 0.78,
+    "cond": {"turn_min": 1, "turn_max": 10},
+    "w": {"attack": 0.7, "defense": 0.3, "situation": 0.5},
+    "phase1_tag": "SPEED_PUSH",
+    "phase2_filter": "PROTECT_NAKAFUKURE",
+    "intent": "中膨れ(2334等)維持。カンチャン受入4枚＋両面進化の余地を残し端牌を切る",
+    "reference": "麻雀Station「形状の価値評価」"
   },
   {
-    "id": "DEF-READ-003",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "target_action": "pon_tsumogiri_x3"
-    },
-    "w": {
-      "attack": 0.0,
-      "defense": 1.0,
-      "situation": 0.9
-    },
-    "rec": "genbutsu_only",
-    "intent": "鳴き聴牌完全警戒"
+    "id": "SHAPE_PENCHANT_UP",
+    "category": "ATTACK",
+    "priority": 55,
+    "confidence": 0.72,
+    "cond": {"turn_min": 1, "turn_max": 4},
+    "w": {"attack": 0.6, "defense": 0.3, "situation": 0.4},
+    "phase1_tag": "SPEED_PUSH",
+    "phase2_filter": "CUT_PENCHAN_KEEP_MIDDLE",
+    "intent": "序盤ペンチャン(12/89)切り。孤立中張(3-7)の両面化・対子化の確率が高い",
+    "reference": "孤立牌の切り順理論「客風>端牌>役牌」"
   },
   {
-    "id": "DEF-READ-004",
-    "cond": {
-      "turn_min": 9,
-      "turn_max": 24,
-      "target_action": "dora_then_safe"
-    },
-    "w": {
-      "attack": 0.3,
-      "defense": 0.7,
-      "situation": 0.8
-    },
-    "rec": "safe_or_ori",
-    "intent": "ダマテン警戒（ドラ切り後安牌）"
+    "id": "SHAPE_RYANKAN",
+    "category": "ATTACK",
+    "priority": 50,
+    "confidence": 0.68,
+    "cond": {"turn_min": 1, "turn_max": 6},
+    "w": {"attack": 0.6, "defense": 0.3, "situation": 0.4},
+    "phase1_tag": "SPEED_PUSH",
+    "phase2_filter": "SIMPLIFY_RYANKAN",
+    "intent": "リャンカン(135等)の中央切り→両面化で受入4枚→8枚。序盤は形状単純化で速度向上",
+    "reference": "麻雀Station「形状の価値評価」"
+  },
+
+  {
+    "id": "VALUE_MANGAN_YAKUHAI",
+    "category": "ATTACK",
+    "priority": 90,
+    "confidence": 0.88,
+    "cond": {"turn_min": 1, "turn_max": 12, "riichi_min": 0},
+    "w": {"attack": 0.9, "defense": 0.1, "situation": 0.7},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "KEEP_YAKUHAI_PAIR",
+    "intent": "役牌対子保持で満貫(8000点)確定。2翻(2600点)→3翻への1翻差は打点3倍の差",
+    "reference": "近代麻雀「満貫ブロックの重要性」、天鳳統計「2翻vs3翻EV差」"
   },
   {
-    "id": "DEF-READ-005",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "target_action": "honor_mid_terminal"
-    },
-    "w": {
-      "attack": 0.4,
-      "defense": 0.6,
-      "situation": 0.6
-    },
-    "rec": "early_defense",
-    "intent": "手牌整理完了シグナル対応"
+    "id": "VALUE_DORA_KEPT",
+    "category": "ATTACK",
+    "priority": 75,
+    "confidence": 0.80,
+    "cond": {"turn_min": 1, "turn_max": 14},
+    "w": {"attack": 0.8, "defense": 0.2, "situation": 0.6},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "PROTECT_DORA",
+    "intent": "ドラ・赤ドラ複合形維持。ドラ1枚=1翻確定は速度低下を補って余りある打点根拠",
+    "reference": "天鳳統計「赤ドラの和了率・打点」"
   },
   {
-    "id": "OFF-SHAPE-001",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 12,
-      "hand_shape": "4_connected"
-    },
-    "w": {
-      "attack": 0.8,
-      "defense": 0.2,
-      "situation": 0.5
-    },
-    "rec": "keep_4_connected",
-    "intent": "4連形維持（両面2つ分）"
+    "id": "VALUE_TANYAO_TRANSITION",
+    "category": "ATTACK",
+    "priority": 60,
+    "confidence": 0.72,
+    "cond": {"turn_min": 1, "turn_max": 10},
+    "w": {"attack": 0.6, "defense": 0.4, "situation": 0.5},
+    "phase1_tag": "BALANCED_SHAPE",
+    "phase2_filter": "CUT_YAKUHAI_FOR_TANYAO",
+    "intent": "タンヤオ確定形への移行。門前タンヤオは受入広・鳴かれにくい安定ルート",
+    "reference": "プロ戦術「タンヤオピンフの速度優位性」"
+  },
+
+  {
+    "id": "DEF_RIICHI_GENBUTSU",
+    "category": "DEFENSE",
+    "priority": 98,
+    "confidence": 0.95,
+    "cond": {"riichi_min": 1},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 0.9},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "CUT_GENBUTSU_ONLY",
+    "intent": "現物最優先切り。形状維持は一切考慮せず安全度100%を強制",
+    "reference": "麻雀のオリ理論「現物>壁>スジ」"
   },
   {
-    "id": "OFF-SHAPE-002",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 12,
-      "hand_shape": "nakabukure"
-    },
-    "w": {
-      "attack": 0.7,
-      "defense": 0.3,
-      "situation": 0.5
-    },
-    "rec": "keep_nakabukure",
-    "intent": "中膨れ維持（カンチャン＋両面進化）"
+    "id": "DEF_KABE_COMPLETE",
+    "category": "DEFENSE",
+    "priority": 88,
+    "confidence": 0.85,
+    "cond": {"riichi_min": 1},
+    "w": {"attack": 0.05, "defense": 0.95, "situation": 0.8},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "CUT_WALL_TILE",
+    "intent": "壁牌(場に3枚見え)切り。ロン和了される可能性0。現物がない場合の次点安全牌",
+    "reference": "麻雀アイテム「壁の理論」"
   },
   {
-    "id": "OFF-SHAPE-003",
-    "cond": {
-      "turn_min": 12,
-      "turn_max": 24,
-      "hand_shape": "ryankan"
-    },
-    "w": {
-      "attack": 0.6,
-      "defense": 0.4,
-      "situation": 0.4
-    },
-    "rec": "discard_ryankan",
-    "intent": "リャンカン見切り（進化余地低）"
+    "id": "DEF_SUJI_TRAP_5",
+    "category": "DEFENSE",
+    "priority": 85,
+    "confidence": 0.78,
+    "cond": {"turn_min": 8, "turn_max": 24, "riichi_min": 1},
+    "w": {"attack": 0.05, "defense": 0.95, "situation": 0.85},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "EXCLUDE_SUJI_TRAP_28",
+    "intent": "5切りリーチに対する2/8高危険牌除外。両スジ罠の統計的危険度+28%",
+    "reference": "近代麻雀「リーチの読み・スジ罠」、天鳳鳳凰位牌譜分析"
   },
   {
-    "id": "OFF-SHAPE-004",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "hand_shape": "5block_over"
-    },
-    "w": {
-      "attack": 0.6,
-      "defense": 0.4,
-      "situation": 0.5
-    },
-    "rec": "discard_toitsu",
-    "intent": "対子落とし（5ブロック理論）"
+    "id": "DEF_DEALER_RIICHI",
+    "category": "DEFENSE",
+    "priority": 92,
+    "confidence": 0.88,
+    "cond": {"riichi_min": 1, "rank": 1, "score_min": 3000},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 1.0},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "STRICT_SAFETY_ONLY",
+    "intent": "親リーチ下のトップ守り切り。放銃=点数損失+連荘の二重苦→リスク許容度を極限まで低下",
+    "reference": "鳳凰位戦術「トップの守り切り」"
+  },
+
+  {
+    "id": "SIT_TOP_MIGNON",
+    "category": "SITUATION",
+    "priority": 88,
+    "confidence": 0.85,
+    "cond": {"rank": 1, "score_min": 4000, "riichi_min": 1},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 0.95},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "SAFETY_OVER_SPEED",
+    "intent": "トップ時の小和了回避。和了しても順位不変→和了価値=0。現状維持が最適解",
+    "reference": "麻雀期待値計算「順位点と和了点のトレードオフ」"
   },
   {
-    "id": "OFF-SHAPE-005",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "hand_shape": "aka_complex"
-    },
-    "w": {
-      "attack": 0.9,
-      "defense": 0.1,
-      "situation": 0.8
-    },
-    "rec": "keep_aka",
-    "intent": "赤ドラ複合形維持（打点＋速度）"
+    "id": "SIT_LAST_DESPERATE",
+    "category": "SITUATION",
+    "priority": 92,
+    "confidence": 0.82,
+    "cond": {"rank": 4, "score_min": -12000, "turn_min": 8},
+    "w": {"attack": 0.95, "defense": 0.05, "situation": 0.9},
+    "phase1_tag": "RISKY_PUSH",
+    "phase2_filter": "MAXIMIZE_SCORE_IGNORE_SAFETY",
+    "intent": "ラス目点差≤12000→満貫(8000点)以上狙いの全押し。安全牌を除外し打点最大化",
+    "reference": "麻雀の勝率統計「ラス目の逆転確率」"
   },
   {
-    "id": "SIT-SCORE-001",
-    "cond": {
-      "turn_min": 8,
-      "turn_max": 24,
-      "score_min": -12000,
-      "rank": 3,
-      "round": "S4"
-    },
-    "w": {
-      "attack": 0.9,
-      "defense": 0.1,
-      "situation": 0.9
-    },
-    "rec": "mangan_aim",
-    "intent": "満貫狙い（ラス目前提の逆転）"
+    "id": "SIT_DEALER_RENCHAN",
+    "category": "SITUATION",
+    "priority": 75,
+    "confidence": 0.75,
+    "cond": {"dealer": true, "han_min": 3},
+    "w": {"attack": 0.8, "defense": 0.2, "situation": 0.8},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "MAINTAIN_HAN_ABOVE_3",
+    "intent": "親3翻以上→連荘狙い。高打点和了が次局への布石。多少速度が落ちても打点維持",
+    "reference": "天鳳統計「親の和了打点と連荘率」"
   },
   {
-    "id": "SIT-SCORE-002",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "score_min": 4000,
-      "rank": 1,
-      "riichi_min": 1,
-      "honba_min": 3
-    },
-    "w": {
-      "attack": 0.2,
-      "defense": 0.8,
-      "situation": 1.0
-    },
-    "rec": "strategic_deal_in",
-    "intent": "戦略的放銃（トップ本場リセット）"
+    "id": "SIT_EVERYONE_RIICHI",
+    "category": "DEFENSE",
+    "priority": 99,
+    "confidence": 0.98,
+    "cond": {"riichi_min": 3},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 1.0},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "ABSOLUTE_SAFETY_MECHANICAL",
+    "intent": "3人リーチ→手牌無視の機械的安全牌切り(現物>壁>スジ)。いかなる良形でも即オリ",
+    "reference": "鳳凰位プレイヤー解説「3人リーチの最適解」"
+  },
+
+  {"_section": "=== 振聴関連ルール (FURITEN) ==="},
+
+  {
+    "id": "FURITEN_AVOID_FULL",
+    "category": "ATTACK",
+    "priority": 85,
+    "confidence": 0.90,
+    "cond": {"shanten_max": 0, "furiten_type": "TypeA", "furiten_full": true},
+    "w": {"attack": 0.3, "defense": 0.5, "situation": 0.6},
+    "phase1_tag": "FURITEN_RESHAPE",
+    "phase2_filter": "AVOID_FULL_FURITEN_TENPAI",
+    "intent": "全振聴テンパイ回避。待ち牌が全て自分の捨て牌にあるためロン不可。テンパイを崩して手替わりを狙うか、ツモ和了のみで押すかを巡目で判定",
+    "reference": "何切る問題集「振聴テンパイの判断基準」"
   },
   {
-    "id": "SIT-SCORE-003",
-    "cond": {
-      "turn_min": 6,
-      "turn_max": 24,
-      "score_min": -3000,
-      "rank": 2,
-      "dealer": true
-    },
-    "w": {
-      "attack": 0.9,
-      "defense": 0.1,
-      "situation": 0.8
-    },
-    "rec": "push_for_renchan",
-    "intent": "連荘狙い攻め閾値低下"
+    "id": "FURITEN_PARTIAL_PUSH",
+    "category": "ATTACK",
+    "priority": 70,
+    "confidence": 0.80,
+    "cond": {"shanten_max": 0, "furiten_type": "TypeA", "furiten_full": false},
+    "w": {"attack": 0.6, "defense": 0.3, "situation": 0.5},
+    "phase1_tag": "BALANCED_PUSH",
+    "phase2_filter": "ACCEPT_PARTIAL_FURITEN",
+    "intent": "部分振聴テンパイ。一部の待ちでロン可能。受入が狭まることを考慮しつつ、残り安全待ちの枚数で押し引き判断",
+    "reference": "天鳳位の振聴判断「部分振聴はイーシャンテン押しに準じる」"
   },
   {
-    "id": "SIT-SCORE-004",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "score_max": 25000,
-      "riichi_min": 1
-    },
-    "w": {
-      "attack": 0.0,
-      "defense": 1.0,
-      "situation": 1.0
-    },
-    "rec": "immediate_ori",
-    "intent": "箱テン回避即オリ"
+    "id": "FURITEN_SAFE_DISCARD",
+    "category": "DEFENSE",
+    "priority": 88,
+    "confidence": 0.85,
+    "cond": {"riichi_min": 1, "has_furiten_safe": true},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 0.7},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "PRIORITIZE_FURITEN_SAFE",
+    "intent": "振聴安全牌（自分の捨て牌にある牌を手内に保持）を優先切り。リーチ者への現物と同格の安全度",
+    "reference": "ベタオリの教科書「振聴安全牌の活用」"
+  },
+
+  {"_section": "=== 終局管理ルール (ENDGAME) ==="},
+
+  {
+    "id": "ENDGAME_TOP_DEFEND",
+    "category": "SITUATION",
+    "priority": 92,
+    "confidence": 0.90,
+    "cond": {"is_endgame": true, "rank": 1, "score_diff_min": 4000},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 1.0},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "ENDGAME_TOP_SAFETY",
+    "intent": "オーラストップ目。放銃による順位下降リスクが和了の追加利益を上回る。現物切りで安全に逃げ切り",
+    "reference": "順位点とラス回避「トップ目のオーラス戦略」"
   },
   {
-    "id": "SIT-SCORE-005",
-    "cond": {
-      "turn_min": 1,
-      "turn_max": 24,
-      "honba_min": 5,
-      "rank": 4,
-      "shanten_max": 1,
-      "riichi_min": 0
-    },
-    "w": {
-      "attack": 1.0,
-      "defense": 0.0,
-      "situation": 0.9
-    },
-    "rec": "zen_tsuppa",
-    "intent": "本場5以上のラス目全押し"
+    "id": "ENDGAME_LAST_PUSH",
+    "category": "SITUATION",
+    "priority": 90,
+    "confidence": 0.85,
+    "cond": {"is_endgame": true, "rank": 4, "shanten_max": 1},
+    "w": {"attack": 0.9, "defense": 0.1, "situation": 1.0},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "ENDGAME_LAST_REVERSE",
+    "intent": "オーラスラス目テンパイ圏。必要打点（逆転翻数）に満たない牌姿なら手替わり、到達可能なら迷わず押し",
+    "reference": "ラス回避の基本「最終局の逆転条件」"
+  },
+  {
+    "id": "ENDGAME_TENPAI_KEEP",
+    "category": "SITUATION",
+    "priority": 78,
+    "confidence": 0.80,
+    "cond": {"is_endgame": true, "turn_min": 14, "shanten_max": 0},
+    "w": {"attack": 0.5, "defense": 0.5, "situation": 0.8},
+    "phase1_tag": "BALANCED_PUSH",
+    "phase2_filter": "MAINTAIN_TENPAI_FOR_FEE",
+    "intent": "終盤テンパイ維持。流局時の聴牌料(+1000〜4500点)が順位変動に直結する場面。安全牌切りでテンパイ維持",
+    "reference": "聴牌料の戦略的価値「流局圏内の判断」"
+  },
+  {
+    "id": "ENDGAME_REQUIRED_HAN",
+    "category": "SITUATION",
+    "priority": 82,
+    "confidence": 0.80,
+    "cond": {"is_endgame": true, "rank_min": 2},
+    "w": {"attack": 0.7, "defense": 0.3, "situation": 0.9},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "TARGET_REQUIRED_HAN",
+    "intent": "必要打点到達が目標。逆転に必要な翻数を逆算し、それ以下の安手を拒否。満貫ブロック維持が最優先",
+    "reference": "順位点計算「何翻あれば逆転できるか」"
+  },
+
+  {"_section": "=== 受入精密化ルール (ACCEPT) ==="},
+
+  {
+    "id": "ACCEPT_QUALITY_OVER_COUNT",
+    "category": "ATTACK",
+    "priority": 68,
+    "confidence": 0.78,
+    "cond": {"turn_min": 1, "turn_max": 8, "shanten_min": 2},
+    "w": {"attack": 0.7, "defense": 0.2, "situation": 0.4},
+    "phase1_tag": "BALANCED_SHAPE",
+    "phase2_filter": "PREFER_RYANMEN_QUALITY",
+    "intent": "序盤は受入枚数より受入品質（両面率）を重視。嵌張3つ(12枚)より両面2つ(16枚)＋伸び。4連形は絶対崩さない",
+    "reference": "ウザク式受入「良形と愚形の期待値差」"
+  },
+  {
+    "id": "ACCEPT_EXHAUSTION_CHECK",
+    "category": "ATTACK",
+    "priority": 72,
+    "confidence": 0.82,
+    "cond": {"turn_min": 6},
+    "w": {"attack": 0.5, "defense": 0.4, "situation": 0.6},
+    "phase1_tag": "BALANCED_PUSH",
+    "phase2_filter": "CHECK_TILE_EXHAUSTION",
+    "intent": "中盤以降は場見え枚数で受入を補正。名目8枚の両面でも場見え3枚なら実質5枚。切る前にカウント必須",
+    "reference": "牌効率の応用「場の枚数を使った受入補正」"
+  },
+  {
+    "id": "ACCEPT_GROWTH_PRIORITY",
+    "category": "ATTACK",
+    "priority": 66,
+    "confidence": 0.75,
+    "cond": {"turn_min": 1, "turn_max": 10, "shanten_min": 2},
+    "w": {"attack": 0.7, "defense": 0.2, "situation": 0.4},
+    "phase1_tag": "BALANCED_SHAPE",
+    "phase2_filter": "PREFER_GROWTH_SHAPE",
+    "intent": "2段目受入の伸びを重視。向聴数が深い段階では、1段目受入だけでなく「次のツモで更に受入が増える」形を優先",
+    "reference": "手牌效率の理論「伸びのある形」"
+  },
+
+  {"_section": "=== パラダイム連動ルール (PARADIGM) ==="},
+
+  {
+    "id": "PAR_SPEED_RYANMEN_PROTECT",
+    "category": "ATTACK",
+    "priority": 75,
+    "confidence": 0.85,
+    "cond": {"paradigm": "PAR_SPEED", "ryanmen_min": 2},
+    "w": {"attack": 0.8, "defense": 0.1, "situation": 0.4},
+    "phase1_tag": "BALANCED_SHAPE",
+    "phase2_filter": "PROTECT_RYANMEN_PAIR",
+    "intent": "速度軸活性化中：両面2つ以上を絶対に崩さない。孤立牌処理→嵌張処理の順で受入を保護",
+    "reference": "速度優先の基本「受入最大化の打牌順序」"
+  },
+  {
+    "id": "PAR_VALUE_MANGAN_BLOCK",
+    "category": "ATTACK",
+    "priority": 80,
+    "confidence": 0.85,
+    "cond": {"paradigm": "PAR_VALUE", "potential_han_min": 4},
+    "w": {"attack": 0.7, "defense": 0.2, "situation": 0.6},
+    "phase1_tag": "VALUE_PUSH",
+    "phase2_filter": "MAINTAIN_MANGAN_BLOCK",
+    "intent": "打点軸活性化中：満貫ブロック（役牌対子+ドラ等）を崩さない。1翻減は収支に大きく影響",
+    "reference": "打点構築「2翻と3翻の期待値の崖」"
+  },
+  {
+    "id": "PAR_DEF_GENBUTSU_FIRST",
+    "category": "DEFENSE",
+    "priority": 90,
+    "confidence": 0.92,
+    "cond": {"paradigm": "PAR_DEF", "riichi_min": 1},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 0.8},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "GENBUTSU_PRIORITY_ORDER",
+    "intent": "防御軸活性化中：現物→壁スジ→スジ→その他の厳密な安全度順で切る。迷ったら現物",
+    "reference": "ベタオリの基本「安全牌の優先順位」"
+  },
+  {
+    "id": "PAR_POS_TOP_SMALL_AGARI",
+    "category": "SITUATION",
+    "priority": 76,
+    "confidence": 0.80,
+    "cond": {"paradigm": "PAR_POS", "rank": 1, "score_diff_min": 4000},
+    "w": {"attack": 0.2, "defense": 0.7, "situation": 0.9},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_RISKY_AGARI",
+    "intent": "順位圧力軸（トップ目）：小和了は順位変動に寄与しない場合拒否。安全に逃げ切る判断",
+    "reference": "順位戦「トップ目のリスク管理」"
+  },
+  {
+    "id": "PAR_READ_SUJI_TRAP_ALERT",
+    "category": "DEFENSE",
+    "priority": 83,
+    "confidence": 0.85,
+    "cond": {"paradigm": "PAR_READ", "has_override_flags": true},
+    "w": {"attack": 0.2, "defense": 0.8, "situation": 0.7},
+    "phase1_tag": "CAUTIOUS_ADVANCE",
+    "phase2_filter": "CHECK_READING_OVERRIDES",
+    "intent": "読み軸活性化中：読みエンジンの警告フラグを最優先で参照。スジ信頼度低下・染め手検知時は安全度を再評価",
+    "reference": "読みの活用「エンジン警告に従う場面」"
+  },
+
+  {"_section": "=== 防御高度化ルール (DEFENSE_ADV) ==="},
+
+  {
+    "id": "DEF_ONE_CHANCE_ILLUSION",
+    "category": "DEFENSE",
+    "priority": 80,
+    "confidence": 0.85,
+    "cond": {"riichi_min": 1, "candidate_is_one_chance": true, "candidate_is_not_genbutsu": true},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 0.7},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_LONE_ONE_CHANCE",
+    "intent": "ワンチャンスの過信禁止。壁（ノーチャンス）の安全度とワンチャンスは大差。ベタオリでワンチャンスに頼らない",
+    "reference": "壁理論「ノーチャンス vs ワンチャンスの放銃率差」"
+  },
+  {
+    "id": "DEF_AIDAYONKEN_TRAP",
+    "category": "DEFENSE",
+    "priority": 86,
+    "confidence": 0.88,
+    "cond": {"riichi_min": 1, "candidate_is_aidayonken": true},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 0.8},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_AIDAYONKEN",
+    "intent": "間四軒の罠回避。2つの裏スジが重なるポイントは無スジクラスの致死率。AIの警戒度最大",
+    "reference": "間四軒「2つの裏スジの複合シグナル」"
+  },
+  {
+    "id": "DEF_ANKO_SUJI_OVERRIDE",
+    "category": "DEFENSE",
+    "priority": 87,
+    "confidence": 0.90,
+    "cond": {"riichi_min": 1, "candidate_is_anko_suji": true},
+    "w": {"attack": 0.0, "defense": 1.0, "situation": 0.8},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_ANKO_SUJI",
+    "intent": "暗刻スジ否定。自分がスジ元を暗刻で保有→他家の待ちがシャンポン・単騎に固定され放銃率が無スジ以上に上昇",
+    "reference": "暗刻スジ「自分しか知らない情報が牌を危険に変える」"
+  },
+  {
+    "id": "DEF_RIICHI_URA_SUJI",
+    "category": "DEFENSE",
+    "priority": 84,
+    "confidence": 0.85,
+    "cond": {"riichi_min": 1, "candidate_is_riichi_ura_suji": true},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 0.7},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_RIICHI_URA_SUJI",
+    "intent": "リーチ宣言牌の裏スジ回避。宣言牌周辺の裏スジは完全な無スジと同格の致死性。またぎスジより危険",
+    "reference": "リーチ宣言牌読み「裏スジ vs またぎスジの危険度差」"
+  },
+  {
+    "id": "DEF_EARLY_5_CUT_19_DANGER",
+    "category": "DEFENSE",
+    "priority": 82,
+    "confidence": 0.83,
+    "cond": {"riichi_min": 1, "candidate_suit_5_in_early_pond": true, "candidate_is_19": true},
+    "w": {"attack": 0.1, "defense": 0.9, "situation": 0.7},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "REJECT_19_AFTER_EARLY_5",
+    "intent": "序盤5切り時の1・9牌危険回避。リャンカン外しの可能性があり端牌の安全前提が崩壊",
+    "reference": "5切り読み「1・3・5外しによる1・9の危険度上昇」"
+  },
+
+  {"_section": "=== 読み連動ルール (READ_LINK) ==="},
+
+  {
+    "id": "READ_HONITSU_SUIT_AVOID",
+    "category": "DEFENSE",
+    "priority": 79,
+    "confidence": 0.80,
+    "cond": {"reading_flag": "HONITSU_SUIT"},
+    "w": {"attack": 0.2, "defense": 0.8, "situation": 0.6},
+    "phase1_tag": "CAUTIOUS_ADVANCE",
+    "phase2_filter": "AVOID_HONITSU_SUIT_TILES",
+    "intent": "染め手疑い読み連動。他家の副露パターンから混一色が疑われるスートの牌を回避",
+    "reference": "副露読み「染め手パターンの識別」"
+  },
+  {
+    "id": "READ_LATE_TENPAI_CAUTION",
+    "category": "DEFENSE",
+    "priority": 77,
+    "confidence": 0.78,
+    "cond": {"turn_min": 12, "reading_flag": "READ_LATE_TENPAI"},
+    "w": {"attack": 0.3, "defense": 0.7, "situation": 0.6},
+    "phase1_tag": "CAUTIOUS_ADVANCE",
+    "phase2_filter": "LATE_TENPAI_SAFETY_CHECK",
+    "intent": "終盤ダマテン気配検知連動。ノーリーチでも危険牌の切り出しを控える",
+    "reference": "ダマテン読み「終盤の字牌・端牌処理パターン」"
+  },
+  {
+    "id": "READ_SUJI_CONFIDENCE_DOWN",
+    "category": "DEFENSE",
+    "priority": 81,
+    "confidence": 0.83,
+    "cond": {"reading_flag": "SUJI_CONFIDENCE_SCALE"},
+    "w": {"attack": 0.2, "defense": 0.8, "situation": 0.7},
+    "phase1_tag": "DEFENSIVE_FOLD",
+    "phase2_filter": "DOWNGRADE_SUJI_SAFETY",
+    "intent": "スジ信頼度低下検知連動。暗刻保有や5切り等によりスジの安全度が通常より低い場面で警戒強化",
+    "reference": "スジ理論「スジが信用できない場面」"
+  },
+  {
+    "id": "READ_WALL_COLLAPSE_ALERT",
+    "category": "DEFENSE",
+    "priority": 74,
+    "confidence": 0.75,
+    "cond": {"reading_flag": "WALL_COLLAPSE"},
+    "w": {"attack": 0.3, "defense": 0.7, "situation": 0.5},
+    "phase1_tag": "CAUTIOUS_ADVANCE",
+    "phase2_filter": "REASSESS_WALL_SAFETY",
+    "intent": "壁崩壊検知連動。壁牌の隣接が切られた直後、壁に基づく安全度を再評価",
+    "reference": "壁理論「壁が崩れた時の安全度変化」"
   }
 ]

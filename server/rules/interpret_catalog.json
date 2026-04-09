@@ -1,49 +1,272 @@
 [
   {
-    "id": "SPEC-READ-001",
+    "id": "INT_4RENKEI_CUT",
+    "category": "EFFICIENCY",
+    "priority": 85,
     "target": "any",
-    "danger_cond": [
-      "med",
-      "high"
-    ],
-    "intent": "スジ罠警戒",
-    "tpl": "{tile}切りの意図: リーチ後の中張切りに対する逆スジ（スジ罠）警戒"
+    "danger_cond": ["low", "med"],
+    "shape_trigger": "has_4_connected",
+    "intent": "両面2重維持・打牌自由度確保",
+    "tpl": "{tile}切り：4連形の外側を切り、2連の両面待ちを同時にキープ。受入8枚を維持しつつ手牌の進化余地を最大化する定石打",
+    "reference": "平澤元気「一番やさしい牌効率の教科書」4連形の項"
   },
   {
-    "id": "SPEC-READ-002",
+    "id": "INT_NAKA_FUKURE_KEEP",
+    "category": "EFFICIENCY",
+    "priority": 78,
     "target": "any",
-    "danger_cond": [
-      "low",
-      "med"
-    ],
-    "intent": "壁崩れ読み",
-    "tpl": "{tile}の推奨: 場に見えた壁崩れ周辺ターツの危険度上昇を先読み"
+    "danger_cond": ["low", "med"],
+    "shape_trigger": "has_nakabukure",
+    "intent": "カンチャン＋両面進化の複合価値",
+    "tpl": "{tile}切り：中膨れは受入4枚＋両面化の余地があります。この形状のポテンシャルを高く買い、孤立牌処理を選択",
+    "reference": "麻雀Station「形状の価値評価」"
   },
   {
-    "id": "SPEC-READ-003",
+    "id": "INT_RYANMEN_UP",
+    "category": "EFFICIENCY",
+    "priority": 72,
     "target": "any",
-    "danger_cond": [
-      "high"
-    ],
-    "intent": "フリテン誘導回避",
-    "tpl": "{tile}ツモ切り: 自身フリテン時の戦略的ツモ切り（放銃回避優先）"
+    "danger_cond": ["low"],
+    "intent": "受入枚数の最大化(4枚→8枚)",
+    "tpl": "{tile}切り：リャンカンを両面へ変化させ受入枚数を倍増。速度を最優先する効率重視の一手",
+    "reference": "麻雀Station「形状の価値評価」"
   },
   {
-    "id": "SPEC-READ-004",
+    "id": "INT_TERMINAL_DISPOSAL",
+    "category": "EFFICIENCY",
+    "priority": 65,
+    "target": "any",
+    "danger_cond": ["low"],
+    "turn_max": 6,
+    "intent": "中張連結による効率改善",
+    "tpl": "{tile}切り：序盤の定石。変化の乏しい端牌を処理し、中張牌同士を連結させて受入の裾野を広げる効率手",
+    "reference": "孤立牌の切り順理論「客風>端牌>役牌」"
+  },
+  {
+    "id": "INT_MANGAN_YAKUHAI",
+    "category": "VALUE",
+    "priority": 92,
+    "target": "any",
+    "danger_cond": ["low", "med"],
+    "han_min": 2,
+    "intent": "満貫ブロック形成・打点>牌効率",
+    "tpl": "{tile}切り：役牌対子を保持し満貫(8000点)への道筋を確保。カンチャン処理を後回しにする「打点>形状」の判断。満貫確定の価値が両面進化の価値を上回る",
+    "reference": "近代麻雀「満貫ブロックの重要性」、天鳳統計「2翻vs3翻のEV差」"
+  },
+  {
+    "id": "INT_DORA_COMPOUND",
+    "category": "VALUE",
+    "priority": 80,
+    "target": "any",
+    "danger_cond": ["low"],
+    "intent": "打点と速度の両立",
+    "tpl": "{tile}切り：ドラを含む複合形は打点1翻確定かつ受入も広い。この'美味しい形'を維持し非ドラ孤立牌を処理",
+    "reference": "天鳳統計「赤ドラの和了率・打点」"
+  },
+  {
+    "id": "INT_TANYAO_SHIFT",
+    "category": "VALUE",
+    "priority": 68,
     "target": "z",
-    "danger_cond": [
-      "high"
-    ],
-    "intent": "終盤単騎警戒",
-    "tpl": "終盤端牌・字牌の単騎待ちピンポイント警戒"
+    "danger_cond": ["low", "med"],
+    "intent": "門前タンヤオによる速度・防御向上",
+    "tpl": "{tile}切り：役牌対子を切ってタンヤオ・ピンフの形へ移行。鳴かれにくく受入も広い安定した和了ルートを選択",
+    "reference": "プロ戦術「タンヤオピンフの速度優位性」"
   },
   {
-    "id": "SPEC-READ-005",
-    "target": "safe",
-    "danger_cond": [
-      "low"
-    ],
-    "intent": "見逃し戦略",
-    "tpl": "順位不変時の見逃し・放銃リスク回避の判断"
+    "id": "INT_RIICHI_GENBUTSU",
+    "category": "DEFENSE",
+    "priority": 98,
+    "target": "any",
+    "danger_cond": ["high"],
+    "requires_genbutsu": true,
+    "intent": "絶対安全牌による完全オリ",
+    "tpl": "{tile}切り：他家リーチに対し100%安全な現物を切り、和了の可能性を捨ててでも放銃リスクを0にする防御判断",
+    "reference": "麻雀のオリ理論「現物の定義と安全度」"
+  },
+  {
+    "id": "INT_KABE_CUT",
+    "category": "DEFENSE",
+    "priority": 88,
+    "target": "any",
+    "danger_cond": ["med", "high"],
+    "intent": "壁完成牌によるロン不可回避",
+    "tpl": "{tile}切り：場に3枚見えの牌はロン和了される可能性が0。'壁'の性質を利用した実質的安全牌",
+    "reference": "麻雀アイテム「壁の理論」"
+  },
+  {
+    "id": "INT_SUJI_AVOID",
+    "category": "DEFENSE",
+    "priority": 90,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "スジ罠(リャンスジ)の回避",
+    "tpl": "{tile}切り：5切りリーチに対し2・8は'スジ罠'の危険がある。そのリスクを察知しより安全なルートを選択",
+    "reference": "近代麻雀「スジ罠の心理学」、鳳凰位牌譜「リーチ後の打牌パターン」"
+  },
+  {
+    "id": "INT_DEFENSIVE_SHIELD_KEEP",
+    "category": "DEFENSE",
+    "priority": 82,
+    "target": "any",
+    "danger_cond": ["med"],
+    "intent": "防御資源の温存・テンパイ止まり回避",
+    "tpl": "{tile}切りでテンパイ：手牌に現物を抱えたままやや危険度のある牌を切る選択。テンパイを取った上で現物を「盾」として残し次巡以降の押し引きに備える高等技術",
+    "reference": "天鳳鳳凰位牌譜「現物の抱え殺しとタイミング」"
+  },
+
+  {"_section": "=== 振聴回避パターン ==="},
+
+  {
+    "id": "INT_FURITEN_TENPAI_RESHAPE",
+    "category": "EFFICIENCY",
+    "priority": 88,
+    "target": "any",
+    "danger_cond": ["low", "med"],
+    "intent": "振聴テンパイの回避・手替わり",
+    "tpl": "{tile}切り：テンパイを崩して手替わりを狙った。待ち牌{furiten_tiles}が自分の捨て牌にあるため全振聴（ロン不可）。ツモのみ和了に固執するより、1つ戻して振聴でない待ちへ手替わりする判断",
+    "reference": "何切る問題集「振聴テンパイの最適解」"
+  },
+  {
+    "id": "INT_FURITEN_SAFE_PRIORITY",
+    "category": "DEFENSE",
+    "priority": 85,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "振聴安全牌の優先切り",
+    "tpl": "{tile}切り：自分の捨て牌にある牌を手内から切り出した。自家にとっての「振聴安全牌」で、リーチ者に対して現物と同等の安全度を持つ",
+    "reference": "ベタオリの応用「振聴安全牌の活用」"
+  },
+
+  {"_section": "=== 終局判断パターン ==="},
+
+  {
+    "id": "INT_ENDGAME_TOP_FOLD",
+    "category": "DEFENSE",
+    "priority": 92,
+    "target": "any",
+    "danger_cond": ["low", "med", "high"],
+    "intent": "トップ目の守り切り判断",
+    "tpl": "{tile}切り：トップ目のオーラスで安全牌を選択。和了しても順位が上がらず、放銃すれば順位が下がる場面。和了より無事に終局させることが最大利益",
+    "reference": "順位戦略「トップ逃げ切りのオーラス戦術」"
+  },
+  {
+    "id": "INT_ENDGAME_REVERSE_PUSH",
+    "category": "EFFICIENCY",
+    "priority": 90,
+    "target": "any",
+    "danger_cond": ["low", "med"],
+    "intent": "ラス圏からの逆転狙い",
+    "tpl": "{tile}切り：ラス目のオーラスで打点を崩さず形を維持。逆転に必要な打点（{required_han}翻以上）到達のため、安手に甘えず高打点原型を保持した",
+    "reference": "ラス回避「必要翻数を逆算した打牌選択」"
+  },
+  {
+    "id": "INT_TENPAI_FEE_MAINTAIN",
+    "category": "DEFENSE",
+    "priority": 78,
+    "target": "any",
+    "danger_cond": ["low", "med"],
+    "intent": "聴牌料確保のためのテンパイ維持",
+    "tpl": "{tile}切り：流局間近でテンパイを維持する安全牌を選択。聴牌料（+1000〜4500点）が順位変動に直結する局面で、和了より確実な聴牌料を狙う合理的判断",
+    "reference": "聴牌料の戦略「流局圏の安全テンパイ維持」"
+  },
+
+  {"_section": "=== パラダイム連動パターン ==="},
+
+  {
+    "id": "INT_PAR_SPEED_CHOICE",
+    "category": "EFFICIENCY",
+    "priority": 75,
+    "target": "any",
+    "danger_cond": ["low"],
+    "intent": "速度軸での受入最大化選択",
+    "tpl": "{tile}切り：速度優先。両面待ちの受入を最大化するため、この牌を切ることで受入枚数を最大に保った。打点よりも早い聴牌を優先した判断",
+    "reference": "牌効率の基本「受入枚数と和了率の相関」"
+  },
+  {
+    "id": "INT_PAR_VALUE_CHOICE",
+    "category": "EFFICIENCY",
+    "priority": 80,
+    "target": "any",
+    "danger_cond": ["low", "med"],
+    "intent": "打点軸での翻数維持選択",
+    "tpl": "{tile}切り：打点優先。満貫ブロック（役牌対子・ドラ等）を崩さず形を犠牲にしてでも翻数を維持した。1翻の差が収支を大きく分ける場面",
+    "reference": "打点構築「満貫ブロックの保持判断」"
+  },
+  {
+    "id": "INT_PAR_DEF_CHOICE",
+    "category": "DEFENSE",
+    "priority": 90,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "防御軸での安全牌選択",
+    "tpl": "{tile}切り：防御優先。現物を最優先で切り出し。手牌進行より放銃回避を優先した。現物>壁スジ>スジのベタオリ安全度順に忠実な選択",
+    "reference": "ベタオリの教科書「安全牌の厳密な優先順位」"
+  },
+
+  {"_section": "=== 高度防御パターン ==="},
+
+  {
+    "id": "INT_ONE_CHANCE_REJECT",
+    "category": "DEFENSE",
+    "priority": 83,
+    "target": "any",
+    "danger_cond": ["med", "high"],
+    "intent": "ワンチャンスの過信回避",
+    "tpl": "{tile}切り：壁（ノーチャンス）ではなくワンチャンスの牌を避けた。3枚見えのワンチャンスは2倍以上危険で、ベタオリで頼る牌ではない。単一の安全根拠より複合安全条件を優先",
+    "reference": "壁理論「ワンチャンスの錯覚」"
+  },
+  {
+    "id": "INT_AIDAYONKEN_AVOID",
+    "category": "DEFENSE",
+    "priority": 87,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "間四軒回避",
+    "tpl": "{tile}切り：間四軒（2つの裏スジ複合）を回避した。例えば1と6が切られている時の2-5は、2つの裏スジが重なる致命的な罠。通常のスジの安全度が大幅に低下する",
+    "reference": "間四軒「複合裏スジの恐怖」"
+  },
+  {
+    "id": "INT_ANKO_SUJI_AVOID",
+    "category": "DEFENSE",
+    "priority": 88,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "暗刻スジ回避",
+    "tpl": "{tile}切り：スジだが安全でない。スジ元の牌を暗刻で保有しているため、他家の待ちがシャンポン・単騎に固定される。「スジだから安全」の前提が、自分しか知らない情報で崩壊した",
+    "reference": "暗刻スジ「自分の手持ち情報による安全度変化」"
+  },
+
+  {"_section": "=== 読み連動パターン ==="},
+
+  {
+    "id": "INT_HONITSU_READ",
+    "category": "DEFENSE",
+    "priority": 79,
+    "target": "any",
+    "danger_cond": ["med", "high"],
+    "intent": "染め手読みに基づく打牌",
+    "tpl": "{tile}切り：他家の副露パターン（同一スートの連続副露）から混一色を疑い、そのスートの牌を回避。染め手対策は早期の牌切りで対応すべき",
+    "reference": "副露読み「混一色パターンの早期検知」"
+  },
+  {
+    "id": "INT_URA_SUJI_RIICHI_READ",
+    "category": "DEFENSE",
+    "priority": 85,
+    "target": "any",
+    "danger_cond": ["high"],
+    "intent": "リーチ宣言牌の裏スジ回避",
+    "tpl": "{tile}切り：リーチ宣言牌の裏スジ（宣言牌からカンチャン→両面への変化）を回避。この裏スジは完全な無スジと同格の致死性を持つ。宣言牌が安全牌の場合はこの読みがリセットされる",
+    "reference": "リーチ読み「宣言牌と待ちの関係」"
+  },
+  {
+    "id": "INT_EARLY_5_CUT_READ",
+    "category": "DEFENSE",
+    "priority": 82,
+    "target": "any",
+    "danger_cond": ["med", "high"],
+    "intent": "序盤5切りからの1・9牌危険察知",
+    "tpl": "{tile}切り：他家が序盤に同色の5を切っている。1-3-5や5-7-9のリャンカン外しの可能性があり、端牌が安全という前提が崩壊。端牌でも同色5切りがある場面では慎重に",
+    "reference": "序盤打牌読み「5切りと端牌の安全度」"
   }
 ]

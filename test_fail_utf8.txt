@@ -1,0 +1,121 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\horie\majang
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.1.0, timeout-2.4.0, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 70 items / 69 deselected / 1 selected
+
+tests\test_mahjong_logic.py F                                            [100%]
+
+================================== FAILURES ===================================
+_________________ TestMortalInterpreter.test_output_structure _________________
+
+self = <server.engines.mortal_interpreter.MortalInterpreter object at 0x0000016D7B18C440>
+rule = {'category': 'EFFICIENCY', 'danger_cond': ['low', 'med'], 'id': 'INT_ENDGAME_REVERSE_PUSH', 'intent': 'ラス圏からの逆転狙い', ...}
+tile = '7z', prob = 0.2
+ctx = {'current_han': 0, 'danger': 'low', 'has_4_connected': False, 'has_nakabukure': False, ...}
+
+    def _render_template(self, rule: Dict, tile: str, prob: float, ctx: Dict) -> str:
+        """テンプレートに変数を埋め込んで解説文を生成"""
+        tpl = rule.get("tpl", "{tile}は戦術的選択")
+    
+        # テンプレート変数の辞書
+        variables = {
+            "tile": tile,
+            "prob": f"{prob*100:.1f}%",
+            "turn": str(ctx.get("turn", "?")),
+            "han": str(ctx.get("current_han", "?")),
+            "potential_han": str(ctx.get("potential_han", "?")),
+            "riichi_count": str(ctx.get("riichi", 0)),
+        }
+    
+        try:
+>           return tpl.format(**variables)
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'required_han'
+
+server\engines\mortal_interpreter.py:195: KeyError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_mahjong_logic.TestMortalInterpreter testMethod=test_output_structure>
+
+    def test_output_structure(self):
+        ctx = {
+            "turn": 6, "riichi": 0, "danger": "low",
+            "current_han": 0, "potential_han": 0,
+            "is_genbutsu": False, "has_yakuhai_pair": False,
+            "has_4_connected": False, "has_nakabukure": False,
+        }
+>       result = self.interp.interpret("7z", 0.2, ctx)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_mahjong_logic.py:359: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <server.engines.mortal_interpreter.MortalInterpreter object at 0x0000016D7B18C440>
+ai_tile = '7z', prob = 0.2
+context = {'current_han': 0, 'danger': 'low', 'has_4_connected': False, 'has_nakabukure': False, ...}
+
+    def interpret(self, ai_tile: str, prob: float, context: Dict) -> InterpretResult:
+        """AI推奨手と盤面から意図を逆推論"""
+    
+        # 全パターンマッチング（スコア付き）
+        scored_matches = self._score_all_patterns(ai_tile, prob, context)
+    
+        # スコア降順でソート
+        scored_matches.sort(key=lambda x: x[1], reverse=True)
+    
+        if not scored_matches:
+            return InterpretResult(
+                tile=ai_tile,
+                text=f"{ai_tile}切り：標準的な牌効率に基づく選択",
+                confidence="medium",
+                confidence_score=0.4,
+                intents=["牌効率最適化"],
+                matched_rules=[],
+                category="EFFICIENCY",
+                han_context={}
+            )
+    
+        # 最高スコアのパターンを採用
+        best_rule, best_score = scored_matches[0]
+    
+        # 解説文の生成
+>       text = self._render_template(best_rule, ai_tile, prob, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+server\engines\mortal_interpreter.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <server.engines.mortal_interpreter.MortalInterpreter object at 0x0000016D7B18C440>
+rule = {'category': 'EFFICIENCY', 'danger_cond': ['low', 'med'], 'id': 'INT_ENDGAME_REVERSE_PUSH', 'intent': 'ラス圏からの逆転狙い', ...}
+tile = '7z', prob = 0.2
+ctx = {'current_han': 0, 'danger': 'low', 'has_4_connected': False, 'has_nakabukure': False, ...}
+
+    def _render_template(self, rule: Dict, tile: str, prob: float, ctx: Dict) -> str:
+        """テンプレートに変数を埋め込んで解説文を生成"""
+        tpl = rule.get("tpl", "{tile}は戦術的選択")
+    
+        # テンプレート変数の辞書
+        variables = {
+            "tile": tile,
+            "prob": f"{prob*100:.1f}%",
+            "turn": str(ctx.get("turn", "?")),
+            "han": str(ctx.get("current_han", "?")),
+            "potential_han": str(ctx.get("potential_han", "?")),
+            "riichi_count": str(ctx.get("riichi", 0)),
+        }
+    
+        try:
+            return tpl.format(**variables)
+        except (KeyError, IndexError):
+            # テンプレート変数不足時はフォールバック
+>           return tpl.format(tile=tile)
+                   ^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'required_han'
+
+server\engines\mortal_interpreter.py:198: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_mahjong_logic.py::TestMortalInterpreter::test_output_structure
+====================== 1 failed, 69 deselected in 0.08s =======================

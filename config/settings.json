@@ -1,0 +1,25 @@
+{
+  "ai_model_path": "server/mortal/weights/mortal.pth",
+  "use_mortal": false,
+  "use_gpu": true,
+  "explanation_detail": "high",
+  "show_top3": true,
+  "show_metrics": true,
+  "voice_enabled": false,
+  "voice_engine": "pyttsx3",
+  "voice_rate": 180,
+  "voice_volume": 0.8,
+  "theme": "dark",
+  "tile_design": "traditional",
+  "show_red_dora": true,
+  "screen_capture_enabled": false,
+  "capture_roi": {
+    "top": 0,
+    "left": 0,
+    "width": 1920,
+    "height": 1080
+  },
+  "capture_fps": 12,
+  "auto_save_replay": true,
+  "replay_save_path": "replays/"
+}

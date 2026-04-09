@@ -1,0 +1,98 @@
+{
+  "_schema_version": "1.0",
+  "_description": "定量データのプレースホルダースキーマ。実際の鳳凰位牌譜解析データが入手でき次第、値を注入する。架空の数値は使用不可。",
+  "_data_source": "PLACEHOLDER — 実データ未注入",
+  "_required_fields_per_entry": [
+    "context_conditions",
+    "point_estimate",
+    "confidence_interval_95",
+    "sample_size",
+    "analysis_period",
+    "reliability_tier",
+    "limitations"
+  ],
+  "safety_tiers": {
+    "NOCHANCE":    {"label": "完全安全圏", "risk_range": "PLACEHOLDER", "ordinal": "ごく稀"},
+    "NAKA_SUJI":   {"label": "完全安全圏", "risk_range": "PLACEHOLDER", "ordinal": "ごく稀"},
+    "OUTER_SUJI":  {"label": "相対的安全圏", "risk_range": "PLACEHOLDER", "ordinal": "低い"},
+    "OMOTE_SUJI":  {"label": "相対的安全圏", "risk_range": "PLACEHOLDER", "ordinal": "低い"},
+    "ONE_CHANCE":  {"label": "警戒圏", "risk_range": "PLACEHOLDER", "ordinal": "やや注意"},
+    "KATA_SUJI":   {"label": "警戒圏", "risk_range": "PLACEHOLDER", "ordinal": "やや注意"},
+    "URA_SUJI":    {"label": "危険圏", "risk_range": "PLACEHOLDER", "ordinal": "高い"},
+    "MUSUJI":      {"label": "危険圏", "risk_range": "PLACEHOLDER", "ordinal": "高い"},
+    "ANKO_SUJI":   {"label": "危険圏", "risk_range": "PLACEHOLDER", "ordinal": "非常に高い"},
+    "AIDA_YONKEN": {"label": "致命圏", "risk_range": "PLACEHOLDER", "ordinal": "極めて高い"}
+  },
+  "contextual_statistics": [
+    {
+      "stat_id": "STAT_RIICHI_WAIT_RYANMEN",
+      "description": "リーチの待ち型分布（両面の割合）",
+      "context_conditions": {"action": "riichi_declared"},
+      "point_estimate": null,
+      "confidence_interval_95": null,
+      "sample_size": null,
+      "analysis_period": null,
+      "reliability_tier": "UNVERIFIED",
+      "limitations": ["実データ未注入。鳳凰位牌譜解析後に更新予定"]
+    },
+    {
+      "stat_id": "STAT_5CUT_19_RISK",
+      "description": "序盤5切り時の同色1・9牌の放銃率",
+      "context_conditions": {"opponent_early_discard": "5_same_suit", "turn_max": 6},
+      "point_estimate": null,
+      "confidence_interval_95": null,
+      "sample_size": null,
+      "analysis_period": null,
+      "reliability_tier": "UNVERIFIED",
+      "limitations": ["実データ未注入"]
+    },
+    {
+      "stat_id": "STAT_ANKO_SUJI_RISK",
+      "description": "暗刻スジの放銃率",
+      "context_conditions": {"player_holds_indicator_anko": true, "is_suji": true},
+      "point_estimate": null,
+      "confidence_interval_95": null,
+      "sample_size": null,
+      "analysis_period": null,
+      "reliability_tier": "UNVERIFIED",
+      "limitations": ["実データ未注入"]
+    },
+    {
+      "stat_id": "STAT_BETAORI_PRIORITY",
+      "description": "ベタオリ時の安全牌選択分布（鳳凰位）",
+      "context_conditions": {"action": "fold_or_defend", "riichi_min": 1},
+      "point_estimate": null,
+      "confidence_interval_95": null,
+      "sample_size": null,
+      "analysis_period": null,
+      "reliability_tier": "UNVERIFIED",
+      "limitations": ["実データ未注入"]
+    },
+    {
+      "stat_id": "STAT_SPEED_MID_CHOICE",
+      "description": "中盤速度優先条件下での打牌選択一致率",
+      "context_conditions": {"turn_range": [6, 12], "shanten": 2, "riichi": 0},
+      "point_estimate": null,
+      "confidence_interval_95": null,
+      "sample_size": null,
+      "analysis_period": null,
+      "reliability_tier": "UNVERIFIED",
+      "limitations": ["実データ未注入"]
+    }
+  ],
+  "presentation_rules": {
+    "ordinal_scale": {
+      "description": "定量値を序数スケールに変換し、実戦での記憶定着を支援",
+      "ranges": {
+        "≤0.10": "ごく稀",
+        "0.10-0.30": "低い",
+        "0.30-0.50": "約3-5割",
+        "0.50-0.70": "約半数〜7割",
+        "0.70-0.90": "約7-9割",
+        "≥0.90": "ほぼ確実"
+      }
+    },
+    "memory_anchor_template": "{context}では、鳳凰位の{ordinal}が同選択",
+    "disclaimer": "この数値は思考の代替ではなく、判断の検証材料です。定性フレームと矛盾する場合は定性を優先してください。"
+  }
+}
