@@ -761,6 +761,1012 @@
         "methodology": "late_dangerous_tsumogiri_tenpai",
         "status": "pending_validation"
       }
+    },
+    {
+      "id": "READ_MID_SUITE_CONVERGENCE_LAG",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "保留ラグが観測された場合、滞留スートの全牌をCRITICAL危険として扱え",
+        "checklists": [
+          "保留ラグが観測された場合、滞留スートの全牌をCRITICAL危険として扱え。",
+          "他スートのスジ理論は一時停止し、滞留スートの物理的枚数分布のみで防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_HONOR_PAIR_DUMP_VELOCITY",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "対子連続切りが観測された場合、狭待ち・高打点警戒を解除せよ",
+        "checklists": [
+          "対子連続切りが観測された場合、狭待ち・高打点警戒を解除せよ。",
+          "広範な両面・多面張を想定し、スジ網を広く張って防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_DRAGON_ADJACENT_HOLD_PATTERN",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "ドラ隣接牌保留が観測された場合、ドラ自体と隣接牌を高危険としてマークせよ",
+        "checklists": [
+          "ドラ隣接牌保留が観測された場合、ドラ自体と隣接牌を高危険としてマークせよ。",
+          "打点見込みを標準より1〜2翻上乗せして防御閾値を調整せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_EDGE_MID_INTERLEAVE_FREQUENCY",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "交互切りが観測された場合、スジ・両面警戒を解除せよ",
+        "checklists": [
+          "交互切りが観測された場合、スジ・両面警戒を解除せよ。",
+          "対子・単騎・嵌張待ちを最優先で警戒し、生牌の字牌・端牌を高危険として扱え。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SAFE_TILE_HOARDING_THRESHOLD",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "安全牌ホーディングが観測された場合、相手を「確定テンパイ」と断定せよ",
+        "checklists": [
+          "安全牌ホーディングが観測された場合、相手を「確定テンパイ」と断定せよ。",
+          "次に切られる牌を最高危険度として扱い、現物以外は絶対に切らない。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MID_BLOCK_SPLIT_DELAY",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "遅延切りが観測された場合、ブロック破壊後の残存形状を「確定待ち」として扱え",
+        "checklists": [
+          "遅延切りが観測された場合、ブロック破壊後の残存形状を「確定待ち」として扱え。",
+          "標準的なブロック読みをリセットし、残存牌の逆スジ・またぎを高危険としてマークせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_SUJI_GAP_DECLARATION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "隙間宣言が観測された場合、標準スジ読みを完全に停止せよ",
+        "checklists": [
+          "隙間宣言が観測された場合、標準スジ読みを完全に停止せよ。",
+          "隙間を埋める方向の牌（例：4m・7m）をCRITICAL危険として扱え。",
+          "両面警戒を解除し、狭待ち特化防御へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SUIT_ROTATION_VELOCITY",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "高速回転が観測された場合、点差・順位状況で判断軸を切替えよ",
+        "checklists": [
+          "高速回転が観測された場合、点差・順位状況で判断軸を切替えよ。",
+          "攻撃圏なら広範囲スジ警戒、防御圏なら全スート現物優先。",
+          "中間的な読みは通用しない。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_HONOR_MID_TRANSITION_SYNC",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "同期移行が観測された場合、鳴き成立前の読みを完全にリセットせよ",
+        "checklists": [
+          "同期移行が観測された場合、鳴き成立前の読みを完全にリセットせよ。",
+          "移行後に切り出される中張牌の逆方向・スジを高危険としてマークせよ。",
+          "戦術軸の切替点を防御基準にせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_TERMINAL_BALANCE_BREAK",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "バランス崩壊が観測された場合、偏った側の牌種を「不要領域」として無視せよ",
+        "checklists": [
+          "バランス崩壊が観測された場合、偏った側の牌種を「不要領域」として無視せよ。",
+          "残された側の牌・形状を最高警戒レベルで扱え。",
+          "意思決定完了後の形状変化に集中防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_SUIT_SUPPRESSION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "スート抑制が観測された場合、抑制スートを「核心軸」または「完全不要軸」として二択で扱え",
+        "checklists": [
+          "スート抑制が観測された場合、抑制スートを「核心軸」または「完全不要軸」として二択で扱え。",
+          "点差・他家状況で判断を分岐せよ。",
+          "中間的なスジ読みは排除せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_EDGE_CONCENTRATION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "端牌集中捨てが観測された場合、スジ・両面警戒を解除せよ",
+        "checklists": [
+          "端牌集中捨てが観測された場合、スジ・両面警戒を解除せよ。",
+          "生牌の字牌・端牌・中張孤立牌をCRITICAL危険として扱え。",
+          "対子系特化防御へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_MID_AVOIDANCE_PATTERN",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "中張回避が観測された場合、打点警戒を低下させ、広待ち警戒を最大化せよ",
+        "checklists": [
+          "中張回避が観測された場合、打点警戒を低下させ、広待ち警戒を最大化せよ。",
+          "スジ網を広く張り、放銃確率より和了確率を優先して防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_DRAGON_EXPOSURE_DELAY",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "ドラ遅延切りが観測された場合、ドラ周辺牌を高危険としてマークせよ",
+        "checklists": [
+          "ドラ遅延切りが観測された場合、ドラ周辺牌を高危険としてマークせよ。",
+          "打点見込みを標準より上乗せし、放銃損失許容閾値を厳格化せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_SUJI_CONTRADICTION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "スジ矛盾切りが観測された場合、標準スジ読みを完全に無効化せよ",
+        "checklists": [
+          "スジ矛盾切りが観測された場合、標準スジ読みを完全に無効化せよ。",
+          "矛盾方向の牌を高危険としてマークし、物理的枚数分布のみで防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_TENPAI_ACCELERATION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "高速打ちが観測された場合、相手を「確定テンパイ」と断定せよ",
+        "checklists": [
+          "高速打ちが観測された場合、相手を「確定テンパイ」と断定せよ。",
+          "次に切られる牌を最高危険度として扱い、現物以外は絶対に切らない。",
+          "思考完了後の形状変化に集中防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_SUIT_ROTATION_STOP",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "循環停止が観測された場合、停止スートを「不要領域」として無視せよ",
+        "checklists": [
+          "循環停止が観測された場合、停止スートを「不要領域」として無視せよ。",
+          "集中スートの牌をCRITICAL危険として扱え。",
+          "形状確定後の単一軸防御へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_HONOR_REINTRODUCTION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "字牌再導入が観測された場合、対子系警戒を再開せよ",
+        "checklists": [
+          "字牌再導入が観測された場合、対子系警戒を再開せよ。",
+          "生牌の字牌・端牌を高危険としてマークし、スジ理論の適用を停止せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_SAFE_TILE_EXCHANGE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "安全牌交換が観測された場合、交換されている牌を「安全領域」として無視せよ",
+        "checklists": [
+          "安全牌交換が観測された場合、交換されている牌を「安全領域」として無視せよ。",
+          "交換されていない牌をCRITICAL危険として扱え。",
+          "相互不戦均衡を認識し、第三者として防御を最優先せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_SHAPE_FREEZE_BREAK",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "フリーズ解除が観測された場合、解除直後の打牌を「確定待ち打牌」として扱え",
+        "checklists": [
+          "フリーズ解除が観測された場合、解除直後の打牌を「確定待ち打牌」として扱え。",
+          "次に切られる牌を最高危険度として扱い、現物以外は絶対に切らない。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_DELAY_MID_CUT",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "遅延宣言が観測された場合、遅延中に切られた牌の逆スジ・またぎを高危険としてマークせよ",
+        "checklists": [
+          "遅延宣言が観測された場合、遅延中に切られた牌の逆スジ・またぎを高危険としてマークせよ。",
+          "標準リーチ読みよりも警戒レベルを引き上げよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_SHAPE_DECLARATION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "宣言牌形状が観測された場合、形状に応じた待ちを逆推論せよ",
+        "checklists": [
+          "宣言牌形状が観測された場合、形状に応じた待ちを逆推論せよ。",
+          "両面搭子構成牌なら反対側、嵌張なら待ち牌、単騎なら宣言牌自体をCRITICAL危険としてマークせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_POST_RIICHI_SUJI_FLOW_REVERSAL",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "流路逆転が観測された場合、逆転方向の牌を高危険としてマークせよ",
+        "checklists": [
+          "流路逆転が観測された場合、逆転方向の牌を高危険としてマークせよ。",
+          "スジ理論を逆転適用し、流路が遮断されている側の牌を優先回避せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_DAMA_RIICHI_TRANSITION_TRIGGER",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "移行トリガーが観測された場合、トリガー牌を「構造転換点」として扱え",
+        "checklists": [
+          "移行トリガーが観測された場合、トリガー牌を「構造転換点」として扱え。",
+          "直後の待ちが極めて危険。",
+          "ダマ時代の読みをリセットし、リーチ後の形状を優先して防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_STICK_HOARDING_PRESSURE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "ホーディングが観測された場合、相手を「ダマ粘り」と認識せよ",
+        "checklists": [
+          "ホーディングが観測された場合、相手を「ダマ粘り」と認識せよ。",
+          "スジ理論を一時停止し、物理的枚数分布・他家の捨て牌傾向のみで危険度を評価せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_FURITEN_ESCAPE_PATTERN",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "回避パターンが観測された場合、回避トリガー牌を「待ち再確定点」として扱え",
+        "checklists": [
+          "回避パターンが観測された場合、回避トリガー牌を「待ち再確定点」として扱え。",
+          "直後の待ちが極めて危険。",
+          "フリテン前の読みをリセットし、回避後の形状を優先して防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_TILE_PROXIMITY_BIAS",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "近接宣言が観測された場合、近接方向の牌を高危険としてマークせよ",
+        "checklists": [
+          "近接宣言が観測された場合、近接方向の牌を高危険としてマークせよ。",
+          "近接牌が偽装の場合は反対側を警戒せよ。",
+          "近接パターンから待ちの偏在を逆推論せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_SUJI_CONTRADICTION_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "矛盾宣言が観測された場合、標準スジ読みを完全に停止せよ",
+        "checklists": [
+          "矛盾宣言が観測された場合、標準スジ読みを完全に停止せよ。",
+          "矛盾牌周辺の物理的枚数分布のみで危険度を評価せよ。",
+          "スジ理論の適用を放棄し、枚数ベースの客観評価へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_MELD_INTERFERENCE_RESET",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "干渉後リーチが観測された場合、干渉前の読みを完全にリセットせよ",
+        "checklists": [
+          "干渉後リーチが観測された場合、干渉前の読みを完全にリセットせよ。",
+          "干渉後の手牌再構築を考慮し、新しい形状を優先して防御せよ。",
+          "心理的圧力の転換を認識して警戒せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_DORA_EXPOSURE_OPTIMIZATION",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "ドラ露出が観測された場合、ドラ周辺牌を高危険としてマークせよ",
+        "checklists": [
+          "ドラ露出が観測された場合、ドラ周辺牌を高危険としてマークせよ。",
+          "ドラ露出が偽装の場合は反対側を警戒せよ。",
+          "ドラパターンから待ちの偏在を逆推論せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_ENDGAME_SAFE_EXHAUSTION_GAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "枯渇ゲームが観測された場合、個人の手牌価値だけでなく、他家への圧力分配を評価せよ",
+        "checklists": [
+          "枯渇ゲームが観測された場合、個人の手牌価値だけでなく、他家への圧力分配を評価せよ。",
+          "押す牌が他家の保留牌であれば、押し優先。",
+          "放銃リスクを他者への行動強制圧力として転換せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_LATE_TSUMOGIRI_DANGER_SPIKE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "危険ツモ切りが観測された場合、相手を「確定テンパイ」と断定せよ",
+        "checklists": [
+          "危険ツモ切りが観測された場合、相手を「確定テンパイ」と断定せよ。",
+          "ツモ切り牌自体は危険だが、残された手牌が極めて危険。",
+          "和了への執着が強いと認識し、防御を最優先せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_WALL_BREAK_IMMEDIATE_LOCK",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "即時ロックが観測された場合、壁を崩した牌の残り1枚をCRITICAL危険として扱え",
+        "checklists": [
+          "即時ロックが観測された場合、壁を崩した牌の残り1枚をCRITICAL危険として扱え。",
+          "壁理論が逆転しており、通常なら安全な牌が高危険化。",
+          "防御閾値を最大へ引き上げよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_DOUBLE_RIICHI_CROSS_AVOIDANCE_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "交叉回避が観測された場合、交差候補をCRITICAL危険として絶対回避せよ",
+        "checklists": [
+          "交叉回避が観測された場合、交差候補をCRITICAL危険として絶対回避せよ。",
+          "交差候補がない場合でも、同スート全牌を高危険として扱い、他スート現物へ撤退せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_LATE_SHAPE_FREEZE_RELEASE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "フリーズ解除が観測された場合、解除直後の打牌を「確定待ち打牌」として扱え",
+        "checklists": [
+          "フリーズ解除が観測された場合、解除直後の打牌を「確定待ち打牌」として扱え。",
+          "次に切られる牌を最高危険度として扱い、現物以外は絶対に切らない。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_TERMINAL_HONOR_BALANCE_ENDGAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "バランス崩壊が観測された場合、偏った側の牌種を「不要領域」として無視せよ",
+        "checklists": [
+          "バランス崩壊が観測された場合、偏った側の牌種を「不要領域」として無視せよ。",
+          "残された側の牌・形状を最高警戒レベルで扱え。",
+          "意思決定完了後の形状変化に集中防御せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MID_BLOCK_SPLIT_ENDGAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "終盤分割が観測された場合、ブロック破壊後の残存形状を「確定待ち」として扱え",
+        "checklists": [
+          "終盤分割が観測された場合、ブロック破壊後の残存形状を「確定待ち」として扱え。",
+          "標準的なブロック読みをリセットし、残存牌の逆スジ・またぎを高危険としてマークせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SAFE_TILE_HOARDING_ENDGAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "終盤ホーディングが観測された場合、相手を「確定テンパイ」と断定せよ",
+        "checklists": [
+          "終盤ホーディングが観測された場合、相手を「確定テンパイ」と断定せよ。",
+          "次に切られる牌を最高危険度として扱い、現物以外は絶対に切らない。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_RIICHI_DELAY_ENDGAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "終盤遅延が観測された場合、遅延中に切られた牌の逆スジ・またぎを高危険としてマークせよ",
+        "checklists": [
+          "終盤遅延が観測された場合、遅延中に切られた牌の逆スジ・またぎを高危険としてマークせよ。",
+          "標準リーチ読みよりも警戒レベルを引き上げよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SUJI_ORDER_INVERSION_ENDGAME",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "終盤逆転が観測された場合、逆転された側の牌を高危険として再評価せよ",
+        "checklists": [
+          "終盤逆転が観測された場合、逆転された側の牌を高危険として再評価せよ。",
+          "標準スジ読みを反転適用し、逆方向の警戒軸へシフトせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MULTI_RIICHI_FLOW_ASYMMETRY_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "非対称流路が観測された場合、流路が遮断されている側の牌を優先回避せよ",
+        "checklists": [
+          "非対称流路が観測された場合、流路が遮断されている側の牌を優先回避せよ。",
+          "交差領域を一律CRITICALとせず、非対称性を逆利用して防御軸を調整せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_TRAP_ACTIVATION_INTERVAL_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "時間差罠が観測された場合、スジ/カベ理論の信頼度を一旦リセットせよ",
+        "checklists": [
+          "時間差罠が観測された場合、スジ/カベ理論の信頼度を一旦リセットせよ。",
+          "仕掛け牌周辺の物理的残り枚数分布のみで危険度を再計算。",
+          "罠決め打ちを避け、枚数ベースの客観評価へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_MELD_ARRANGEMENT_MISDIRECTION_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "配置操作が観測された場合、見せられたスジ/形状の「反対側」を高危険としてマークせよ",
+        "checklists": [
+          "配置操作が観測された場合、見せられたスジ/形状の「反対側」を高危険としてマークせよ。",
+          "鳴き順子に連動する標準読みを一旦保留し、配置操作の逆方向に警戒軸をシフトせよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SHAPE_FREEZING_MID_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "有効牌スルーが観測された場合、相手の手を「広汎な待ち」から「固定された特定待ち」へと読み変えよ",
+        "checklists": [
+          "有効牌スルーが観測された場合、相手の手を「広汎な待ち」から「固定された特定待ち」へと読み変えよ。",
+          "両面スジを信用してはいけない。",
+          "待ちは固定されていると仮定し、場況的に最も待ちそうな筋の牌を警戒せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_DAMA_STALKING_FLOW_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "ダマ粘りが観測された場合、スジ牌＝安全という常識を捨てよ",
+        "checklists": [
+          "ダマ粘りが観測された場合、スジ牌＝安全という常識を捨てよ。",
+          "相手がダマで切り続けている牌のスジ・またぎは、最も捕獲したがっている牌である確率が高い。",
+          "その牌は高危険として扱うか、他スートへ完全に撤退せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_CENTER_BLOCK_DUMP_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "中張全棄却が観測された場合、以前の両面待ち・順子手読みを完全にリセットせよ",
+        "checklists": [
+          "中張全棄却が観測された場合、以前の両面待ち・順子手読みを完全にリセットせよ。",
+          "対々手・字牌単騎を警戒し、生牌の字牌・場に出ていない端牌の危険度が跳ね上がる。",
+          "中盤でのこの動作は速度から打点・完全撤退の二極化を示す。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SHAPE_DESTRUCTION_TENPAI_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "形状破壊が観測された場合、崩された側の牌は相手が待ちたくない牌である可能性が高い",
+        "checklists": [
+          "形状破壊が観測された場合、崩された側の牌は相手が待ちたくない牌である可能性が高い。",
+          "逆に残された側の牌や関連する牌が極めて危険。",
+          "広い待ちを前提とした防御は通用しない。",
+          "一点突破の警戒へ移行せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_SAFE_TILE_CYCLE_COLOR_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "安全牌循環が観測された場合、循環していないスートの牌をCRITICAL危険として再評価せよ",
+        "checklists": [
+          "安全牌循環が観測された場合、循環していないスートの牌をCRITICAL危険として再評価せよ。",
+          "循環スート自体は比較的安全だが、非循環スートへの集中攻撃を警戒せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
+    },
+    {
+      "id": "READ_FURO_MID_TERMINAL_REINFORCEMENT_FORCE",
+      "priority": 70,
+      "intent": "鳳凰位統計分析・定性ヒューリスティック",
+      "reference": "本セッション抽出ルール 101-150",
+      "qualitative_logic": {
+        "principle": "端牌追加切りが観測された場合、和了までの残りターンを3巡以下と見積もり、防御を最優先せよ",
+        "checklists": [
+          "端牌追加切りが観測された場合、和了までの残りターンを3巡以下と見積もり、防御を最優先せよ。",
+          "現物がない場合でも、高危険牌を切ってでもオリる判断が合理的。",
+          "放銃期待損失＞和了期待収益と認識せよ。"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "鳳凰位牌譜(本セッション提供)",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "静的相関抽出"
+      }
     }
   ]
 }
