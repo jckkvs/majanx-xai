@@ -1,103 +1,156 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>majanx MVP UI</title>
-  <link rel="stylesheet" href="/static/css/base.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MajanX-XAI - 麻雀対戦</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="game-board">
-    <!-- 対局情報バー -->
-    <div class="game-info-bar">
-      <div class="round-info">
-        <span class="round">東1局</span>
-        <span class="honba">0本場</span>
-        <span class="kyotaku">0</span>
-      </div>
-      <div class="turn-indicator">
-        巡目: <span id="turn-count">1</span>
-      </div>
-      <div class="dora-indicator">
-        ドラ: <span id="dora-tile">🀫</span>
-      </div>
-      <div class="riichi-sticks">
-        供託: <span id="riichi-sticks">0</span>
-      </div>
-    </div>
-    
-    <!-- スコア表示 -->
-    <div class="score-display top-score" data-player="2">
-      <div class="score">25000</div>
-    </div>
-    <div class="score-display right-score" data-player="1">
-      <div class="score">25000</div>
-    </div>
-    <div class="score-display left-score" data-player="3">
-      <div class="score">25000</div>
-    </div>
-    <div class="score-display bottom-score" data-player="0">
-      <div class="player-name">自分</div>
-      <div class="score">25000</div>
-    </div>
-
-    <!-- 他家手牌（伏せ牌） -->
-    <div class="player-top">
-      <div class="opponent-hand" id="opponent-top-hand"></div>
-    </div>
-    <div class="player-right">
-      <div class="opponent-hand" id="opponent-right-hand"></div>
-    </div>
-    <div class="player-left">
-      <div class="opponent-hand" id="opponent-left-hand"></div>
-    </div>
-
-    <!-- 4方向の河 -->
-    <div class="discard-rivers">
-      <div class="river river-top" id="river-top" data-player="2"></div>
-      <div class="river river-right" id="river-right" data-player="1"></div>
-      <div class="river river-bottom" id="river-bottom" data-player="0"></div>
-      <div class="river river-left" id="river-left" data-player="3"></div>
-    </div>
-
-    <!-- AI双視点パネル -->
-    <div class="ai-panel" id="ai-panel" style="display: none;">
-      <h3>🤖 Cognitive Mirror</h3>
-      <div class="perspective-container">
-        <!-- 視点A -->
-        <div class="perspective-card" id="perspective-a">
-          <div class="ai-name">AI A (Speed)</div>
-          <div class="recommended-action">推奨: <span class="pai-badge">🀫</span></div>
-          <div class="principle">原則...</div>
-          <ul class="checklist"></ul>
+    <!-- ロード画面 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h1>MAJANX-XAI</h1>
+            <p>対戦相手を探しています...</p>
         </div>
-        <!-- 視点B -->
-        <div class="perspective-card" id="perspective-b">
-          <div class="ai-name">AI B (Rule)</div>
-          <div class="recommended-action">推奨: <span class="pai-badge">🀫</span></div>
-          <div class="principle">原則...</div>
-          <ul class="checklist"></ul>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="game-screen" class="game-screen hidden">
+        <!-- 上部情報バー -->
+        <div class="top-bar">
+            <div class="game-info">
+                <span class="round-indicator" id="round-display">東1局</span>
+                <span class="honba-indicator" id="honba-display">0本場</span>
+            </div>
+            <div class="score-display">
+                <div class="player-score" id="score-0">
+                    <span class="player-name">自分</span>
+                    <span class="score-value" id="score-val-0">25000</span>
+                </div>
+                <div class="player-score" id="score-1">
+                    <span class="player-name">下家</span>
+                    <span class="score-value" id="score-val-1">25000</span>
+                </div>
+                <div class="player-score" id="score-2">
+                    <span class="player-name">対面</span>
+                    <span class="score-value" id="score-val-2">25000</span>
+                </div>
+                <div class="player-score" id="score-3">
+                    <span class="player-name">上家</span>
+                    <span class="score-value" id="score-val-3">25000</span>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- ゲームボード -->
+        <div class="game-board">
+            <!-- 上家（左側） -->
+            <div class="player-area player-left" id="player-3">
+                <div class="player-info">
+                    <div class="avatar">
+                        <div class="avatar-placeholder">上</div>
+                    </div>
+                    <div class="wind-indicator" id="wind-3">西</div>
+                </div>
+                <div class="hand-display" id="hand-3">
+                    <!-- 牌はJSで動的生成 -->
+                </div>
+                <div class="tile-pool" id="pool-3"></div>
+            </div>
+
+            <!-- 対面（上部） -->
+            <div class="player-area player-top" id="player-2">
+                <div class="player-info">
+                    <div class="avatar">
+                        <div class="avatar-placeholder">対</div>
+                    </div>
+                    <div class="wind-indicator" id="wind-2">南</div>
+                </div>
+                <div class="hand-display" id="hand-2"></div>
+                <div class="tile-pool" id="pool-2"></div>
+            </div>
+
+            <!-- 下家（右側） -->
+            <div class="player-area player-right" id="player-1">
+                <div class="player-info">
+                    <div class="avatar">
+                        <div class="avatar-placeholder">下</div>
+                    </div>
+                    <div class="wind-indicator" id="wind-1">東</div>
+                </div>
+                <div class="hand-display" id="hand-1"></div>
+                <div class="tile-pool" id="pool-1"></div>
+            </div>
+
+            <!-- 中央エリア（河・ドラ表示） -->
+            <div class="center-area">
+                <div class="dora-indicator" id="dora-display">
+                    <span class="dora-label">ドラ</span>
+                    <div class="dora-tiles" id="dora-tiles"></div>
+                </div>
+                <div class="river-container">
+                    <div class="river-label">河</div>
+                    <div class="river" id="river">
+                        <!-- 捨て牌はJSで動的生成 -->
+                    </div>
+                </div>
+                <div class="game-message" id="game-message"></div>
+                <div class="action-buttons" id="action-buttons">
+                    <!-- アクションボタンはJSで動的生成 -->
+                </div>
+            </div>
+
+            <!-- 自分（下部） -->
+            <div class="player-area player-bottom active" id="player-0">
+                <div class="player-info">
+                    <div class="avatar">
+                        <div class="avatar-placeholder">自</div>
+                    </div>
+                    <div class="wind-indicator" id="wind-0">北</div>
+                </div>
+                <div class="hand-display interactive" id="hand-0">
+                    <!-- 自分の手牌はJSで動的生成（クリック可能） -->
+                </div>
+                <div class="tile-pool" id="pool-0"></div>
+            </div>
+        </div>
+
+        <!-- コントロールパネル -->
+        <div class="control-panel">
+            <button class="control-btn" id="btn-riichi" disabled>リーチ</button>
+            <button class="control-btn" id="btn-tsumo">ツモ</button>
+            <button class="control-btn" id="btn-ron" disabled>ロン</button>
+            <button class="control-btn" id="btn-flow">流局</button>
+            <button class="control-btn" id="btn-menu">メニュー</button>
+        </div>
     </div>
 
-    <!-- 自分手牌と操作 -->
-    <div class="self-hand-area">
-      <div class="self-hand" id="player-hand"></div>
-      
-      <div class="action-buttons">
-        <button id="btn-reach" onclick="window.declareRiichi()" disabled>リーチ</button>
-        <button id="btn-pon" onclick="window.callPon()" style="display:none">ポン</button>
-        <button id="btn-chi" onclick="window.callChi()" style="display:none">チー</button>
-        <button id="btn-kan" onclick="window.callKan()" style="display:none">カン</button>
-        <button id="btn-ron" onclick="window.callRon()" style="display:none">ロン/ツモ</button>
-        <button id="btn-pass" onclick="window.callPass()" style="display:none">パス</button>
-        <button id="btn-discard" onclick="window.doDiscard()" disabled>打牌</button>
-      </div>
+    <!-- 鳴き選択モーダル -->
+    <div id="meld-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>鳴きを選択</h2>
+            <div class="meld-options">
+                <button class="meld-btn" data-meld="none">なし</button>
+                <button class="meld-btn" data-meld="chi">チー</button>
+                <button class="meld-btn" data-meld="pon">ポン</button>
+                <button class="meld-btn" data-meld="kan">カン</button>
+                <button class="meld-btn" data-meld="ron">ロン</button>
+            </div>
+        </div>
     </div>
-    
-  </div>
 
-  <script src="/static/js/main.js"></script>
+    <!-- 和了表示モーダル -->
+    <div id="win-modal" class="modal hidden">
+        <div class="modal-content win-content">
+            <h1 class="win-title" id="win-title">和了!</h1>
+            <div class="win-details" id="win-details"></div>
+            <button class="close-btn" onclick="closeWinModal()">閉じる</button>
+        </div>
+    </div>
+
+    <script src="/static/js/game.js"></script>
 </body>
 </html>

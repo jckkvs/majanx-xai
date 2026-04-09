@@ -1,0 +1,5 @@
+patterns:
+  - id: kagi_cut
+    description: "引っ掛け（カギ）パターンの分析。安全牌と見せかけて筋を引掛けるケース"
+  - id: suji_trap
+    description: "スジ引っ掛けの分析"
