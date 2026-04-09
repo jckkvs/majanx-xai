@@ -9,7 +9,7 @@ from typing import List, Dict
 from server.action_decoder import decode_action
 
 class PhoenixInference:
-    def __init__(self, model_path: str = "server/mortal/weights/phoenix.pth", device: str = "auto"):
+    def __init__(self, model_path: str = "server/models/phoenix_jit.pt", device: str = "auto"):
         self.device = self._select_device(device)
         self.model = self._load_model(model_path)
 
