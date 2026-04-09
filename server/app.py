@@ -9,12 +9,37 @@ from fastapi.responses import HTMLResponse
 
 from server.ws_handler import ws_manager
 from server.game_loop import GameLoop
+from server.ai_adapters.mortal_adapter import MortalAdapter
+from server.ai_adapters.rulebase_adapter import RulebaseAdapter
+from server.ai_adapters.base import MJAIAction
+from server.recommendation_aggregator import RecommendationAggregator
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 game = GameLoop()
+
+mortal = MortalAdapter()
+phoenix = RulebaseAdapter()
+aggregator = RecommendationAggregator()
+
+async def request_ai_suggestion():
+    # 人間の打牌待ち時、AI2つの推奨を取得して統合する
+    if game.state != game.STATE.DISCARDING or game.turn_idx != 0:
+        return None
+        
+    legal_actions = []
+    # 実際には適正な合法手リストが必要だがモック化
+    for tile in game.players[0].hand:
+        legal_actions.append(MJAIAction("dahai", pai=tile))
+        
+    rec_speed = await mortal.request_action(legal_actions)
+    rec_phoenix = await phoenix.request_action(legal_actions)
+    
+    if rec_speed and rec_phoenix:
+        return aggregator.aggregate([rec_speed, rec_phoenix], [a.params["pai"] for a in legal_actions])
+    return None
 
 @app.get("/")
 async def get_index():
@@ -32,18 +57,23 @@ async def websocket_ui_endpoint(ws: WebSocket):
             msg_type = data.get("type")
             
             if msg_type == "join":
-                # ゲーム開始（最初の1人が入ったときのみ）
                 if game.state == game.STATE.INIT:
                     snapshot = game.start()
                 else:
                     snapshot = game._get_state_snapshot()
+                
+                # 自分(盤面)のターンならAI予測も付与して送信
+                if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
+                    ai_res = await request_ai_suggestion()
+                    if ai_res:
+                        snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
+                
                 await ws_manager.send_personal_message(snapshot, player_id)
                 
             elif msg_type == "action_request":
                 action = data.get("action")
                 if action == "discard":
                     tile = data.get("tile")
-                    # プレイヤー0（人間）が打牌したと仮定
                     snapshot = game.process_discard(0, tile)
                     await ws_manager.broadcast(snapshot)
                     
@@ -51,11 +81,18 @@ async def websocket_ui_endpoint(ws: WebSocket):
                     while game.state != game.STATE.ROUND_END and game.turn_idx != 0:
                         await asyncio.sleep(0.5)
                         cpu_idx = game.turn_idx
-                        # CPUの最初の手牌を適当に切る
                         if game.players[cpu_idx].hand:
                             cpu_tile = game.players[cpu_idx].hand[0]
                             snapshot = game.process_discard(cpu_idx, cpu_tile)
                             await ws_manager.broadcast(snapshot)
+                            
+                    # 人間の手番に戻ったならAI推論を生成してブロードキャスト
+                    if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
+                        snapshot = game._get_state_snapshot()
+                        ai_res = await request_ai_suggestion()
+                        if ai_res:
+                            snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
+                        await ws_manager.broadcast(snapshot)
                             
     except WebSocketDisconnect:
         ws_manager.disconnect(player_id)

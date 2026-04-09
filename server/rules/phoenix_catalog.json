@@ -1,0 +1,766 @@
+{
+  "catalog_version": "1.1",
+  "source": "phoenix_position_2023",
+  "rules": [
+    {
+      "id": "READ_EARLY_YAKUHAI_DOUBLE_DISCARD",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 1 and turn <= 4",
+        "opponent_discard_history.count(same_yakuhai) == 2",
+        "opponent_riichi == false",
+        "opponent_furo_count == 0"
+      ],
+      "qualitative_logic": {
+        "principle": "序盤役牌2枚切りは、打点を犠牲にした染め手または速度特化の強いシグナル",
+        "checklists": [
+          "中張牌の連続切り観測有無",
+          "染め色（非処理スート）の特定",
+          "防御閾値の早期引き上げ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "early_yakuhai_bias_check",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MID_DORAAdjacent_RETREAT",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7 and turn <= 11",
+        "opponent_discard_history.contains(dora_adjacent_tiles_sequence)",
+        "opponent_riichi == false",
+        "opponent_furo_count <= 1"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤ドラ隣接切りは、ドラを既に固定確保した手、またはドラ不要の多面張や複合役シグナル",
+        "checklists": [
+          "ドラが見えていないか確認",
+          "相手の打点見込みを4-5翻以上に引き上げ",
+          "通常押し基準の局面でもオリを検討"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "mid_dora_adjacent_correlation",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_LATE_SAFE_TILE_CYCLE_COLOR",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 13",
+        "opponent_discard_history.recent(3).all_in_same_suit()",
+        "opponent_discard_history.recent(3).are_all_safe_tiles()",
+        "is_opponent_pushing == true"
+      ],
+      "qualitative_logic": {
+        "principle": "終盤の安全スート循環はベタオリではなく部分的オリ。特定スートへの集中攻撃準備",
+        "checklists": [
+          "循環スート以外の全牌をCRITICAL危険指定",
+          "循環スートは相対的に安全",
+          "特定スートへの偏りがないか確認"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "late_safe_cycle_color_tracking",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_FURO_MID_TERMINAL_REINFORCEMENT",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 6 and turn <= 10",
+        "opponent_furo_event_occurred",
+        "furo_used_tiles.are_all_middle_tiles()",
+        "opponent_discard_history.recent(3).contains_terminals_min(2)"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤副露直後の端牌集中処理は、手役確定と和了への速度特化の複合シグナル（残り1-3巡）",
+        "checklists": [
+          "和了まで残り3巡以内と見積もる",
+          "放銃期待損失＞和了期待収益とみなし原則撤退",
+          "1枚ずつパラパラ切られるケースは除外"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "furo_terminal_speed_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DOUBLE_RIICHI_CROSS_AVOIDANCE",
+      "category": "reading",
+      "trigger_conditions": [
+        "riichi_count >= 2",
+        "riichi_declarations.have_same_or_adjacent_suits()"
+      ],
+      "qualitative_logic": {
+        "principle": "複数リーチの同スート宣言は待ちの重なり（交差領域）を生み、特定牌の放銃危険度が異常上昇する",
+        "checklists": [
+          "両者の宣言牌から交差領域候補を計算",
+          "交差候補の牌は絶対禁止ゾーンに指定",
+          "同スート付近は避け、他スート現物へ撤退"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "double_riichi_cross_avoidance",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_TRAP_ACTIVATION_INTERVAL",
+      "category": "reading",
+      "trigger_conditions": [
+        "time_since_trap_setup >= 2_turns",
+        "interval_actions_include_shape_adjustment == true",
+        "is_forced_turn_skip == false"
+      ],
+      "qualitative_logic": {
+        "principle": "仕掛け牌から2巡以上空いたリーチは、即発動罠ではなく形状調整後のカンチャン・単騎ロックの可能性が高い",
+        "checklists": [
+          "間隔中の打牌が孤立牌処分か形状調整か確認",
+          "スジ/カベ理論の警戒を一旦リセット",
+          "物理的残り枚数による危険度評価へ移行"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "pattern_interval_correlation",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MULTI_RIICHI_FLOW_ASYMMETRY",
+      "category": "reading",
+      "trigger_conditions": [
+        "riichi_count >= 2",
+        "cross_waiting_candidates.exists()",
+        "post_riichi_flow_is_asymmetric == true"
+      ],
+      "qualitative_logic": {
+        "principle": "複数リーチ時の宣言後打牌流路の「非対称性」は、交差領域内の待ち偏在シグナルとなる",
+        "checklists": [
+          "宣言直後1-2打牌のツモ切り/手切りパターンを比較",
+          "流路が遮断されている側の牌を優先回避",
+          "交差領域を一律CRITICALとせず流路で判断"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "multi_riichi_asymmetry_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_LATE_SAFE_EXHAUSTION_GAME",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 14",
+        "absolute_safe_tiles_count == 0",
+        "self_hand_is_tenpai_or_1shanten == true",
+        "self_hand_value >= 2_han",
+        "is_rank_fixed == false"
+      ],
+      "qualitative_logic": {
+        "principle": "終盤の絶対安全牌枯渇時は「相互のゲーム理論的圧力」が判断軸。押すことで他家をfoldさせるチキンレース",
+        "checklists": [
+          "押す牌が他家にとって最も切りたくない保留牌か評価",
+          "放銃リスクを「他者への行動強制圧力」に転換",
+          "オリ＝圧力放棄と認識し、中間圏では押し優先"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "game_theory_pressure_distribution",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MELD_ARRANGEMENT_MISDIRECTION",
+      "category": "reading",
+      "trigger_conditions": [
+        "opponent_furo_event_occurred == true",
+        "furo_type in [\"chi\", \"pon_with_ryanmen\"]",
+        "furo_is_honor_or_terminal == false",
+        "post_furo_discard_is_middle_tile == true"
+      ],
+      "qualitative_logic": {
+        "principle": "数牌副露後の手牌配置変更や特定中張牌の即切りは、誤認を誘う逆シグナル（見せ牌）",
+        "checklists": [
+          "見せられたスジの「反対側」または「無関連スート」を高危険指定",
+          "鳴き順子に連動する標準読みを一旦保留",
+          "意図的な配置操作を逆読みへシフト"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "meld_arrangement_misdirection_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_RIICHI_DECLARATION_TIMING_GAP",
+      "category": "reading",
+      "trigger_conditions": [
+        "has_tenpai == true",
+        "riichi_declaration_delayed_by_1_turn == true",
+        "delayed_discard_tile_type == 'middle_tile'",
+        "delayed_discard_is_not_safe_tile == true"
+      ],
+      "qualitative_logic": {
+        "principle": "テンパイからの1巡遅れリーチは、待ちの不安定性または意図的誘導（罠）のサイン",
+        "checklists": [
+          "即リーチよりも危険度が高い（不確定・誘導）",
+          "遅らせた間に切った牌のスジやまたぎを特に警戒"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "riichi_delay_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_KAN_DECLARATION_HIDDEN_INTENT",
+      "category": "reading",
+      "trigger_conditions": [
+        "furo_type in ['daiminkan', 'kakan']",
+        "kan_tile_type == 'middle_tile'",
+        "immediate_post_kan_action in ['riichi', 'tenpai_discard']"
+      ],
+      "qualitative_logic": {
+        "principle": "中張牌の明槓/加槓直後のリーチ・テンパイは、打点急上昇と待ちの完全固定（単騎・嵌張）のサイン",
+        "checklists": [
+          "通常2翻手でもカン直後は4-5翻手と見なして防御優先",
+          "カンにより固定されたカンチャン・単騎待ちを警戒"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "kan_subsequent_riichi_danger_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DISCARD_SEQUENCE_REVERSAL",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 5",
+        "discard_sequence_is_reversed == true",
+        "is_isolated_tile_disposal == false"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤以降の逆順切りは、特定スートの完全放棄（染め手）または反対側への誤認誘導シグナル",
+        "checklists": [
+          "逆順切りの反対側（例: 8→6→4なら1-3）が危険",
+          "染め手警戒と誤認誘導の両面から他スートへの警戒を強化"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "reverse_discard_sequence_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_SAFE_TILE_HOLDING_DURATION",
+      "category": "reading",
+      "trigger_conditions": [
+        "held_safe_tile_turns >= 3",
+        "safe_tile_type == 'middle_tile'",
+        "post_safe_tile_discard_is_dangerous == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中張安全牌の長期保持と直後の危険牌切りは、テンパイ維持（ツモ切り用）と待ち隠蔽のサイン",
+        "checklists": [
+          "安全牌保持中の安全な見た目に騙されず、既にテンパイしていると判断",
+          "保持していた安全牌が切られた直後の打牌が極めて危険"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "safe_tile_hold_and_release_danger_ratio",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MELD_SKIP_PATTERN",
+      "category": "reading",
+      "trigger_conditions": [
+        "skipped_meld_opportunity == true",
+        "skipped_tile_type == 'middle_tile'",
+        "hand_shape_allows_meld == true"
+      ],
+      "qualitative_logic": {
+        "principle": "鳴ける中張牌の見逃しは、メンゼン高打点（リーチ・裏ドラ・多面張）維持のサイン",
+        "checklists": [
+          "鳴かなかった中張牌のスジやまたぎは、メンゼン待ちの急所の可能性が高い",
+          "メンゼン維持のため危険度が通常より増していると認識"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "meld_skip_high_value_correlation",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_TSUMOGIRI_CONSECUTIVE",
+      "category": "reading",
+      "trigger_conditions": [
+        "consecutive_tsumogiri_turns >= 3",
+        "no_valid_tile_drawn == true"
+      ],
+      "qualitative_logic": {
+        "principle": "3巡以上の連続ツモ切り（手変わりなし）は、完全テンパイまたは待ち固定のサイン",
+        "checklists": [
+          "リーチ宣言がいつでも来ると認識し、防御準備を完了",
+          "ツモ切りが続いている間の手牌（空切りでない限り）が極めて危険"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "tsumogiri_consecutive_tenpai_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_HONOR_TILE_EARLY_EXHAUSTION",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn <= 6",
+        "discarded_honor_tile_types_count >= 4",
+        "all_honors_discarded == true"
+      ],
+      "qualitative_logic": {
+        "principle": "序盤の多種字牌すべて切り捨ては、字牌に頼らない染め手や速度特化手のサイン",
+        "checklists": [
+          "数牌（特に中張牌）の危険度が跳ね上がる",
+          "特定スートの高危険度化（染め手警戒）に対応せよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "early_honor_exhaustion_some_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DRAG_TILE_RETENTION",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7",
+        "turn <= 11",
+        "dora_tile_held_in_hand == true",
+        "discarded_tile_is_safe == true",
+        "dora_is_isolated_or_toitsu == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤でのドラ（孤立/対子）保留かつ安全牌切りは、打点隠蔽・高打点狙いのサイン",
+        "checklists": [
+          "見かけの打点（2翻）より実際の打点（4-5翻）が高いと見積もる",
+          "ドラ単騎やドラ対子の待ちを警戒"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "dora_retention_hidden_value_analysis",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_WALL_BREAK_IMMEDIATE_RIICHI",
+      "category": "reading",
+      "trigger_conditions": [
+        "wall_break_discard_occurred == true",
+        "discarded_tile_type == 'middle_tile'",
+        "immediate_post_discard_action == 'riichi'"
+      ],
+      "qualitative_logic": {
+        "principle": "中張牌の壁崩し直後の即リーチは、壁理論の逆利用（残り1枚待ち確定）のサイン",
+        "checklists": [
+          "壁崩し牌の残り1枚が極めて危険",
+          "通常なら安全と思われる壁周辺が高危険化している"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "wall_break_riichi_danger_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DOUBLE_SIDED_WAIT_DECEPTION",
+      "category": "reading",
+      "trigger_conditions": [
+        "double_sided_taatsu_broken == true",
+        "changed_to_kanchan_wait == true",
+        "discarded_tile_type == 'middle_tile'"
+      ],
+      "qualitative_logic": {
+        "principle": "両面塔子崩しからの嵌張変化は、待ち隠蔽（引っ掛け）と高打点のサイン",
+        "checklists": [
+          "両面と見せかけた嵌張待ち（例: 3m待ち）が極めて危険",
+          "安全と油断したスジ牌が捕まるため警戒"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "double_sided_deception_kanchan_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_LATE_GAME_SAFE_TILE_EXCHANGE",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 14",
+        "safe_tile_exchanged_between_two_players == true",
+        "exchanged_tile_is_dangerous_to_third_party == true"
+      ],
+      "qualitative_logic": {
+        "principle": "終盤での2名による互いの現物交換は、相互不戦およびトップ・2位による第三者排除のゲーム",
+        "checklists": [
+          "交換されている現物は安全だが、交換されていない牌が極めて危険",
+          "自分は第三者として防御を最優先し、無理な放銃を避ける"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "late_safe_exchange_third_party_danger",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MID_GAME_SHAPE_FREEZE_BREAK",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7",
+        "turn <= 11",
+        "shape_freeze_was_active == true",
+        "shape_freeze_broken_by_valid_tile_draw == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤での形状フリーズ（有効牌スルー）の突然の解除は、待ち確定と打点向上の時間切れサイン",
+        "checklists": [
+          "解除直後の打牌が極めて危険（待ちが確定した証拠）",
+          "隠していた待ちが解除によって露見するため、安全牌選定を再評価"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "shape_freeze_break_tenpai_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DRAG_TILES_SYMMETRY",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7",
+        "hand_contains_dora_and_adjacent_tile == true",
+        "adjacent_tile_discarded_before_dora == true",
+        "dora_tile_retained_as_isolated == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤でドラとその隣接牌を分割処理する行為は、打点隠蔽および特定役・ドラ待ち確定のサイン",
+        "checklists": [
+          "ドラ牌自体が「待ち」や役の構成要素である可能性が高い",
+          "ドラ単騎などドラを活用した役を警戒せよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "dora_symmetry_split_correlation",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_RIICHI_AFTER_KAN_DORA_CHANGE",
+      "category": "reading",
+      "trigger_conditions": [
+        "post_kan_dora_reveal_occurred == true",
+        "new_kan_dora_type == 'middle_tile'",
+        "immediate_action_is_riichi == true"
+      ],
+      "qualitative_logic": {
+        "principle": "カンによるドラ変化直後の即リーチは、打点の飛躍的向上（満貫・跳満級）を伴った強烈な心理的圧迫のサイン",
+        "checklists": [
+          "通常リーチとは異なり、打点を極限まで重視して防御せよ",
+          "放銃リスクが尋常でないため、現物以外は絶対に切らない"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "kan_dora_riichi_value_spike",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MID_RANGE_ISOLATION",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7 and turn <= 11",
+        "isolated_middle_tile_retained == true",
+        "safe_tiles_discarded_prior_to_it == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤の安全牌切り＆中張孤立牌の長期保留は、手牌柔軟性の維持と聴牌または特定牌待ちの接近サイン",
+        "checklists": [
+          "孤立牌自体は危険ではないが、それが手出しで処理・あるいは形が変わった瞬間が極めて危険",
+          "保留されている孤立牌のスジやまたぎを警戒"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "mid_range_isolated_retention_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_SEAT_BIAS_IN_MELD",
+      "category": "reading",
+      "trigger_conditions": [
+        "bias_in_meld_source_seat == true",
+        "melded_tile_type == 'middle_tile'"
+      ],
+      "qualitative_logic": {
+        "principle": "特定席からの鳴き偏重（対面ポン狙いや上家チー特化など）は、防御姿勢や速度優先といった戦術的意図のサイン",
+        "checklists": [
+          "対面ポン偏重は打点維持・メンゼン崩れ回避意図（手が整っている）",
+          "上家チー偏重はツモ番スキップ・速度特化意図（和了が近い）",
+          "鳴きの席順偏向を分析し相手の方向性を逆読みせよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "meld_seat_bias_strategy_correlation",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_SAFE_TILE_TSUMOGIRI_CONSECUTIVE",
+      "category": "reading",
+      "trigger_conditions": [
+        "consecutive_safe_tile_tsumogiri_turns >= 3",
+        "no_valid_tile_drawn == true"
+      ],
+      "qualitative_logic": {
+        "principle": "安全牌の3巡以上連続ツモ切りは、聴牌が完全に固定されており手変わりを求めていない明確なサイン",
+        "checklists": [
+          "いつでもリーチが来ると認識し防御準備を完了せよ",
+          "安全牌がツモ切られている間の「手牌」が極めて危険"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "safe_tsumogiri_tenpai_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_LATE_GAME_RIICHI_STICK_ACCUMULATION",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 14",
+        "accumulated_riichi_sticks >= 2",
+        "riichi_declaration_tile_type == 'middle_tile'"
+      ],
+      "qualitative_logic": {
+        "principle": "終盤かつ供託リーチ棒2本以上の状況でのリーチは、和了よりも供託回収価値や順位圧力に主眼が置かれているサイン",
+        "checklists": [
+          "純粋な手牌の強さよりも順位争いを重視",
+          "自分がトップなら順位維持でオリ、ラス圏なら期待値が高いとみて押し推奨等、局面戦略を優先"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "late_riichi_stick_accumulation_push_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_HONOR_TILE_PAIR_RETENTION",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7 and turn <= 11",
+        "retained_honor_pairs_counts >= 2",
+        "prioritized_middle_tile_discard == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤での字牌対子2組以上の保留＆数牌優先切りは、対々手や字一色・染め手への転換サイン",
+        "checklists": [
+          "数牌のスジ理論が通用しなくなり、字牌の生牌や対子候補周辺が極めて危険",
+          "単騎・双碰待ちを最大限に警戒せよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "honor_pair_retention_yaku_shift",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_DRAG_TILE_DISCARD_AFTER_REACH",
+      "category": "reading",
+      "trigger_conditions": [
+        "discard_after_riichi_is_dora == true",
+        "dora_was_isolated_or_toitsu == true"
+      ],
+      "qualitative_logic": {
+        "principle": "リーチ後の手出し・ツモ切りドラは、待ちが極限まで固定され（単騎待ち等）、かつ打点の確保がすでに万全であるサイン",
+        "checklists": [
+          "ドラ牌自体は安全だが、残された別の待ちが極めて狭く確定している",
+          "単騎待ちの候補牌（字牌や端牌など）を警戒せよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "riichi_dora_discard_tanki_rate",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_MID_GAME_SAFE_TILE_EXCHANGE",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 7 and turn <= 11",
+        "mutual_safe_tile_exchange_between_players == true",
+        "exchanged_safe_tiles_are_middle_tiles == true"
+      ],
+      "qualitative_logic": {
+        "principle": "中盤における2名以上の現物（中張牌）交換は、互いの手牌質の低下や速度低下、相互牽制のサイン",
+        "checklists": [
+          "交換されている現物は安全だが、交換に加わっていない牌の危険度上昇に注意",
+          "相手の手が整っていないため、自分は攻撃に転じるチャンスと見なす"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "mid_game_mutual_exchange_speed_drop",
+        "status": "pending_validation"
+      }
+    },
+    {
+      "id": "READ_LATE_GAME_TSUMOGIRI_DANGER",
+      "category": "reading",
+      "trigger_conditions": [
+        "turn >= 14",
+        "tsumogiri_is_dangerous_middle_tile == true"
+      ],
+      "qualitative_logic": {
+        "principle": "終盤での生牌・非スジ等の危険中張牌のツモ切りは、聴牌が確定し和了への強烈な執着があるサイン",
+        "checklists": [
+          "ツモ切られた危険牌だけでなく、手牌内の待ちも確定的に危険",
+          "和了への執着が究極的に高まっているので防御を最優先せよ"
+        ]
+      },
+      "quantitative_schema": {
+        "dataset": "phoenix_replay_2023",
+        "period": "TBD",
+        "sample_size": "TBD",
+        "confidence_interval_95": "TBD",
+        "methodology": "late_dangerous_tsumogiri_tenpai",
+        "status": "pending_validation"
+      }
+    }
+  ]
+}
