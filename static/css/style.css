@@ -409,38 +409,41 @@ html, body {
 }
 #hand-0 {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-start; /* 上揃え */
   justify-content: center;
-  position: relative;
-  /* 13牌分の幅を固定 (60px幅 + 左右4pxマージン = 64px × 13) */
-  width: calc(64px * 13);
-  margin: 0 auto;
-  padding-bottom: 10px;
+  flex-wrap: nowrap;
+  padding: 10px 0;
 }
 
 /* ─── 牌 (Nyanco Style) ─────────────────── */
 .tile {
-    width: 60px;
-    height: 84px;
-    background-image: url('../img/majang-hai.png');
-    background-repeat: no-repeat;
-    background-size: 540px 336px;
-    display: inline-block;
-    flex: 0 0 60px; /* 縮小・拡大を禁止 */
-    margin: 0 2px;  /* 左右4px間隔固定 */
-    border-radius: 4px;
-    vertical-align: top;
-    cursor: pointer;
-    transition: transform 0.15s ease;
-    
-    position: relative;
-    box-shadow: 1px 1px 0px #ccc, 2px 3px 5px rgba(0, 0, 0, 0.25);
-    font-family: var(--font-tile);
-    font-size: 1rem;
-    font-weight: bold;
-    line-height: 1.05;
-    user-select: none;
-    color: #1a1a1a;
+  width: 60px;
+  height: 84px;
+  background-image: url('../img/majang-hai.png');
+  background-repeat: no-repeat;
+  background-size: 540px 336px;
+  
+  /* 垂直位置を厳密に固定 */
+  display: inline-block;
+  vertical-align: top !important;
+  position: relative;
+  top: 0 !important;
+  margin: 2px;
+  border-radius: 4px;
+  
+  /* フレックスボックスでの配置を無効化 */
+  flex-shrink: 0;
+  flex-grow: 0;
+  
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  box-shadow: 1px 1px 0px #ccc, 2px 3px 5px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-tile);
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1.05;
+  user-select: none;
+  color: #1a1a1a;
 }
 .tile:hover {
     transform: translateY(-6px);
@@ -782,4 +785,140 @@ html, body {
     .side-opp { width: 60px; }
     .top-bar { flex-direction: column; gap: 3px; padding: 3px 8px; }
     .score-row { flex-wrap: wrap; justify-content: center; }
+}
+
+/* 5パターン推奨パネル */
+#ai-recommendations {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+}
+
+.rec-panel {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 0.9rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rec-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.panel-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent-blue);
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.panel-title {
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+}
+
+.panel-body {
+  line-height: 1.6;
+}
+
+.rec-tile {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 12px 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.rec-prob {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--color-accent-gold);
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.rec-judgment {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.rec-judgment.push {
+  background: rgba(102, 187, 106, 0.3);
+  color: #66bb6a;
+}
+
+.rec-judgment.fold {
+  background: rgba(239, 83, 80, 0.3);
+  color: #ef5350;
+}
+
+.rec-judgment.balance {
+  background: rgba(255, 167, 38, 0.3);
+  color: #ffa726;
+}
+
+.rec-reasoning {
+  margin: 12px 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--color-accent-blue);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rec-alternatives,
+.rec-rules,
+.rec-rule-refs {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+}
+
+.rec-rules ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.rec-rules li {
+  margin: 4px 0;
+}
+
+.rec-consistency {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(171, 71, 188, 0.2);
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  color: #ab47bc;
 }

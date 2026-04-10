@@ -1,0 +1,11 @@
+[
+  {
+    "pattern_id": "1m_2m_3m_4p_5p_6p_7s",
+    "situation_desc": "手牌パターン: 1m_2m_3m_4p_5p_6p_7s_8s_9s_E_N_S_W_1m...",
+    "recommended_tile": "1m",
+    "probability": 1.0,
+    "reasoning": "この手牌では1m切りが圧倒的（100.0%）。成功率は0.0%と低め。",
+    "success_rate": 0.0,
+    "source_haihu_id": "dummy"
+  }
+]

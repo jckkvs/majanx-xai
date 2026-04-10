@@ -67,21 +67,21 @@ class MahjongGame {
     onMessage(d) {
         if (d.type === 'state_update') {
             this.onState(d);
-        } else if (d.type === 'triple_recommendation') {
-            this.onAIRecommendation(d.data);
+        } else if (d.type === 'five_pattern_recommendation') {
+            this.onFivePatternRecommendation(d.data);
         }
     }
 
     /* ── AI Recommendation ─────────────────── */
-    onAIRecommendation(data) {
-        console.log("Received triple_recommendation:", data);
+    onFivePatternRecommendation(data) {
+        console.log("Received five_pattern_recommendation:", data);
         if (!this.aiHighlight) return;
         
         // 推奨手牌を保存
         this.aiRecommendations = data;
         
         // UIに表示
-        this.renderAIRecommendations(data);
+        this.renderFivePatternRec(data);
         
         // 手牌のハイライトを更新
         if (this.gameState && this.gameState.hand) {
@@ -89,59 +89,105 @@ class MahjongGame {
         }
     }
 
-    renderAIRecommendations(data) {
+    renderFivePatternRec(data) {
         const container = document.getElementById('ai-recommendations');
         if (!container) return;
         
         container.innerHTML = '';
-        container.style.display = 'flex';
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
+        container.style.gap = '16px';
+        container.style.padding = '16px';
         
-        if (data.ai && data.ai.primary) {
-            const primary = data.ai.primary;
-            const recEl = document.createElement('div');
-            recEl.className = 'ai-rec-box';
-            recEl.innerHTML = `
-                <div class="ai-rec-title">AI推奨</div>
-                <div class="ai-rec-tile">${this.display(primary.tile)}</div>
-                <div class="ai-rec-prob">${(primary.prob * 100).toFixed(1)}%</div>
-            `;
-            container.appendChild(recEl);
-            
-            if (data.ai.alternatives && data.ai.alternatives.length > 0) {
-                data.ai.alternatives.slice(0, 2).forEach((alt, idx) => {
-                    const altEl = document.createElement('div');
-                    altEl.className = 'ai-rec-box alt';
-                    altEl.innerHTML = `
-                        <div class="ai-rec-title">代替${idx + 1}</div>
-                        <div class="ai-rec-tile">${this.display(alt.tile)}</div>
-                        <div class="ai-rec-prob">${(alt.prob * 100).toFixed(1)}%</div>
-                    `;
-                    container.appendChild(altEl);
-                });
+        // 5パターンを表示
+        const patterns = [
+            data.pattern_1,
+            data.pattern_2,
+            data.pattern_3,
+            data.pattern_4,
+            data.pattern_5
+        ];
+        
+        patterns.forEach((pattern, idx) => {
+            if (pattern) {
+                const panel = this.createPatternPanel(pattern, idx + 1);
+                container.appendChild(panel);
             }
-        }
+        });
+    }
+
+    createPatternPanel(pattern, num) {
+        const panel = document.createElement('div');
+        panel.className = 'rec-panel';
+        panel.style.borderLeft = `4px solid ${this.getPatternColor(num)}`;
         
-        if (data.xai) {
-            const xaiEl = document.createElement('div');
-            xaiEl.className = 'ai-analysis-box';
-            xaiEl.innerHTML = `
-                <div class="ai-analysis-title">XAI分析</div>
-                <div class="ai-analysis-text">${data.xai.reasoning || ''}</div>
-            `;
-            container.appendChild(xaiEl);
-        }
+        const content = pattern.content;
         
-        if (data.strategy) {
-            const stratEl = document.createElement('div');
-            stratEl.className = 'ai-analysis-box';
-            stratEl.innerHTML = `
-                <div class="ai-analysis-title">戦略</div>
-                <div class="ai-analysis-text">${data.strategy.balance || ''}</div>
-                <div>攻め: ${data.strategy.attack_score?.toFixed(1) || 0}</div>
-                <div>守り: ${data.strategy.defense_score?.toFixed(1) || 0}</div>
+        panel.innerHTML = `
+            <div class="panel-header">
+                <span class="panel-number">${num}</span>
+                <span class="panel-title">${pattern.name}</span>
+            </div>
+            <div class="panel-body">
+                ${this.renderPatternContent(content, num)}
+            </div>
+        `;
+        
+        return panel;
+    }
+
+    renderPatternContent(content, patternNum) {
+        if (patternNum === 1) {
+            return `
+                <div class="rec-tile">${this.display(content.recommended_tile)}</div>
+                <div class="rec-prob">確率: ${(content.probability * 100).toFixed(1)}%</div>
+                <div class="rec-reasoning">${content.reasoning}</div>
+                ${content.alternatives && content.alternatives.length > 0 ? `
+                    <div class="rec-alternatives">
+                        <strong>代替案:</strong>
+                        ${content.alternatives.map(a => `${this.display(a.tile)} (${(a.prob * 100).toFixed(1)}%)`).join(', ')}
+                    </div>
+                ` : ''}
             `;
-            container.appendChild(stratEl);
+        } else if (patternNum === 2 || patternNum === 3) {
+            return `
+                <div class="rec-judgment ${content.judgment.toLowerCase()}">
+                    ${content.judgment === 'PUSH' ? '⚔️ 攻め' : content.judgment === 'FOLD' ? '🛡️ 守り' : '⚖️ バランス'}
+                </div>
+                <div class="rec-tile">${this.display(content.recommended_tile)}</div>
+                <div class="rec-reasoning">${content.reasoning}</div>
+                ${content.rules_applied && content.rules_applied.length > 0 ? `
+                    <div class="rec-rules">
+                        <strong>適用ルール:</strong>
+                        <ul>
+                            ${content.rules_applied.map(r => `
+                                <li><strong>${r.id}</strong>: ${r.name}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+        } else {
+            return `
+                <div class="rec-tile">${this.display(content.ai_tile)}</div>
+                <div class="rec-reasoning">${content.interpretation}</div>
+                <div class="rec-consistency">
+                    定石一致度: ${(content.consistency_score * 100).toFixed(0)}%
+                    (${content.matching_rules_count}ルール一致)
+                </div>
+                ${content.rule_references && content.rule_references.length > 0 ? `
+                    <div class="rec-rule-refs">
+                        <strong>一致したルール:</strong>
+                        ${content.rule_references.map(r => `<div>• ${r.reasoning}</div>`).join('')}
+                    </div>
+                ` : ''}
+            `;
         }
+    }
+
+    getPatternColor(num) {
+        const colors = ['#4fc3f7', '#66bb6a', '#ffa726', '#ab47bc', '#ef5350'];
+        return colors[num - 1] || '#666';
     }
 
     onState(d) {
@@ -246,12 +292,14 @@ class MahjongGame {
         }
 
         const recommendedTiles = new Set();
-        if (this.aiRecommendations?.ai?.primary?.tile) {
-            recommendedTiles.add(this.aiRecommendations.ai.primary.tile);
+        if (this.aiRecommendations?.pattern_1?.content?.recommended_tile && this.aiRecommendations.pattern_1.content.recommended_tile !== "unknown") {
+            recommendedTiles.add(this.aiRecommendations.pattern_1.content.recommended_tile);
         }
-        if (this.aiRecommendations?.ai?.alternatives) {
-            this.aiRecommendations.ai.alternatives.forEach(alt => {
-                recommendedTiles.add(alt.tile);
+        if (this.aiRecommendations?.pattern_1?.content?.alternatives) {
+            this.aiRecommendations.pattern_1.content.alternatives.forEach(alt => {
+                if (alt.tile !== "unknown") {
+                    recommendedTiles.add(alt.tile);
+                }
             });
         }
 

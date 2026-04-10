@@ -12,19 +12,12 @@ from server.game_loop import GameLoop
 
 # AI adapters are optional - game works without them
 try:
-    from server.ai_adapters.mortal_adapter import MortalAdapter
-    from server.ai_adapters.rulebase_adapter import RulebaseAdapter
-    from server.ai_adapters.base import MJAIAction
-    from server.recommendation_aggregator import RecommendationAggregator
-    mortal = MortalAdapter()
-    phoenix = RulebaseAdapter()
-    aggregator = RecommendationAggregator()
+    from server.triple_recommendation_engine import FivePatternRecommendationEngine
+    recommendation_engine = FivePatternRecommendationEngine()
     AI_AVAILABLE = True
 except Exception as e:
     print(f"AI adapters not available: {e}")
-    mortal = None
-    phoenix = None
-    aggregator = None
+    recommendation_engine = None
     AI_AVAILABLE = False
 
 app = FastAPI()
@@ -36,21 +29,15 @@ game = GameLoop()
 async def request_ai_suggestion(current_game):
     if not AI_AVAILABLE:
         return None
-    # 人間の打牌待ち時、AI2つの推奨を取得して統合する
+    # 人間の打牌待ち時、5パターンの推奨を取得して統合する
     if current_game.state != current_game.STATE.DISCARDING or current_game.turn_idx != 0:
         return None
         
-    legal_actions = []
-    # 実際には適正な合法手リストが必要だがモック化
-    for tile in current_game.players[0].hand:
-        legal_actions.append(MJAIAction("dahai", pai=tile))
-        
-    rec_speed = await mortal.request_action(legal_actions)
-    rec_phoenix = await phoenix.request_action(legal_actions)
+    game_state_dict = current_game._get_state_snapshot()
+    hand_tiles = current_game.players[0].hand
     
-    if rec_speed and rec_phoenix:
-        return aggregator.aggregate([rec_speed, rec_phoenix], [a.params["pai"] for a in legal_actions])
-    return None
+    result = await recommendation_engine.generate_recommendations(game_state_dict, hand_tiles)
+    return result
 
 @app.get("/")
 async def get_index():
@@ -74,13 +61,12 @@ async def websocket_ui_endpoint(ws: WebSocket):
                 current_session_id = game._session_id
                 snapshot = game.start()
                 
-                # 自分(盤面)のターンならAI予測も付与して送信
+                # 自分(盤面)のターンならAI予測を別途送信
+                await ws_manager.send_personal_message(snapshot, player_id)
                 if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
                     ai_res = await request_ai_suggestion(game)
                     if ai_res:
-                        snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
-                
-                await ws_manager.send_personal_message(snapshot, player_id)
+                        await ws_manager.send_personal_message(ai_res, player_id)
                 
             elif msg_type == "action_request":
                 action = data.get("action")
@@ -116,11 +102,10 @@ async def websocket_ui_endpoint(ws: WebSocket):
                     # 人間の手番に戻ったならAI推論を生成してブロードキャスト
                     if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
                         snapshot = game._get_state_snapshot()
+                        await ws_manager.broadcast(snapshot)
                         ai_res = await request_ai_suggestion(game)
                         if ai_res:
-                            snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
-                        await ws_manager.broadcast(snapshot)
-                            
+                            await ws_manager.broadcast(ai_res)
     except WebSocketDisconnect:
         ws_manager.disconnect(player_id)
     except Exception as e:
