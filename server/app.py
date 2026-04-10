@@ -90,15 +90,25 @@ async def websocket_ui_endpoint(ws: WebSocket):
                     await ws_manager.broadcast(snapshot)
                     
                     # 簡易的にCPU(1,2,3)も自動で打牌してターンを回す
+                    from server.config import CPU_STRENGTH
+                    from server.cpu_decision import select_cpu_action
                     while game.state != game.STATE.ROUND_END and game.turn_idx != 0:
                         await asyncio.sleep(0.5)
                         if getattr(game, "_session_id", None) != current_session_id:
                             break
                         cpu_idx = game.turn_idx
                         if game.players[cpu_idx].hand:
-                            cpu_tile = game.players[cpu_idx].hand[0]
+                            valid_moves = game.players[cpu_idx].hand
+                            
+                            # AI確率分布を実際は得たいが、現行MVPでは対応していないため None を渡す
+                            # (None の場合 select_cpu_action 内でランダムに選ばれる)
+                            cpu_tile = select_cpu_action(None, valid_moves, strength=CPU_STRENGTH)
+                            
                             snapshot = game.process_discard(cpu_idx, cpu_tile)
                             await ws_manager.broadcast(snapshot)
+                            
+                            if snapshot.get("phase") == "ryukyoku":
+                                await asyncio.sleep(1.5)
                             
                     if getattr(game, "_session_id", None) != current_session_id:
                         continue

@@ -29,6 +29,8 @@ class GameLoop:
         self.discards: list[list[str]] = [[] for _ in range(4)]
         self.riichi_flags = [False]*4
         self.honba = 0
+        self.round_number = 0
+        self.scores = [25000, 25000, 25000, 25000]
 
     def start(self) -> dict:
         self.wall.build()
@@ -54,13 +56,40 @@ class GameLoop:
         
         next_tile = self.wall.draw()
         if not next_tile:
-            self.state = self.STATE.ROUND_END
-            return self._get_state_snapshot()
+            return self.handle_ryukyoku()
             
         self.players[self.turn_idx].add(next_tile)
         self.state = self.STATE.DISCARDING
         
         return self._get_state_snapshot()
+        
+    def handle_ryukyoku(self):
+        # 1. 簡易版の流局処理（MVP用なので点数計算・聴牌判定は省略または仮）
+        self.honba += 1
+        self.turn_idx = 0
+        self.turn_count = 0
+        self.round_number += 1
+        
+        # 3. ゲーム終了判定 (今回は無限ループを防ぐため簡易リセット)
+        if self.round_number >= 8 or any(s <= 0 for s in self.scores):
+            self.state = self.STATE.ROUND_END
+            snapshot = self._get_state_snapshot()
+            snapshot["phase"] = "game_end"
+            return snapshot
+        self.discards = [[] for _ in range(4)]
+        self.wall.build()
+        for p in self.players:
+            p.hand = []
+        for _ in range(13):
+            for i in range(4):
+                self.players[i].add(self.wall.draw())
+        self.players[0].add(self.wall.draw())
+        self.state = self.STATE.DISCARDING
+        
+        snapshot = self._get_state_snapshot()
+        # 通知用に ryukyoku フェーズであることを付与
+        snapshot["phase"] = "ryukyoku"
+        return snapshot
         
     def _get_state_snapshot(self) -> dict:
         return {
@@ -72,7 +101,7 @@ class GameLoop:
             "discards": self.discards,
             "dora_indicator": self.wall.dora_indicator,
             "riichi_sticks": sum(self.riichi_flags),
-            "scores": [25000, 25000, 25000, 25000],
+            "scores": self.scores,
             "available_actions": [
                 {"type": "discard", "tiles": list(set(self.players[0].hand))}
             ] if self.turn_idx == 0 and self.state == self.STATE.DISCARDING else []

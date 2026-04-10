@@ -65,7 +65,83 @@ class MahjongGame {
 
     /* ── Message Router ────────────────────── */
     onMessage(d) {
-        if (d.type === 'state_update') this.onState(d);
+        if (d.type === 'state_update') {
+            this.onState(d);
+        } else if (d.type === 'triple_recommendation') {
+            this.onAIRecommendation(d.data);
+        }
+    }
+
+    /* ── AI Recommendation ─────────────────── */
+    onAIRecommendation(data) {
+        console.log("Received triple_recommendation:", data);
+        if (!this.aiHighlight) return;
+        
+        // 推奨手牌を保存
+        this.aiRecommendations = data;
+        
+        // UIに表示
+        this.renderAIRecommendations(data);
+        
+        // 手牌のハイライトを更新
+        if (this.gameState && this.gameState.hand) {
+            this.renderHand(this.gameState.hand);
+        }
+    }
+
+    renderAIRecommendations(data) {
+        const container = document.getElementById('ai-recommendations');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        container.style.display = 'flex';
+        
+        if (data.ai && data.ai.primary) {
+            const primary = data.ai.primary;
+            const recEl = document.createElement('div');
+            recEl.className = 'ai-rec-box';
+            recEl.innerHTML = `
+                <div class="ai-rec-title">AI推奨</div>
+                <div class="ai-rec-tile">${this.display(primary.tile)}</div>
+                <div class="ai-rec-prob">${(primary.prob * 100).toFixed(1)}%</div>
+            `;
+            container.appendChild(recEl);
+            
+            if (data.ai.alternatives && data.ai.alternatives.length > 0) {
+                data.ai.alternatives.slice(0, 2).forEach((alt, idx) => {
+                    const altEl = document.createElement('div');
+                    altEl.className = 'ai-rec-box alt';
+                    altEl.innerHTML = `
+                        <div class="ai-rec-title">代替${idx + 1}</div>
+                        <div class="ai-rec-tile">${this.display(alt.tile)}</div>
+                        <div class="ai-rec-prob">${(alt.prob * 100).toFixed(1)}%</div>
+                    `;
+                    container.appendChild(altEl);
+                });
+            }
+        }
+        
+        if (data.xai) {
+            const xaiEl = document.createElement('div');
+            xaiEl.className = 'ai-analysis-box';
+            xaiEl.innerHTML = `
+                <div class="ai-analysis-title">XAI分析</div>
+                <div class="ai-analysis-text">${data.xai.reasoning || ''}</div>
+            `;
+            container.appendChild(xaiEl);
+        }
+        
+        if (data.strategy) {
+            const stratEl = document.createElement('div');
+            stratEl.className = 'ai-analysis-box';
+            stratEl.innerHTML = `
+                <div class="ai-analysis-title">戦略</div>
+                <div class="ai-analysis-text">${data.strategy.balance || ''}</div>
+                <div>攻め: ${data.strategy.attack_score?.toFixed(1) || 0}</div>
+                <div>守り: ${data.strategy.defense_score?.toFixed(1) || 0}</div>
+            `;
+            container.appendChild(stratEl);
+        }
     }
 
     onState(d) {
@@ -108,20 +184,39 @@ class MahjongGame {
     }
 
     tileHTML(t) {
-        const txt = this.display(t);
-        if (txt.length <= 1) {
-            if (t === 'C') return `<span class="char-c">${txt}</span>`;
-            if (t === 'F') return `<span class="char-f">${txt}</span>`;
-            return `<span>${txt}</span>`;
-        }
-        return txt.split('').map(c => `<span>${c}</span>`).join('');
+        // スプライトシートを使用するため要素内のテキストは不要
+        return '';
     }
 
     cls(t) {
-        if (!t) return '';
-        if ('ESWNC'.includes(t[0]) && t.length === 1) return 'jihai';
-        if (t === 'F' || t === 'P') return 'jihai';
-        return { m: 'manzu', p: 'pinzu', s: 'souzu' }[t[1]] || '';
+        if (!t) return 'tile-back';
+        let r = -1, c = -1;
+        
+        // 10x4 spritesheet: Row 0 is Honors, Row 1 is Manzu, Row 2 is Souzu, Row 3 is Pinzu.
+        if (t[1] === 'm') { r = 1; }
+        else if (t[1] === 's') { r = 2; }
+        else if (t[1] === 'p') { r = 3; }
+        else {
+            const H2I = { E: 0, S: 1, W: 2, N: 3, P: 4, F: 5, C: 6 };
+            if (H2I[t] !== undefined) {
+                r = 0;
+                c = H2I[t];
+            }
+        }
+        
+        if (r !== 0 && r !== -1) {
+            if (t[0] === '0') {
+                c = 5; // Akadora (Red 5)
+            } else {
+                let num = parseInt(t[0]);
+                if (num <= 5) c = num - 1;
+                else c = num; // Number >= 6 jumps over red 5
+            }
+        }
+
+        if (r === -1) return 'tile-back';
+        
+        return `tile-sprite row-${r} col-${c}`;
     }
 
     tileOrder(t) {
@@ -139,20 +234,56 @@ class MahjongGame {
         this.selectedIdx = null;
         this.selectedTile = null;
 
-        const sorted = [...hand].sort((a, b) => this.tileOrder(a) - this.tileOrder(b));
+        const currentHand = [...hand];
+        let normalTiles = [];
+        let tsumoTile = null;
 
-        sorted.forEach((tile, i) => {
+        if (currentHand.length % 3 === 2) {
+            tsumoTile = currentHand.pop();
+            normalTiles = currentHand.sort((a, b) => this.tileOrder(a) - this.tileOrder(b));
+        } else {
+            normalTiles = currentHand.sort((a, b) => this.tileOrder(a) - this.tileOrder(b));
+        }
+
+        const recommendedTiles = new Set();
+        if (this.aiRecommendations?.ai?.primary?.tile) {
+            recommendedTiles.add(this.aiRecommendations.ai.primary.tile);
+        }
+        if (this.aiRecommendations?.ai?.alternatives) {
+            this.aiRecommendations.ai.alternatives.forEach(alt => {
+                recommendedTiles.add(alt.tile);
+            });
+        }
+
+        normalTiles.forEach((tile, i) => {
             const d = document.createElement('div');
             d.className = `tile ${this.cls(tile)}`;
-            if (sorted.length % 3 === 2 && i === sorted.length - 1) {
-                d.classList.add('tsumo-tile');
+            
+            if (recommendedTiles.has(tile)) {
+                d.classList.add('ai-recommended');
             }
+            
             d.innerHTML = this.tileHTML(tile);
             d.dataset.i = i;
             d.dataset.t = tile;
             d.addEventListener('click', () => this.clickTile(i, tile, d));
             el.appendChild(d);
         });
+
+        if (tsumoTile) {
+            const d = document.createElement('div');
+            d.className = `tile ${this.cls(tsumoTile)} tsumo-tile`;
+            
+            if (recommendedTiles.has(tsumoTile)) {
+                d.classList.add('ai-recommended');
+            }
+            
+            d.innerHTML = this.tileHTML(tsumoTile);
+            d.dataset.i = normalTiles.length;
+            d.dataset.t = tsumoTile;
+            d.addEventListener('click', () => this.clickTile(normalTiles.length, tsumoTile, d));
+            el.appendChild(d);
+        }
     }
 
     /* ── Opponents ─────────────────────────── */

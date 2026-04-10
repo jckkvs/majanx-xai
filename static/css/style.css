@@ -26,6 +26,7 @@
     --color-accent-red: #e05252;
     --color-accent-blue: #4a8fe7;
     --color-accent-green: #48c78e;
+    --color-accent-purple: #ab47bc;
 
     --color-tile-face: #f5f0e8;
     --color-tile-side: #d9d0c0;
@@ -33,8 +34,8 @@
     --color-tile-hover: #fffdf5;
     --color-tile-selected: #ffeaa0;
 
-    --tw: 46px;
-    --th: 64px;
+    --tw: 60px;
+    --th: 84px;
     --tw-sm: 28px;
     --th-sm: 38px;
     --radius: 8px;
@@ -374,6 +375,12 @@ html, body {
         0 0 12px rgba(212, 168, 83, 0.3),
         1px 1px 0px var(--color-tile-side);
     border: 1.5px solid var(--color-accent-gold);
+    filter: brightness(1.15) drop-shadow(0 0 4px rgba(212, 168, 83, 0.8));
+    z-index: 10;
+}
+.river-tile.tile-sprite.last-discard {
+    border: 1.5px solid var(--color-accent-gold);
+    border-radius: 4px;
 }
 
 @keyframes tilePlace {
@@ -400,45 +407,51 @@ html, body {
     gap: 3px;
     align-items: flex-end;
 }
+#hand-0 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  /* 13牌分の幅を固定 (60px幅 + 左右4pxマージン = 64px × 13) */
+  width: calc(64px * 13);
+  margin: 0 auto;
+  padding-bottom: 10px;
+}
 
 /* ─── 牌 (Nyanco Style) ─────────────────── */
 .tile {
+    width: 60px;
+    height: 84px;
+    background-image: url('../img/majang-hai.png');
+    background-repeat: no-repeat;
+    background-size: 540px 336px;
+    display: inline-block;
+    flex: 0 0 60px; /* 縮小・拡大を禁止 */
+    margin: 0 2px;  /* 左右4px間隔固定 */
+    border-radius: 4px;
+    vertical-align: top;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    
     position: relative;
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: var(--tw);
-    height: var(--th);
-    min-width: var(--tw);
-    max-width: var(--tw);
-    min-height: var(--th);
-    max-height: var(--th);
-    background: var(--color-tile-face);
-    border: none;
-    border-radius: 8px;
     box-shadow: 1px 1px 0px #ccc, 2px 3px 5px rgba(0, 0, 0, 0.25);
     font-family: var(--font-tile);
     font-size: 1rem;
     font-weight: bold;
     line-height: 1.05;
     user-select: none;
-    transition: all var(--ease);
-    cursor: pointer;
-    flex-shrink: 0;
-    flex-grow: 0;
     color: #1a1a1a;
 }
 .tile:hover {
     transform: translateY(-6px);
     box-shadow: 2px 6px 0px #5c7468, 3px 7px 8px rgba(0, 0, 0, 0.3);
-    background: var(--color-tile-hover);
     z-index: 10;
+    filter: brightness(1.1);
 }
 .tile.selected {
     transform: translateY(-12px);
-    background: linear-gradient(180deg, #fff8e0, #ffeaa0);
     box-shadow: 2px 10px 0px #d4a853, 3px 11px 12px rgba(212, 168, 83, 0.5);
+    filter: brightness(1.2) drop-shadow(0 0 4px var(--color-accent-gold));
 }
 
 .tile.manzu { color: #d32f2f; }
@@ -448,23 +461,132 @@ html, body {
 .tile.jihai .char-c { color: #d32f2f; }
 .tile.jihai .char-f { color: #388e3c; }
 
-/* 自摸牌の間隔調整 */
-.tile.tsumo-tile {
-    margin-left: 20px;
-    margin-right: 4px;
-    position: relative;
+/* --- スプライトシート --- */
+.tile.tile-sprite, .river-tile.tile-sprite {
+    background-image: url('../img/majang-hai.png') !important;
+    background-size: 1000% 400% !important; /* 10 cols x 4 rows */
+    background-repeat: no-repeat;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: transparent !important;
 }
-.tile.tsumo-tile::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 8px;
-    height: 8px;
-    background: var(--color-accent-gold);
-    border-radius: 50%;
+.tile.tile-sprite.selected, .tile.tile-sprite:hover {
+    box-shadow: none !important;
+}
+
+/* Y positions (4 rows: 0, 33.3%, 66.6%, 100%) */
+.row-0 { background-position-y: 0% !important; }
+.row-1 { background-position-y: 33.333% !important; }
+.row-2 { background-position-y: 66.666% !important; }
+.row-3 { background-position-y: 100% !important; }
+
+/* X positions (10 cols: 0, 11.1%, 22.2%, ..., 100%) */
+.col-0 { background-position-x: 0% !important; }
+.col-1 { background-position-x: 11.111% !important; }
+.col-2 { background-position-x: 22.222% !important; }
+.col-3 { background-position-x: 33.333% !important; }
+.col-4 { background-position-x: 44.444% !important; }
+.col-5 { background-position-x: 55.555% !important; }
+.col-6 { background-position-x: 66.666% !important; }
+.col-7 { background-position-x: 77.777% !important; }
+.col-8 { background-position-x: 88.888% !important; }
+.col-9 { background-position-x: 100% !important; }
+
+/* AI Recommendations */
+#ai-recommendations {
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 15px;
+    margin: 0 0 10px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.ai-rec-box {
+    background: linear-gradient(135deg, rgba(66, 165, 245, 0.2), rgba(30, 136, 229, 0.2));
+    border: 2px solid var(--color-accent-blue);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    min-width: 80px;
+    transition: transform 0.2s;
+}
+
+.ai-rec-box.alt {
+    background: linear-gradient(135deg, rgba(126, 87, 194, 0.2), rgba(106, 27, 154, 0.2));
+    border-color: var(--color-accent-purple);
     opacity: 0.8;
-    pointer-events: none;
+}
+
+.ai-rec-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(66, 165, 245, 0.3);
+}
+
+.ai-rec-title {
+    font-size: 0.7rem;
+    color: var(--color-accent-blue);
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.ai-rec-tile {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    margin: 5px 0;
+}
+
+.ai-rec-prob {
+    font-size: 0.85rem;
+    color: var(--color-accent-gold);
+    font-weight: bold;
+}
+
+.ai-analysis-box {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid var(--color-accent-green);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 150px;
+    max-width: 250px;
+}
+
+.ai-analysis-title {
+    font-size: 0.75rem;
+    color: var(--color-accent-green);
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.ai-analysis-text {
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+    line-height: 1.4;
+}
+
+.tile.ai-recommended {
+    box-shadow: 0 0 10px var(--color-accent-blue) !important;
+    animation: aiHighlight 1.5s ease-in-out infinite;
+}
+
+@keyframes aiHighlight {
+    0%, 100% { box-shadow: 0 0 5px var(--color-accent-blue) !important; }
+    50% { box-shadow: 0 0 20px var(--color-accent-blue), 0 0 30px var(--color-accent-gold) !important; }
+}
+
+/* 自摸牌はコンテナの右外側に配置 */
+.tile.tsumo-tile {
+  position: absolute;
+  left: calc(100% + 20px); /* 13牌の右端から20px離す */
+  top: 0;
+  margin: 0 !important;   /* flexのマージンを無効化 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  z-index: 10;
 }
 
 /* 打牌アニメーション */
