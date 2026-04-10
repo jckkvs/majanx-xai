@@ -33,16 +33,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 game = GameLoop()
 
-async def request_ai_suggestion():
+async def request_ai_suggestion(current_game):
     if not AI_AVAILABLE:
         return None
     # 人間の打牌待ち時、AI2つの推奨を取得して統合する
-    if game.state != game.STATE.DISCARDING or game.turn_idx != 0:
+    if current_game.state != current_game.STATE.DISCARDING or current_game.turn_idx != 0:
         return None
         
     legal_actions = []
     # 実際には適正な合法手リストが必要だがモック化
-    for tile in game.players[0].hand:
+    for tile in current_game.players[0].hand:
         legal_actions.append(MJAIAction("dahai", pai=tile))
         
     rec_speed = await mortal.request_action(legal_actions)
@@ -70,11 +70,13 @@ async def websocket_ui_endpoint(ws: WebSocket):
             if msg_type == "join":
                 global game
                 game = GameLoop()
+                game._session_id = str(uuid.uuid4())
+                current_session_id = game._session_id
                 snapshot = game.start()
                 
                 # 自分(盤面)のターンならAI予測も付与して送信
                 if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
-                    ai_res = await request_ai_suggestion()
+                    ai_res = await request_ai_suggestion(game)
                     if ai_res:
                         snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
                 
@@ -90,16 +92,21 @@ async def websocket_ui_endpoint(ws: WebSocket):
                     # 簡易的にCPU(1,2,3)も自動で打牌してターンを回す
                     while game.state != game.STATE.ROUND_END and game.turn_idx != 0:
                         await asyncio.sleep(0.5)
+                        if getattr(game, "_session_id", None) != current_session_id:
+                            break
                         cpu_idx = game.turn_idx
                         if game.players[cpu_idx].hand:
                             cpu_tile = game.players[cpu_idx].hand[0]
                             snapshot = game.process_discard(cpu_idx, cpu_tile)
                             await ws_manager.broadcast(snapshot)
                             
+                    if getattr(game, "_session_id", None) != current_session_id:
+                        continue
+                            
                     # 人間の手番に戻ったならAI推論を生成してブロードキャスト
                     if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
                         snapshot = game._get_state_snapshot()
-                        ai_res = await request_ai_suggestion()
+                        ai_res = await request_ai_suggestion(game)
                         if ai_res:
                             snapshot["perspective_parallel"] = ai_res["perspective_parallel"]
                         await ws_manager.broadcast(snapshot)

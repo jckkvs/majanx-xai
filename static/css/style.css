@@ -447,7 +447,25 @@ html, body {
 .tile.jihai  { color: #212121; }
 .tile.jihai .char-c { color: #d32f2f; }
 .tile.jihai .char-f { color: #388e3c; }
-.tile.tsumo-tile { margin-left: 14px; }
+
+/* 自摸牌の間隔調整 */
+.tile.tsumo-tile {
+    margin-left: 20px;
+    margin-right: 4px;
+    position: relative;
+}
+.tile.tsumo-tile::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    background: var(--color-accent-gold);
+    border-radius: 50%;
+    opacity: 0.8;
+    pointer-events: none;
+}
 
 /* 打牌アニメーション */
 .tile.discarding {

@@ -38,8 +38,12 @@ class MahjongGame {
 
     /* ── WebSocket ─────────────────────────── */
     connectWebSocket() {
+        if (this.ws) {
+            this.ws.onclose = null;
+            this.ws.close();
+        }
         const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const url = `${proto}//${location.host}/ws_ui`;
+        const url = `${proto}//${location.host}/ws_ui?new_game=true`;
         this.setLoading('サーバーに接続中...');
         this.ws = new WebSocket(url);
 
@@ -140,7 +144,7 @@ class MahjongGame {
         sorted.forEach((tile, i) => {
             const d = document.createElement('div');
             d.className = `tile ${this.cls(tile)}`;
-            if (this.isMyTurn && i === sorted.length - 1 && sorted.length === 14) {
+            if (sorted.length % 3 === 2 && i === sorted.length - 1) {
                 d.classList.add('tsumo-tile');
             }
             d.innerHTML = this.tileHTML(tile);
