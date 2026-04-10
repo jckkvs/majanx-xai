@@ -1,643 +1,395 @@
 /**
- * MAJANX-XAI Game Client
- * 麻雀ソウル風UIの実装
+ * MAJANX-XAI — Game Client v4
+ * 雀魂風: Center rivers, discard animation, last-discard highlight
+ *
+ * Protocol (server -> client):
+ *   { type:"state_update", game_state, current_player, turn, hand[],
+ *     discards[][], dora_indicator, scores[], remaining_tiles? }
+ *
+ * Protocol (client -> server):
+ *   { type:"join" }
+ *   { type:"action_request", action:"discard", tile:"1m" }
  */
 
 class MahjongGame {
     constructor() {
         this.ws = null;
         this.gameState = null;
+        this.selectedIdx = null;
         this.selectedTile = null;
-        this.playerId = 0; // 自分は常に0（下部）
-        this.tiles = [];
-        this.river = [];
-        this.doraIndicators = [];
-        
+        this.playerId = 0;
+        this.isMyTurn = false;
+        this.reconnectTimer = null;
+        this.prevDiscardCounts = [0, 0, 0, 0]; // Track previous discard counts for animation
+
+        // Settings
+        this.doubleClickMode = localStorage.getItem('doubleClickMode') === 'true';
+        this.aiHighlight = localStorage.getItem('aiHighlight') !== 'false';
+
         this.init();
     }
 
+    /* ── Bootstrap ─────────────────────────── */
     init() {
         this.connectWebSocket();
         this.bindEvents();
-        this.hideLoadingScreen();
+        this.initSettings();
     }
 
-    // WebSocket接続
+    /* ── WebSocket ─────────────────────────── */
     connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/game`;
-        
-        this.ws = new WebSocket(wsUrl);
-        
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const url = `${proto}//${location.host}/ws_ui`;
+        this.setLoading('サーバーに接続中...');
+        this.ws = new WebSocket(url);
+
         this.ws.onopen = () => {
-            console.log('WebSocket接続確立');
-            this.showGameScreen();
+            this.setLoading('対局を準備中...');
+            this.ws.send(JSON.stringify({ type: 'join' }));
         };
-        
-        this.ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            this.handleServerMessage(data);
+        this.ws.onmessage = (e) => {
+            try { this.onMessage(JSON.parse(e.data)); }
+            catch (err) { console.error('Parse error', err); }
         };
-        
         this.ws.onclose = () => {
-            console.log('WebSocket接続切断');
-            setTimeout(() => this.connectWebSocket(), 3000); // 3秒後に再接続
+            this.showMsg('接続が切れました — 再接続中...');
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 3000);
         };
-        
-        this.ws.onerror = (error) => {
-            console.error('WebSocketエラー:', error);
-        };
+        this.ws.onerror = () => {};
     }
 
-    // サーバーからのメッセージ処理
-    handleServerMessage(data) {
-        console.log('受信:', data);
-        
-        switch(data.type) {
-            case 'game_start':
-                this.handleGameStart(data);
-                break;
-            case 'game_state':
-                this.handleGameState(data);
-                break;
-            case 'tile_draw':
-                this.handleTileDraw(data);
-                break;
-            case 'tile_discard':
-                this.handleTileDiscard(data);
-                break;
-            case 'meld':
-                this.handleMeld(data);
-                break;
-            case 'riichi':
-                this.handleRiichi(data);
-                break;
-            case 'win':
-                this.handleWin(data);
-                break;
-            case 'ryukyoku':
-                this.handleRyukyoku(data);
-                break;
-            case 'action_request':
-                this.handleActionRequest(data);
-                break;
-            case 'message':
-                this.showMessage(data.text);
-                break;
-        }
+    /* ── Message Router ────────────────────── */
+    onMessage(d) {
+        if (d.type === 'state_update') this.onState(d);
     }
 
-    // ゲーム開始
-    handleGameStart(data) {
-        this.gameState = data.state;
-        this.updateScoreDisplay(data.scores);
-        this.updateRoundDisplay(data.round);
-        this.showMessage('ゲーム開始！');
-    }
+    onState(d) {
+        this.gameState = d;
+        this.showGame();
 
-    // ゲーム状態更新
-    handleGameState(data) {
-        this.gameState = data.state;
-        this.updateAllPlayers(data);
-        this.updateRiver(data.river);
-        this.updateDora(data.dora_indicators);
-        this.updateActivePlayer(data.current_player);
-        
-        if (data.current_player === this.playerId) {
-            this.enablePlayerActions();
+        this.renderHand(d.hand || []);
+        this.renderOpponents();
+        this.renderRivers(d.discards || []);
+        this.renderDora(d.dora_indicator);
+        this.renderScores(d.scores || [25000, 25000, 25000, 25000]);
+        this.renderTurnHighlight(d.current_player);
+        this.renderRemaining(d);
+        this.renderCenterShield(d);
+
+        this.isMyTurn = (d.current_player === this.playerId && d.game_state === 'DISCARDING');
+
+        if (d.game_state === 'ROUND_END') {
+            this.showMsg('流局');
+            this.setControls(false);
+        } else if (this.isMyTurn) {
+            this.showMsg('あなたの番です');
+            this.setControls(true);
         } else {
-            this.disablePlayerActions();
+            const names = ['', '下家', '対面', '上家'];
+            this.showMsg(`${names[d.current_player]}思考中...`);
+            this.setControls(false);
         }
     }
 
-    // 牌をツモ
-    handleTileDraw(data) {
-        const playerId = data.player_id;
-        const tile = data.tile;
-        
-        if (playerId === this.playerId) {
-            this.tiles.push(tile);
-            this.renderHand();
-            
-            if (playerId === this.gameState.current_player) {
-                this.showMessage('あなたの番です');
+    /* ── Tile helpers ──────────────────────── */
+    display(t) {
+        if (!t) return '?';
+        const H = { E: '東', S: '南', W: '西', N: '北', C: '中', F: '發', P: '白' };
+        if (H[t]) return H[t];
+        const N = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八', 9: '九' };
+        const S = { m: '萬', p: '筒', s: '索' };
+        const n = t[0], s = t[1];
+        return (N[n] && S[s]) ? N[n] + S[s] : t;
+    }
+
+    tileHTML(t) {
+        const txt = this.display(t);
+        if (txt.length <= 1) {
+            if (t === 'C') return `<span class="char-c">${txt}</span>`;
+            if (t === 'F') return `<span class="char-f">${txt}</span>`;
+            return `<span>${txt}</span>`;
+        }
+        return txt.split('').map(c => `<span>${c}</span>`).join('');
+    }
+
+    cls(t) {
+        if (!t) return '';
+        if ('ESWNC'.includes(t[0]) && t.length === 1) return 'jihai';
+        if (t === 'F' || t === 'P') return 'jihai';
+        return { m: 'manzu', p: 'pinzu', s: 'souzu' }[t[1]] || '';
+    }
+
+    tileOrder(t) {
+        const ho = { E: 100, S: 101, W: 102, N: 103, C: 104, F: 105, P: 106 };
+        if (ho[t]) return ho[t];
+        const so = { m: 0, p: 10, s: 20 };
+        return (so[t[1]] || 30) + parseInt(t[0]);
+    }
+
+    /* ── Hand ──────────────────────────────── */
+    renderHand(hand) {
+        const el = document.getElementById('hand-0');
+        if (!el) return;
+        el.innerHTML = '';
+        this.selectedIdx = null;
+        this.selectedTile = null;
+
+        const sorted = [...hand].sort((a, b) => this.tileOrder(a) - this.tileOrder(b));
+
+        sorted.forEach((tile, i) => {
+            const d = document.createElement('div');
+            d.className = `tile ${this.cls(tile)}`;
+            if (this.isMyTurn && i === sorted.length - 1 && sorted.length === 14) {
+                d.classList.add('tsumo-tile');
             }
-        }
-    }
-
-    // 牌を打牌
-    handleTileDiscard(data) {
-        const playerId = data.player_id;
-        const tile = data.tile;
-        
-        this.river.push({
-            tile: tile,
-            player_id: playerId
+            d.innerHTML = this.tileHTML(tile);
+            d.dataset.i = i;
+            d.dataset.t = tile;
+            d.addEventListener('click', () => this.clickTile(i, tile, d));
+            el.appendChild(d);
         });
-        
-        if (playerId === this.playerId) {
-            const index = this.tiles.findIndex(t => t.id === tile.id);
-            if (index !== -1) {
-                this.tiles.splice(index, 1);
-                this.renderHand();
-            }
-        }
-        
-        this.updateRiver(this.river);
     }
 
-    // 鳴き
-    handleMeld(data) {
-        const playerId = data.player_id;
-        const meld = data.meld;
-        
-        this.showMessage(`${this.getPlayerName(playerId)}が${this.getMeldName(meld.type)}!`);
-        
-        // 鳴いた牌の処理
-        if (playerId === this.playerId) {
-            // 自分の手牌から鳴きに使用した牌を削除
-            meld.tiles.forEach(tileId => {
-                const index = this.tiles.findIndex(t => t.id === tileId);
-                if (index !== -1) {
-                    this.tiles.splice(index, 1);
+    /* ── Opponents ─────────────────────────── */
+    renderOpponents() {
+        for (let p = 1; p <= 3; p++) {
+            const el = document.getElementById(`hand-${p}`);
+            if (!el) continue;
+            el.innerHTML = '';
+            for (let j = 0; j < 13; j++) {
+                const b = document.createElement('div');
+                b.className = 'tile-back';
+                el.appendChild(b);
+            }
+        }
+    }
+
+    /* ── Rivers (center cross pattern) ────── */
+    renderRivers(discards) {
+        for (let p = 0; p < 4; p++) {
+            const el = document.getElementById(`river-${p}`);
+            if (!el) continue;
+
+            const arr = discards[p] || [];
+            const prevCount = this.prevDiscardCounts[p];
+
+            el.innerHTML = '';
+            arr.forEach((t, idx) => {
+                const d = document.createElement('div');
+                d.className = `river-tile ${this.cls(t)}`;
+                d.innerHTML = this.tileHTML(t);
+                // Last discard of each player gets highlight
+                if (idx === arr.length - 1) {
+                    d.classList.add('last-discard');
                 }
+                // New tiles get animation
+                if (idx >= prevCount) {
+                    d.style.animation = 'tilePlace 0.25s ease-out';
+                }
+                el.appendChild(d);
             });
-            this.renderHand();
+
+            this.prevDiscardCounts[p] = arr.length;
         }
-        
-        // 鳴き表示エリアに追加
-        this.renderMeld(playerId, meld);
     }
 
-    // リーチ
-    handleRiichi(data) {
-        const playerId = data.player_id;
-        this.showMessage(`${this.getPlayerName(playerId)}がリーチ!`);
-        
-        // リーチ棒の表示
-        this.showRiichiStick(playerId);
+    /* ── Dora ──────────────────────────────── */
+    renderDora(indicator) {
+        const el = document.getElementById('dora-tiles');
+        if (!el) return;
+        el.innerHTML = '';
+        if (indicator) {
+            const d = document.createElement('div');
+            d.className = `tile ${this.cls(indicator)}`;
+            d.style.cssText = 'width:var(--tw-sm);height:var(--th-sm);font-size:0.55rem;cursor:default;border-radius:4px';
+            d.innerHTML = this.tileHTML(indicator);
+            el.appendChild(d);
+        }
     }
 
-    // 和了
-    handleWin(data) {
-        const playerId = data.player_id;
-        const winInfo = data.win_info;
-        
-        this.showWinModal(playerId, winInfo);
-        this.showMessage(`${this.getPlayerName(playerId)}の和了！`);
+    /* ── Scores ────────────────────────────── */
+    renderScores(scores) {
+        scores.forEach((s, i) => {
+            const el = document.getElementById(`score-val-${i}`);
+            if (el) el.textContent = s.toLocaleString();
+        });
     }
 
-    // 流局
-    handleRyukyoku(data) {
-        const reason = data.reason;
-        this.showMessage(`流局 (${reason})`);
-        
-        // 流局詳細表示
-        setTimeout(() => {
-            this.showRyukyokuDetails(data);
-        }, 1000);
-    }
-
-    // アクション要求（ポン・チー・カン・ロンなど）
-    handleActionRequest(data) {
-        const actions = data.actions;
-        this.showActionButtons(actions);
-    }
-
-    // 全プレイヤーの更新
-    updateAllPlayers(data) {
-        // 他のプレイヤーの手牌は伏せたまま
+    /* ── Turn highlight ────────────────────── */
+    renderTurnHighlight(cp) {
         for (let i = 0; i < 4; i++) {
-            if (i !== this.playerId) {
-                this.updateOpponentHand(i, data.hands[i].length);
+            const chip = document.getElementById(`score-${i}`);
+            if (chip) chip.classList.toggle('active', i === cp);
+        }
+    }
+
+    /* ── Remaining ─────────────────────────── */
+    renderRemaining(d) {
+        const remaining = Math.max(0, 136 - 14 - 52 - (d.turn || 0));
+        // Top bar
+        const el = document.getElementById('remain-count');
+        if (el) el.textContent = remaining;
+        // Center shield
+        const shieldEl = document.getElementById('shield-remain');
+        if (shieldEl) shieldEl.textContent = remaining;
+    }
+
+    /* ── Center Shield ────────────────────── */
+    renderCenterShield(d) {
+        const roundEl = document.getElementById('shield-round');
+        if (roundEl) {
+            const winds = ['東', '南', '西', '北'];
+            const roundNum = (d.round_number || 0);
+            const wind = winds[Math.floor(roundNum / 4)] || '東';
+            const num = (roundNum % 4) + 1;
+            roundEl.textContent = `${wind}${num}局`;
+        }
+    }
+
+    /* ── Tile interaction ──────────────────── */
+    clickTile(idx, tile, el) {
+        if (!this.isMyTurn) return;
+
+        if (this.doubleClickMode) {
+            if (this.selectedIdx === idx) {
+                this.doDiscard(tile, el);
+                return;
             }
-        }
-        
-        // 自分の手牌
-        if (data.hands[this.playerId]) {
-            this.tiles = data.hands[this.playerId];
-            this.renderHand();
-        }
-    }
-
-    // 対戦相手の手牌更新（枚数のみ）
-    updateOpponentHand(playerId, tileCount) {
-        const handElement = document.getElementById(`hand-${playerId}`);
-        handElement.innerHTML = '';
-        
-        // 伏せ牌を表示
-        for (let i = 0; i < tileCount; i++) {
-            const tile = document.createElement('div');
-            tile.className = 'tile back';
-            tile.textContent = '🀄';
-            handElement.appendChild(tile);
-        }
-    }
-
-    // 自分の手牌レンダリング
-    renderHand() {
-        const handElement = document.getElementById(`hand-${this.playerId}`);
-        handElement.innerHTML = '';
-        
-        // 手牌をソート
-        this.sortTiles();
-        
-        this.tiles.forEach((tile, index) => {
-            const tileElement = this.createTileElement(tile, index);
-            handElement.appendChild(tileElement);
-        });
-    }
-
-    // 牌のソート
-    sortTiles() {
-        const tileOrder = {
-            'm': 1, 'p': 2, 's': 3, 'z': 4
-        };
-        
-        this.tiles.sort((a, b) => {
-            const suitA = tileOrder[a.suit] || 5;
-            const suitB = tileOrder[b.suit] || 5;
-            
-            if (suitA !== suitB) {
-                return suitA - suitB;
-            }
-            
-            return a.number - b.number;
-        });
-    }
-
-    // 牌要素の作成
-    createTileElement(tile, index) {
-        const tileElement = document.createElement('div');
-        tileElement.className = `tile ${this.getTileClass(tile)}`;
-        tileElement.textContent = this.getTileDisplay(tile);
-        tileElement.dataset.index = index;
-        
-        // クリックイベント
-        tileElement.addEventListener('click', () => this.handleTileClick(index, tile));
-        
-        return tileElement;
-    }
-
-    // 牌のクラス取得
-    getTileClass(tile) {
-        switch(tile.suit) {
-            case 'm': return 'manzu';
-            case 'p': return 'pinzu';
-            case 's': return 'souzu';
-            case 'z': return 'jihai';
-            default: return '';
-        }
-    }
-
-    // 牌の表示文字取得
-    getTileDisplay(tile) {
-        if (tile.suit === 'z') {
-            const jihaiMap = {
-                1: '東', 2: '南', 3: '西', 4: '北',
-                5: '白', 6: '發', 7: '中'
-            };
-            return jihaiMap[tile.number] || '';
-        }
-        
-        const suitMap = {
-            'm': '萬',
-            'p': '筒',
-            's': '索'
-        };
-        
-        const numMap = {
-            1: '一', 2: '二', 3: '三', 4: '四',
-            5: '五', 6: '六', 7: '七', 8: '八', 9: '九'
-        };
-        
-        return numMap[tile.number] + suitMap[tile.suit];
-    }
-
-    // 牌クリック処理
-    handleTileClick(index, tile) {
-        if (this.gameState.current_player !== this.playerId) {
-            return; // 自分の番でない場合は何もしない
-        }
-        
-        // 選択状態の切り替え
-        if (this.selectedTile === index) {
-            this.deselectTile();
+            this.deselect();
+            this.selectedIdx = idx;
+            this.selectedTile = tile;
+            el.classList.add('selected');
         } else {
-            this.selectTile(index);
+            // Single-click: animate then discard
+            this.doDiscard(tile, el);
         }
     }
 
-    // 牌選択
-    selectTile(index) {
-        this.deselectTile();
-        this.selectedTile = index;
-        
-        const handElement = document.getElementById(`hand-${this.playerId}`);
-        const tiles = handElement.querySelectorAll('.tile');
-        tiles[index].classList.add('selected');
-    }
-
-    // 牌選択解除
-    deselectTile() {
-        if (this.selectedTile === null) return;
-        
-        const handElement = document.getElementById(`hand-${this.playerId}`);
-        const tiles = handElement.querySelectorAll('.tile');
-        tiles.forEach(tile => tile.classList.remove('selected'));
-        
+    deselect() {
+        if (this.selectedIdx === null) return;
+        document.querySelectorAll('#hand-0 .tile').forEach(t => t.classList.remove('selected'));
+        this.selectedIdx = null;
         this.selectedTile = null;
     }
 
-    // 河の更新
-    updateRiver(river) {
-        const riverElement = document.getElementById('river');
-        riverElement.innerHTML = '';
-        
-        river.forEach((discard, index) => {
-            const tileElement = document.createElement('div');
-            tileElement.className = `tile ${this.getTileClass(discard.tile)} discard-animation`;
-            tileElement.textContent = this.getTileDisplay(discard.tile);
-            tileElement.style.animationDelay = `${index * 0.05}s`;
-            riverElement.appendChild(tileElement);
-        });
-    }
+    doDiscard(tile, tileEl) {
+        if (!this.isMyTurn || !tile) return;
+        this.isMyTurn = false;
+        this.deselect();
+        this.setControls(false);
 
-    // ドラ表示更新
-    updateDora(doraIndicators) {
-        const doraElement = document.getElementById('dora-tiles');
-        doraElement.innerHTML = '';
-        
-        doraIndicators.forEach(tile => {
-            const tileElement = document.createElement('div');
-            tileElement.className = `tile dora ${this.getTileClass(tile)}`;
-            tileElement.textContent = this.getTileDisplay(tile);
-            doraElement.appendChild(tileElement);
-        });
-    }
-
-    // アクティブプレイヤー更新
-    updateActivePlayer(playerId) {
-        document.querySelectorAll('.player-area').forEach((el, index) => {
-            if (index === playerId) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
-        });
-        
-        document.querySelectorAll('.player-score').forEach((el, index) => {
-            if (index === playerId) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
-        });
-    }
-
-    // スコア表示更新
-    updateScoreDisplay(scores) {
-        scores.forEach((score, index) => {
-            const element = document.getElementById(`score-val-${index}`);
-            if (element) {
-                element.textContent = score;
-            }
-        });
-    }
-
-    // 局表示更新
-    updateRoundDisplay(round) {
-        const roundElement = document.getElementById('round-display');
-        const honbaElement = document.getElementById('honba-display');
-        
-        const roundMap = {
-            'east': '東',
-            'south': '南',
-            'west': '西',
-            'north': '北'
-        };
-        
-        roundElement.textContent = `${roundMap[round.wind]}${round.number}局`;
-        honbaElement.textContent = `${round.honba}本場`;
-    }
-
-    // プレイヤー名取得
-    getPlayerName(playerId) {
-        const names = ['自分', '下家', '対面', '上家'];
-        return names[playerId] || `Player ${playerId}`;
-    }
-
-    // 鳴き名取得
-    getMeldName(meldType) {
-        const names = {
-            'chi': 'チー',
-            'pon': 'ポン',
-            'kan': 'カン'
-        };
-        return names[meldType] || meldType;
-    }
-
-    // 鳴きレンダリング
-    renderMeld(playerId, meld) {
-        const poolElement = document.getElementById(`pool-${playerId}`);
-        
-        meld.tiles.forEach(tile => {
-            const tileElement = document.createElement('div');
-            tileElement.className = `tile ${this.getTileClass(tile)}`;
-            tileElement.textContent = this.getTileDisplay(tile);
-            poolElement.appendChild(tileElement);
-        });
-    }
-
-    // リーチ棒表示
-    showRiichiStick(playerId) {
-        const playerArea = document.getElementById(`player-${playerId}`);
-        const stick = document.createElement('div');
-        stick.className = 'riichi-stick';
-        playerArea.appendChild(stick);
-    }
-
-    // アクションボタン表示
-    showActionButtons(actions) {
-        const container = document.getElementById('action-buttons');
-        container.innerHTML = '';
-        
-        actions.forEach(action => {
-            const button = document.createElement('button');
-            button.className = `action-btn ${action.type}`;
-            button.textContent = this.getActionLabel(action.type);
-            button.onclick = () => this.sendAction(action);
-            container.appendChild(button);
-        });
-    }
-
-    // アクションラベル取得
-    getActionLabel(actionType) {
-        const labels = {
-            'riichi': 'リーチ',
-            'tsumo': 'ツモ',
-            'ron': 'ロン',
-            'chi': 'チー',
-            'pon': 'ポン',
-            'kan': 'カン',
-            'none': 'スキップ',
-            'flow': '流局'
-        };
-        return labels[actionType] || actionType;
-    }
-
-    // アクション送信
-    sendAction(action) {
-        this.ws.send(JSON.stringify({
-            type: 'action',
-            action: action.type,
-            tile_index: this.selectedTile
-        }));
-        
-        // ボタンを非表示
-        document.getElementById('action-buttons').innerHTML = '';
-        this.deselectTile();
-    }
-
-    // プレイヤーアクション有効化
-    enablePlayerActions() {
-        const controlBtns = document.querySelectorAll('.control-btn');
-        controlBtns.forEach(btn => {
-            if (btn.id === 'btn-riichi' || btn.id === 'btn-ron') {
-                btn.disabled = false;
-            } else {
-                btn.disabled = false;
-            }
-        });
-    }
-
-    // プレイヤーアクション無効化
-    disablePlayerActions() {
-        const controlBtns = document.querySelectorAll('.control-btn');
-        controlBtns.forEach(btn => {
-            btn.disabled = true;
-        });
-    }
-
-    // メッセージ表示
-    showMessage(text) {
-        const messageElement = document.getElementById('game-message');
-        messageElement.textContent = text;
-        
-        // 3秒後に消去
-        setTimeout(() => {
-            if (messageElement.textContent === text) {
-                messageElement.textContent = '';
-            }
-        }, 3000);
-    }
-
-    // 和了モーダル表示
-    showWinModal(playerId, winInfo) {
-        const modal = document.getElementById('win-modal');
-        const title = document.getElementById('win-title');
-        const details = document.getElementById('win-details');
-        
-        title.textContent = playerId === this.playerId ? '和了!' : '放銃!';
-        
-        let detailHTML = `
-            <div><strong>プレイヤー:</strong> ${this.getPlayerName(playerId)}</div>
-            <div><strong>手役:</strong> ${winInfo.yaku.join(', ')}</div>
-            <div><strong>翻数:</strong> ${winInfo.han}翻</div>
-            <div><strong>符:</strong> ${winInfo.fu}符</div>
-            <div><strong>得点:</strong> ${winInfo.score}点</div>
-        `;
-        
-        details.innerHTML = detailHTML;
-        modal.classList.remove('hidden');
-    }
-
-    // 流局詳細表示
-    showRyukyokuDetails(data) {
-        // 実装は必要に応じて追加
-        console.log('流局詳細:', data);
-    }
-
-    // イベントバインド
-    bindEvents() {
-        // コントロールパネルのボタン
-        document.getElementById('btn-riichi').addEventListener('click', () => {
-            this.sendAction({ type: 'riichi' });
-        });
-        
-        document.getElementById('btn-tsumo').addEventListener('click', () => {
-            if (this.selectedTile !== null) {
-                this.sendAction({ type: 'discard', tile_index: this.selectedTile });
-            }
-        });
-        
-        document.getElementById('btn-ron').addEventListener('click', () => {
-            this.sendAction({ type: 'ron' });
-        });
-        
-        document.getElementById('btn-flow').addEventListener('click', () => {
-            this.sendAction({ type: 'ryukyoku' });
-        });
-        
-        document.getElementById('btn-menu').addEventListener('click', () => {
-            this.showMenu();
-        });
-        
-        // キーボードショートカット
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.deselectTile();
-            } else if (e.key === 'Enter' && this.selectedTile !== null) {
-                document.getElementById('btn-tsumo').click();
-            }
-        });
-    }
-
-    // メニュー表示
-    showMenu() {
-        const menuItems = [
-            { label: 'ゲームを終了', action: () => this.endGame() },
-            { label: '設定', action: () => this.showSettings() },
-            { label: 'キャンセル', action: () => {} }
-        ];
-        
-        // シンプルな確認ダイアログ
-        if (confirm('ゲームを終了しますか？')) {
-            this.endGame();
+        // Animate the tile out
+        if (tileEl) {
+            tileEl.classList.add('discarding');
+            tileEl.addEventListener('animationend', () => {
+                this.showMsg('打牌中...');
+                this.ws.send(JSON.stringify({ type: 'action_request', action: 'discard', tile }));
+            }, { once: true });
+        } else {
+            this.showMsg('打牌中...');
+            this.ws.send(JSON.stringify({ type: 'action_request', action: 'discard', tile }));
         }
     }
 
-    // ゲーム終了
-    endGame() {
-        this.ws.send(JSON.stringify({ type: 'end_game' }));
-        location.reload();
+    /* ── UI helpers ────────────────────────── */
+    showGame() {
+        const ls = document.getElementById('loading-screen');
+        const gs = document.getElementById('game-screen');
+        if (ls && !ls.classList.contains('fade-out')) {
+            ls.classList.add('fade-out');
+            setTimeout(() => ls.classList.add('hidden'), 600);
+        }
+        if (gs) gs.classList.remove('hidden');
     }
 
-    // 設定表示
-    showSettings() {
-        alert('設定機能は準備中です');
+    setLoading(msg) {
+        const el = document.getElementById('loading-msg');
+        if (el) el.textContent = msg;
     }
 
-    // ローディング画面非表示
-    hideLoadingScreen() {
-        setTimeout(() => {
-            document.getElementById('loading-screen').classList.add('hidden');
-        }, 1500);
+    showMsg(text) {
+        const el = document.getElementById('game-message');
+        if (el) el.textContent = text;
     }
 
-    // ゲーム画面表示
-    showGameScreen() {
-        document.getElementById('game-screen').classList.remove('hidden');
+    setControls(on) {
+        const btn = document.getElementById('btn-tsumo');
+        if (btn) btn.disabled = !on;
+        ['btn-riichi', 'btn-ron'].forEach(id => {
+            const b = document.getElementById(id);
+            if (b) b.disabled = true;
+        });
+    }
+
+    /* ── Settings ──────────────────────────── */
+    initSettings() {
+        const dcToggle = document.getElementById('setting-doubleclick');
+        const aiToggle = document.getElementById('setting-ai-highlight');
+
+        if (dcToggle) {
+            dcToggle.checked = this.doubleClickMode;
+            dcToggle.addEventListener('change', () => {
+                this.doubleClickMode = dcToggle.checked;
+                localStorage.setItem('doubleClickMode', this.doubleClickMode);
+            });
+        }
+        if (aiToggle) {
+            aiToggle.checked = this.aiHighlight;
+            aiToggle.addEventListener('change', () => {
+                this.aiHighlight = aiToggle.checked;
+                localStorage.setItem('aiHighlight', this.aiHighlight);
+            });
+        }
+    }
+
+    toggleSettings() {
+        const panel = document.getElementById('settings-panel');
+        const overlay = document.getElementById('settings-overlay');
+        if (!panel) return;
+        const isOpen = !panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', isOpen);
+        overlay?.classList.toggle('hidden', isOpen);
+    }
+
+    /* ── Events ────────────────────────────── */
+    bindEvents() {
+        document.getElementById('btn-tsumo')?.addEventListener('click', () => {
+            if (this.doubleClickMode && this.selectedTile) {
+                this.doDiscard(this.selectedTile);
+            } else if (!this.doubleClickMode) {
+                this.showMsg('牌をクリックして打牌');
+            } else {
+                this.showMsg('牌を選択してください');
+            }
+        });
+
+        document.getElementById('btn-menu')?.addEventListener('click', () => {
+            this.toggleSettings();
+        });
+
+        document.getElementById('settings-close')?.addEventListener('click', () => {
+            this.toggleSettings();
+        });
+        document.getElementById('settings-overlay')?.addEventListener('click', () => {
+            this.toggleSettings();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.deselect();
+                const panel = document.getElementById('settings-panel');
+                if (panel && !panel.classList.contains('hidden')) this.toggleSettings();
+            }
+            if (e.key === 'Enter' && this.selectedTile && this.doubleClickMode) {
+                this.doDiscard(this.selectedTile);
+            }
+        });
     }
 }
 
-// グローバル関数
-function closeWinModal() {
-    document.getElementById('win-modal').classList.add('hidden');
-}
+/* ── Global ────────────────────────────── */
+function closeWinModal() { document.getElementById('win-modal')?.classList.add('hidden'); }
 
-// ゲーム開始
 let game;
-document.addEventListener('DOMContentLoaded', () => {
-    game = new MahjongGame();
-});
+document.addEventListener('DOMContentLoaded', () => { game = new MahjongGame(); });

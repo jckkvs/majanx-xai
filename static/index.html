@@ -4,153 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MajanX-XAI - 麻雀対戦</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=5">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- ロード画面 -->
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <h1>MAJANX-XAI</h1>
-            <p>対戦相手を探しています...</p>
+            <div class="loading-logo">雀</div>
+            <h1>MAJANX<span class="xai">-XAI</span></h1>
+            <p id="loading-msg">サーバーに接続中...</p>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
         </div>
     </div>
 
     <!-- ゲーム画面 -->
     <div id="game-screen" class="game-screen hidden">
-        <!-- 上部情報バー -->
-        <div class="top-bar">
-            <div class="game-info">
-                <span class="round-indicator" id="round-display">東1局</span>
-                <span class="honba-indicator" id="honba-display">0本場</span>
+        <!-- ヘッダー -->
+        <header class="top-bar">
+            <div class="round-info">
+                <span class="round-wind" id="round-display">東1局</span>
+                <span class="round-honba" id="honba-display">0本場</span>
+                <span class="remain-tiles">残 <b id="remain-count">--</b></span>
             </div>
-            <div class="score-display">
-                <div class="player-score" id="score-0">
-                    <span class="player-name">自分</span>
-                    <span class="score-value" id="score-val-0">25000</span>
-                </div>
-                <div class="player-score" id="score-1">
-                    <span class="player-name">下家</span>
-                    <span class="score-value" id="score-val-1">25000</span>
-                </div>
-                <div class="player-score" id="score-2">
-                    <span class="player-name">対面</span>
-                    <span class="score-value" id="score-val-2">25000</span>
-                </div>
-                <div class="player-score" id="score-3">
-                    <span class="player-name">上家</span>
-                    <span class="score-value" id="score-val-3">25000</span>
-                </div>
+            <div class="score-row">
+                <div class="score-chip you" id="score-0"><span class="sc-name">自家</span><span class="sc-val" id="score-val-0">25,000</span></div>
+                <div class="score-chip" id="score-1"><span class="sc-name">下家</span><span class="sc-val" id="score-val-1">25,000</span></div>
+                <div class="score-chip" id="score-2"><span class="sc-name">対面</span><span class="sc-val" id="score-val-2">25,000</span></div>
+                <div class="score-chip" id="score-3"><span class="sc-name">上家</span><span class="sc-val" id="score-val-3">25,000</span></div>
             </div>
-        </div>
+        </header>
 
-        <!-- ゲームボード -->
-        <div class="game-board">
-            <!-- 上家（左側） -->
-            <div class="player-area player-left" id="player-3">
-                <div class="player-info">
-                    <div class="avatar">
-                        <div class="avatar-placeholder">上</div>
+        <!-- メインボード -->
+        <main class="board">
+            <!-- 対面の手牌 (上) -->
+            <section class="opp-area" id="player-2">
+                <div class="opp-label"><span class="opp-wind" id="wind-2">南</span><span>対面</span></div>
+                <div class="opp-hand" id="hand-2"></div>
+            </section>
+
+            <!-- 中段: 上家 + 雀卓 + 下家 -->
+            <div class="mid-row">
+                <section class="side-opp" id="player-3">
+                    <div class="opp-label"><span class="opp-wind" id="wind-3">西</span><span>上家</span></div>
+                    <div class="opp-hand" id="hand-3"></div>
+                </section>
+
+                <!-- 雀卓中央 -->
+                <section class="table-center">
+                    <!-- 4人分の河を十字配置 -->
+                    <div class="river-zone">
+                        <div class="river-row river-toimen" id="river-2"></div>
+                        <div class="river-mid">
+                            <div class="river-col river-kamicha" id="river-3"></div>
+                            <div class="center-shield" id="center-info">
+                                <div class="shield-round" id="shield-round">東1局</div>
+                                <div class="shield-remain">残 <span id="shield-remain">--</span></div>
+                                <div class="dora-mini">
+                                    <span class="dora-mini-label">ドラ</span>
+                                    <div id="dora-tiles" class="dora-tiles"></div>
+                                </div>
+                            </div>
+                            <div class="river-col river-shimocha" id="river-1"></div>
+                        </div>
+                        <div class="river-row river-jibun" id="river-0"></div>
                     </div>
-                    <div class="wind-indicator" id="wind-3">西</div>
-                </div>
-                <div class="hand-display" id="hand-3">
-                    <!-- 牌はJSで動的生成 -->
-                </div>
-                <div class="tile-pool" id="pool-3"></div>
-            </div>
-
-            <!-- 対面（上部） -->
-            <div class="player-area player-top" id="player-2">
-                <div class="player-info">
-                    <div class="avatar">
-                        <div class="avatar-placeholder">対</div>
+                    <!-- メッセージ -->
+                    <div class="turn-indicator">
+                        <span id="game-message">対局準備中...</span>
                     </div>
-                    <div class="wind-indicator" id="wind-2">南</div>
-                </div>
-                <div class="hand-display" id="hand-2"></div>
-                <div class="tile-pool" id="pool-2"></div>
-            </div>
+                </section>
 
-            <!-- 下家（右側） -->
-            <div class="player-area player-right" id="player-1">
-                <div class="player-info">
-                    <div class="avatar">
-                        <div class="avatar-placeholder">下</div>
-                    </div>
-                    <div class="wind-indicator" id="wind-1">東</div>
-                </div>
-                <div class="hand-display" id="hand-1"></div>
-                <div class="tile-pool" id="pool-1"></div>
+                <section class="side-opp" id="player-1">
+                    <div class="opp-label"><span class="opp-wind" id="wind-1">東</span><span>下家</span></div>
+                    <div class="opp-hand" id="hand-1"></div>
+                </section>
             </div>
+        </main>
 
-            <!-- 中央エリア（河・ドラ表示） -->
-            <div class="center-area">
-                <div class="dora-indicator" id="dora-display">
-                    <span class="dora-label">ドラ</span>
-                    <div class="dora-tiles" id="dora-tiles"></div>
-                </div>
-                <div class="river-container">
-                    <div class="river-label">河</div>
-                    <div class="river" id="river">
-                        <!-- 捨て牌はJSで動的生成 -->
-                    </div>
-                </div>
-                <div class="game-message" id="game-message"></div>
-                <div class="action-buttons" id="action-buttons">
-                    <!-- アクションボタンはJSで動的生成 -->
-                </div>
+        <!-- 手牌 + コントロール -->
+        <footer class="my-area" id="player-0">
+            <div class="my-hand" id="hand-0"></div>
+            <div class="my-controls">
+                <button class="ctrl-btn" id="btn-riichi" disabled>リーチ</button>
+                <button class="ctrl-btn primary" id="btn-tsumo" disabled>打牌</button>
+                <button class="ctrl-btn" id="btn-ron" disabled>ロン</button>
+                <button class="ctrl-btn ghost" id="btn-menu" title="設定">⚙</button>
             </div>
-
-            <!-- 自分（下部） -->
-            <div class="player-area player-bottom active" id="player-0">
-                <div class="player-info">
-                    <div class="avatar">
-                        <div class="avatar-placeholder">自</div>
-                    </div>
-                    <div class="wind-indicator" id="wind-0">北</div>
-                </div>
-                <div class="hand-display interactive" id="hand-0">
-                    <!-- 自分の手牌はJSで動的生成（クリック可能） -->
-                </div>
-                <div class="tile-pool" id="pool-0"></div>
-            </div>
-        </div>
-
-        <!-- コントロールパネル -->
-        <div class="control-panel">
-            <button class="control-btn" id="btn-riichi" disabled>リーチ</button>
-            <button class="control-btn" id="btn-tsumo">ツモ</button>
-            <button class="control-btn" id="btn-ron" disabled>ロン</button>
-            <button class="control-btn" id="btn-flow">流局</button>
-            <button class="control-btn" id="btn-menu">メニュー</button>
-        </div>
+        </footer>
     </div>
 
-    <!-- 鳴き選択モーダル -->
+    <!-- 設定パネル -->
+    <div id="settings-overlay" class="settings-overlay hidden"></div>
+    <div id="settings-panel" class="settings-panel hidden">
+        <h2>⚙ 設定</h2>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">ダブルクリック打牌</div>
+                <div class="setting-desc">ONで確認クリック後に打牌（デフォルト: OFF＝ワンクリック打牌）</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="setting-doubleclick">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">AI推奨表示</div>
+                <div class="setting-desc">AI推奨牌をハイライト表示</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="setting-ai-highlight" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <button class="settings-close" id="settings-close">閉じる</button>
+    </div>
+
+    <!-- 鳴きモーダル -->
     <div id="meld-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-card">
             <h2>鳴きを選択</h2>
-            <div class="meld-options">
-                <button class="meld-btn" data-meld="none">なし</button>
-                <button class="meld-btn" data-meld="chi">チー</button>
-                <button class="meld-btn" data-meld="pon">ポン</button>
-                <button class="meld-btn" data-meld="kan">カン</button>
-                <button class="meld-btn" data-meld="ron">ロン</button>
+            <div class="modal-actions">
+                <button class="modal-btn" data-meld="none">スキップ</button>
+                <button class="modal-btn accent" data-meld="chi">チー</button>
+                <button class="modal-btn accent" data-meld="pon">ポン</button>
+                <button class="modal-btn accent" data-meld="kan">カン</button>
+                <button class="modal-btn danger" data-meld="ron">ロン</button>
             </div>
         </div>
     </div>
 
-    <!-- 和了表示モーダル -->
+    <!-- 和了モーダル -->
     <div id="win-modal" class="modal hidden">
-        <div class="modal-content win-content">
+        <div class="modal-card win-card">
             <h1 class="win-title" id="win-title">和了!</h1>
             <div class="win-details" id="win-details"></div>
-            <button class="close-btn" onclick="closeWinModal()">閉じる</button>
+            <button class="modal-btn accent" onclick="closeWinModal()">閉じる</button>
         </div>
     </div>
 
-    <script src="/static/js/game.js"></script>
+    <script src="/static/js/game.js?v=4"></script>
 </body>
 </html>

@@ -9,10 +9,23 @@ from fastapi.responses import HTMLResponse
 
 from server.ws_handler import ws_manager
 from server.game_loop import GameLoop
-from server.ai_adapters.mortal_adapter import MortalAdapter
-from server.ai_adapters.rulebase_adapter import RulebaseAdapter
-from server.ai_adapters.base import MJAIAction
-from server.recommendation_aggregator import RecommendationAggregator
+
+# AI adapters are optional - game works without them
+try:
+    from server.ai_adapters.mortal_adapter import MortalAdapter
+    from server.ai_adapters.rulebase_adapter import RulebaseAdapter
+    from server.ai_adapters.base import MJAIAction
+    from server.recommendation_aggregator import RecommendationAggregator
+    mortal = MortalAdapter()
+    phoenix = RulebaseAdapter()
+    aggregator = RecommendationAggregator()
+    AI_AVAILABLE = True
+except Exception as e:
+    print(f"AI adapters not available: {e}")
+    mortal = None
+    phoenix = None
+    aggregator = None
+    AI_AVAILABLE = False
 
 app = FastAPI()
 
@@ -20,11 +33,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 game = GameLoop()
 
-mortal = MortalAdapter()
-phoenix = RulebaseAdapter()
-aggregator = RecommendationAggregator()
-
 async def request_ai_suggestion():
+    if not AI_AVAILABLE:
+        return None
     # 人間の打牌待ち時、AI2つの推奨を取得して統合する
     if game.state != game.STATE.DISCARDING or game.turn_idx != 0:
         return None
@@ -57,10 +68,9 @@ async def websocket_ui_endpoint(ws: WebSocket):
             msg_type = data.get("type")
             
             if msg_type == "join":
-                if game.state == game.STATE.INIT:
-                    snapshot = game.start()
-                else:
-                    snapshot = game._get_state_snapshot()
+                global game
+                game = GameLoop()
+                snapshot = game.start()
                 
                 # 自分(盤面)のターンならAI予測も付与して送信
                 if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
