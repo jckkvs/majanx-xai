@@ -114,6 +114,22 @@ class HaihuRuleEngine:
             "result": {"result": "unknown"}
         })
     
+    def _record_discard_pattern(self, hand: List[str], discard: str, turn: int, 
+                                 player_idx: int, haihu_id: str):
+        """打牌パターンを記録"""
+        pattern_key = self._create_pattern_key(hand, discard)
+        
+        if pattern_key not in self.pattern_database:
+            self.pattern_database[pattern_key] = []
+        
+        self.pattern_database[pattern_key].append({
+            "discard": discard,
+            "turn": turn,
+            "player_idx": player_idx,
+            "haihu_id": haihu_id,
+            "result": {"result": "unknown"}
+        })
+    
     def _extract_patterns_from_haihu(self, haihu_data: Dict, haihu_id: str):
         """牌譜からパターンを抽出"""
         for round_data in haihu_data.get("rounds", []):
@@ -162,8 +178,8 @@ class HaihuRuleEngine:
             discard_counts = defaultdict(int)
             for inst in instances:
                 discard = inst["discard"]
-                if discard != "initial":
-                    discard_counts[discard] += 1
+                # initial もカウント（初期手牌の第一打として）
+                discard_counts[discard] += 1
             
             if not discard_counts:
                 continue
@@ -171,12 +187,16 @@ class HaihuRuleEngine:
             best_discard = max(discard_counts.keys(), key=lambda x: discard_counts[x])
             total_count = sum(discard_counts.values())
             
+            # サンプル数が少なすぎる場合はスキップ
+            if total_count < 1:
+                continue
+            
             reasoning = self._generate_natural_language_reasoning(
                 pattern_key, best_discard, discard_counts, total_count
             )
             
             rule = HaihuRule(
-                pattern_id=pattern_key[:30],
+                pattern_id=pattern_key[:50],
                 situation_desc=self._describe_situation(pattern_key),
                 recommended_tile=best_discard,
                 probability=discard_counts[best_discard] / total_count if total_count > 0 else 0,
