@@ -1,6 +1,7 @@
 # server/ai/cpu_pacing.py
 import random
 from dataclasses import dataclass
+from typing import List, Dict, Any
 from server.ai.cpu_style_profiles import CPUStyleProfile, PROFILES
 
 @dataclass

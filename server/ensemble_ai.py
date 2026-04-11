@@ -1,12 +1,11 @@
-# server/ensemble_ai.py
 from typing import Dict, List, Any
 import time
-
-from server.tactics.attack_fold_controller import AttackFoldController
-from server.tactics.call_evaluator import CallEvaluator
-from server.tactics.riichi_judge import RiichiJudge
 from server.ai.offline_progression import OfflineEngine
 from server.ai.cpu_pacing import CPUPacingEngine
+from server.ai.mahjong_brain import MahjongBrain, ShantenEngine
+from server.ai.action_judge import ActionJudge
+from server.utils.mahjong_logic import hand_to_34
+from server.models import tile_from_str
 
 class MockNNEngine:
     def predict(self, features: Any) -> Dict[str, float]:
@@ -26,88 +25,62 @@ class FeatureBuilder:
 
 class EnsembleAI:
     def __init__(self, model_path: str = ""):
-        # Mock NN engine for the v7.0 specification
-        self.nn_engine = MockNNEngine()
         self.offline_engine = OfflineEngine()
         
     def recommend(self, game_state: Dict, hand: List[str], my_seat: int) -> Dict:
         start_time = time.time()
         
-        # 1. 基本特徴量抽出・NN推論 (既存)
-        features = FeatureBuilder.build_state_tensor(**game_state)
-        nn_output = self.nn_engine.predict(features)
+        # 文字列手牌を34形式に変換
+        hand_tiles = [tile_from_str(t) for t in hand]
+        hand_34 = hand_to_34(hand_tiles)
         
-        # 2. 他家打牌評価 (鳴き判定)
-        if game_state.get("discard_player") is not None:
-            call_dec = CallEvaluator.evaluate(
-                current_hand=hand, 
-                call_target=game_state.get("discard_tile", ""), 
-                call_type="chi/pon/kan",
-                current_shanten=int(nn_output["shanten"]), 
-                current_value=nn_output["value"],
-                current_risk=nn_output["risk"], 
-                turn=game_state.get("turn", 1), 
-                riichi_count=game_state.get("riichi_count", 0)
-            )
-            if call_dec.should_call:
-                return {
-                    "action": "call", 
-                    "type": call_dec.call_type, 
-                    "latency_ms": self._get_latency(start_time)
-                }
-                
-        # 3. 攻守判断
-        af_dec = AttackFoldController.decide(
-            win_prob=nn_output["win_rate"],
-            deal_in_prob=nn_output["deal_in_rate"],
-            avg_hand_value=nn_output["value"],
-            current_score_diff=game_state.get("score_diff", 0),
-            rank=game_state.get("rank", 2),
-            turn=game_state.get("turn", 1),
-            is_riichi_opponent=len(game_state.get("riichi_players", [])) > 0
-        )
+        # 1. 向聴数計算
+        shanten, ukeire = ShantenEngine.calc(hand_34)
         
-        # 4. 打牌候補フィルタリング
-        candidates = self._filter_candidates(hand, af_dec, nn_output, game_state)
-        if not candidates:
-            # Fallback if no valid candidates
-            candidates = [{"tile": hand[0] if hand else "1m", "risk_score": 0.0}]
-            
-        # 5. リーチ判定 (聴牌時)
-        riichi_dec = None
-        if nn_output["shanten"] == 0:
-            riichi_dec = RiichiJudge.judge(
-                hand=hand, 
-                win_prob_dama=nn_output.get("win_rate_dama", 0.2), 
-                deal_in_prob=nn_output["deal_in_rate"],
-                avg_hand_value=nn_output["value"], 
-                riichi_opponents=len(game_state.get("riichi_players", [])),
-                turn=game_state.get("turn", 1), 
-                is_dealer=game_state.get("is_dealer", False)
-            )
-
-        # 6. CPU Pacing (Local Offline Context)
-        pacing_cfg = self.offline_engine.cpu_diff
-        pacing_engine = CPUPacingEngine(difficulty=pacing_cfg)
-        cpu_action = pacing_engine.resolve(candidates, {
-            "opponent_riichi": len(game_state.get("riichi_players", [])) > 0,
-            "turn": game_state.get("turn", 1)
-        })
-            
-        # 7. 最終出力
-        return {
-            "action": "discard",
-            "tile": cpu_action.tile,
-            "riichi": riichi_dec.should_riichi if riichi_dec else False,
-            "reasoning": af_dec.reason,
-            "latency_ms": self._get_latency(start_time),
-            "cpu_delay_ms": cpu_action.delay_ms,
-            "is_suboptimal": cpu_action.is_suboptimal,
-            "cpu_difficulty": pacing_cfg
+        # 2. 打牌評価 (MahjongBrain)
+        river_data = {
+            "turn": game_state.get("turn", 1),
+            "discards": game_state.get("discards", [[],[],[],[]])
         }
         
-    def _filter_candidates(self, hand: List[str], af_dec, nn_output, game_state) -> List[Dict]:
-        return [{"tile": t, "risk_score": 0.1 * idx} for idx, t in enumerate(set(hand))]
+        riichi_flags = game_state.get("riichi_flags", [False]*4)
+        opponents = [
+            {"id": i, "riichi": riichi_flags[i]} 
+            for i in range(4) if i != my_seat
+        ]
         
+        best_move = MahjongBrain.evaluate_discard(hand_34, river_data, opponents)
+        
+        # 3. 鳴き判定 (ActionJudge)
+        # 簡易的に向聴数が下がるなら鳴く
+        
+        # 4. リーチ判定 (ActionJudge)
+        riichi_action = "none"
+        if shanten == 0:
+            riichi_action = ActionJudge.riichi_vs_dama(
+                win_prob=0.3, # 推定値
+                avg_score=4000, 
+                deal_in_prob=0.1, 
+                is_riichi_safe=True, 
+                turn=game_state.get("turn", 1)
+            )
+                
+        def idx_to_tile(idx: int) -> str:
+            suits = ['m', 'p', 's', 'z']
+            s = suits[idx // 9]
+            n = (idx % 9) + 1
+            return f"{n}{s}"
+
+        # 5. 出力
+        return {
+            "action": "discard",
+            "tile": idx_to_tile(best_move["tile_idx"]),
+            "riichi": riichi_action == "riichi",
+            "shanten": shanten,
+            "ukeire": len(ukeire),
+            "reasoning": f"Attack: {best_move['attack']:.2f}, Defense: {best_move['defense']:.2f}",
+            "latency_ms": (time.time() - start_time) * 1000.0,
+        }
+
     def _get_latency(self, start_time: float) -> float:
         return (time.time() - start_time) * 1000.0

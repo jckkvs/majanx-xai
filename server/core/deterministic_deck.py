@@ -8,11 +8,13 @@ class DeterministicDeck:
         self._deck: List[str] = self._generate_deck()
         self._hash: str = ""
         self._shuffled: List[str] = self._shuffle()
+        self.dora_indicator: str = self._shuffled[-10] # 14(dead) - 4
+        self._shuffled = self._shuffled[:-14] # 山から王牌を除く
         self._consumed: List[str] = []
 
     def _generate_deck(self) -> List[str]:
         suits = ['m', 'p', 's']
-        deck = [f"{s}{n}" for s in suits for n in range(1, 10)] * 4
+        deck = [f"{n}{s}" for s in suits for n in range(1, 10)] * 4
         deck.extend([f"{i}z" for i in range(1, 8)] * 4)
         return deck
 
