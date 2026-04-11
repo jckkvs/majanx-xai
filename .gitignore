@@ -1,11 +1,1 @@
-server/data_ingestion/logs/
-__pycache__/
-*.pyc
-haihu_example/
-haihu/
-server/__pycache__/
-server/ai_adapters/__pycache__/
-server/data_ingestion/__pycache__/
-tests/__pycache__/
-server/data_ingestion/analysis_results.json
-.DS_Store
+Nothing should be ignored in this case, as only a Python source file (`server/rule_engine_2.py`) was modified and there are no build artifacts, dependencies, or temporary files in the changes.
