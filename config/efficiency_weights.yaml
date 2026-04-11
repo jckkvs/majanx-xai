@@ -1,11 +1,155 @@
-weights:
-  shape: 0.40
-  ukeire: 0.03
-  honor: 0.30
-  context:
-    late_turn_riichi: 0.90
-    dealer_early_speed: 0.02
+# 牌効率エンジン 重み設定 v1.1
+# PriorityWeightAdapter 対応 5次元重みベクトル
 
+version: "1.1"
+
+# === デフォルト重み（戦略タグ未指定時） ===
+defaults:
+  shape: 0.30
+  ukeire: 0.25
+  honor: 0.20
+  risk: 0.15
+  form: 0.10
+
+# === 戦略タグ別ベース重み ===
+# rule_engine_1 の tile_selection フィールドに対応
+strategy_weights:
+  # 速度重視（受入枚数最大化）
+  speed:
+    shape: 0.15
+    ukeire: 0.55
+    honor: 0.05
+    risk: 0.05
+    form: 0.20
+
+  # 受入枚数最大化（speedの細分化）
+  ukeire_max:
+    shape: 0.10
+    ukeire: 0.60
+    honor: 0.05
+    risk: 0.05
+    form: 0.20
+
+  # 打点最大化（形状・役牌重視）
+  value_max:
+    shape: 0.45
+    ukeire: 0.10
+    honor: 0.30
+    risk: 0.05
+    form: 0.10
+
+  # バランス型
+  balanced:
+    shape: 0.30
+    ukeire: 0.25
+    honor: 0.20
+    risk: 0.15
+    form: 0.10
+
+  # 最安全牌（完全守備）
+  safest:
+    shape: 0.00
+    ukeire: 0.00
+    honor: 0.10
+    risk: 0.80
+    form: 0.10
+
+  # テンパイ維持（聴牌キープ）
+  tenpai_maintain:
+    shape: 0.20
+    ukeire: 0.40
+    honor: 0.10
+    risk: 0.15
+    form: 0.15
+
+  # テンパイ最善（最良のテンパイを追求）
+  tenpai_best:
+    shape: 0.35
+    ukeire: 0.30
+    honor: 0.15
+    risk: 0.05
+    form: 0.15
+
+  # 安全テンパイ（テンパイ維持しつつ守備）
+  safe_tenpai:
+    shape: 0.10
+    ukeire: 0.15
+    honor: 0.10
+    risk: 0.55
+    form: 0.10
+
+  safest_tenpai:
+    shape: 0.05
+    ukeire: 0.10
+    honor: 0.10
+    risk: 0.65
+    form: 0.10
+
+  # 待ち改善（良型への手変わり重視）
+  wait_improve:
+    shape: 0.40
+    ukeire: 0.30
+    honor: 0.10
+    risk: 0.10
+    form: 0.10
+
+  # 字牌関連
+  terminal_only:
+    shape: 0.10
+    ukeire: 0.10
+    honor: 0.50
+    risk: 0.20
+    form: 0.10
+
+  honor_discard:
+    shape: 0.30
+    ukeire: 0.35
+    honor: 0.05
+    risk: 0.20
+    form: 0.10
+
+  # 染め手
+  flush_oriented:
+    shape: 0.50
+    ukeire: 0.15
+    honor: 0.20
+    risk: 0.05
+    form: 0.10
+
+# === ターンフェーズ別調整係数 ===
+# 各次元の重みにこの係数を乗算した後、再正規化する
+turn_adjustments:
+  early:   # 1-4巡
+    shape: 1.0
+    ukeire: 1.0
+    honor: 1.0
+    risk: 0.5
+    form: 0.8
+  middle:  # 5-9巡
+    shape: 1.0
+    ukeire: 0.9
+    honor: 1.1
+    risk: 1.2
+    form: 1.0
+  late:    # 10-14巡
+    shape: 0.8
+    ukeire: 0.6
+    honor: 1.3
+    risk: 1.8
+    form: 1.2
+  end:     # 15巡以降
+    shape: 0.5
+    ukeire: 0.3
+    honor: 1.5
+    risk: 2.5
+    form: 1.5
+
+# === 競合解決パラメータ ===
+conflict_resolution:
+  decay_factor: 0.5       # 優先度が1つ下がるごとの減衰率
+  max_rules_to_merge: 5   # 統合対象の最大ルール数
+
+# === レガシー互換（旧 3次元設定） ===
 thresholds:
   min_effective_ukeire: 2.0
   honor_keep_min_score: 0.5
