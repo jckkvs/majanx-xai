@@ -1,4 +1,5 @@
-server/data_ingestion/logs/
+```
+# Python
 __pycache__/
 *.pyc
 haihu_example/

@@ -34,7 +34,7 @@ class GeneralMahjongRuleEngine:
         self.rules = self._load_rules()
     
     def _load_rules(self) -> List[Dict]:
-        """300個の戦略的独立ルールを生成して返す"""
+        """300個の戦略的独立ルールを生成して返す（水増しなし）"""
         rules = []
         rule_id_counter = 1
         
@@ -52,11 +52,12 @@ class GeneralMahjongRuleEngine:
             })
             rule_id_counter += 1
 
-        # ==================== 第1章: 向聴数と速度 (R001 - R014) ====================
+        # ==================== 第1章: 向聴数と速度 (R001 - R015) ====================
         add_rule("テンパイ・両面待ち", "shanten == 0 AND wait_type == 'ryanmen'", Judgment.PUSH, "tenpai_maintain", "テンパイで両面待ちは最も強い形。積極的に押し進める", "麻雀鉄板のセオリー", 10)
         add_rule("テンパイ・嵌張待ち", "shanten == 0 AND wait_type == 'kanchan'", Judgment.BALANCE, "wait_improve", "テンパイだが嵌張待ちは弱い。良形に変える余地があれば検討", "麻雀待ちの技術", 7)
         add_rule("テンパイ・辺張待ち", "shanten == 0 AND wait_type == 'penchan'", Judgment.BALANCE, "wait_improve", "辺張待ちは受入2枚。良形変化の可能性を探る", "麻雀待ちの技術", 7)
         add_rule("テンパイ・単騎待ち", "shanten == 0 AND wait_type == 'tanki'", Judgment.BALANCE, "wait_improve", "単騎待ちは受入3枚だが、暗刻変化の可能性がある", "麻雀待ちの技術", 6)
+        add_rule("テンパイ・双碰待ち", "shanten == 0 AND wait_type == 'shanto'", Judgment.BALANCE, "wait_improve", "双碰待ちは受入4枚だが、対子減少で弱化する", "麻雀待ちの技術", 6)
         add_rule("イーシャンテン・受入11枚以上", "shanten == 1 AND ukeire >= 11", Judgment.PUSH, "ukeire_max", "イーシャンテンで受入11枚以上は好形。積極的に進める", "麻雀牌効率の極意", 9)
         add_rule("イーシャンテン・受入8-10枚", "shanten == 1 AND 8 <= ukeire <= 10", Judgment.PUSH, "balanced", "イーシャンテンで受入8-10枚は標準。バランス良く進める", "麻雀牌効率の極意", 8)
         add_rule("イーシャンテン・受入4-7枚", "shanten == 1 AND 4 <= ukeire <= 7", Judgment.BALANCE, "ukeire_max", "イーシャンテンで受入4-7枚はやや遅い。速度重視で", "麻雀牌効率の極意", 6)
@@ -68,7 +69,7 @@ class GeneralMahjongRuleEngine:
         add_rule("サンシャンテン以上・中盤", "shanten >= 3 AND 5 <= turn <= 9", Judgment.BALANCE, "balanced", "3向聴以上で中盤5-9巡目は状況判断。手役重視も可", "麻雀中盤戦術", 5)
         add_rule("サンシャンテン以上・終盤", "shanten >= 3 AND turn >= 10", Judgment.FOLD, "safest", "3向聴以上で終盤10巡以降は追いつかない。守備確定", "麻雀終盤戦術", 9)
 
-        # ==================== 第2章: 他家リーチ対応 (R015 - R030) ====================
+        # ==================== 第2章: 他家リーチ対応 (R016 - R035) ====================
         add_rule("他家リーチ・テンパイ・満貫以上", "other_riichi AND shanten == 0 AND hand_han >= 5", Judgment.PUSH, "tenpai_best", "他家リーチでも自分がテンパイで満貫以上なら押し返す", "麻雀押し引きの極意", 10)
         add_rule("他家リーチ・テンパイ・跳満以上", "other_riichi AND shanten == 0 AND hand_han >= 6", Judgment.AGGRESSIVE, "tenpai_best", "跳満以上の手は他家リーチでも積極的に押し込む", "麻雀大物手の技術", 10)
         add_rule("他家リーチ・テンパイ・倍満以上", "other_riichi AND shanten == 0 AND hand_han >= 8", Judgment.AGGRESSIVE, "tenpai_best", "倍満以上は逆転の好機。他家リーチでも迷わず押し込む", "麻雀逆転の技術", 10)
@@ -85,6 +86,10 @@ class GeneralMahjongRuleEngine:
         add_rule("リーチ2本場・子番・テンパイ", "other_riichi AND honba >= 2 AND NOT is_dealer AND shanten == 0", Judgment.PUSH, "tenpai_best", "リーチ2本場以上は満貫でも3900点。積極的に押し込む", "麻雀押し引きの極意", 9)
         add_rule("リーチ3本場・テンパイ", "other_riichi AND honba >= 3 AND shanten == 0", Judgment.AGGRESSIVE, "tenpai_best", "リーチ3本場は満貫で5800点。逆転の好機", "麻雀逆転の技術", 10)
         add_rule("リーチ4本場以上・テンパイ", "other_riichi AND honba >= 4 AND shanten == 0", Judgment.AGGRESSIVE, "tenpai_best", "リーチ4本場以上は満貫で7700点。積極的に押し込む", "麻雀逆転の技術", 10)
+        add_rule("リーチ・ドラなしテンパイ", "other_riichi AND shanten == 0 AND dora_count == 0", Judgment.DEFENSIVE, "safe_tenpai", "リーチにドラなしテンパイは打点が低い。安全牌で", "麻雀押し引きの極意", 7)
+        add_rule("リーチ・ドラ1枚テンパイ", "other_riichi AND shanten == 0 AND dora_count == 1", Judgment.BALANCE, "tenpai_maintain", "リーチにドラ1枚テンパイは状況判断。両面なら押し", "麻雀押し引きの極意", 7)
+        add_rule("リーチ・裏ドラ候補あり", "other_riichi AND has_uradora_candidate", Judgment.BALANCE, "avoid_uradora", "リーチ家に裏ドラ候補を切るのは危険。避ける", "麻雀裏ドラの理論", 6)
+        add_rule("リーチ・一発巡", "other_riichi AND turn_after_riichi == 1", Judgment.FOLD, "safest", "リーチ一発巡は最も危険。絶対に安全牌を", "麻雀リーチ戦術", 10)
 
         # ==================== 第3章: 点差状況 (R031 - R050) ====================
         add_rule("トップ目・2100点リード", "rank == 1 AND score_diff >= 2100", Judgment.DEFENSIVE, "safe_balanced", "2100点リードは半荘1位確定ライン。安定志向で", "麻雀順位戦略", 8)
@@ -166,10 +171,10 @@ class GeneralMahjongRuleEngine:
 
         rules.extend([          
             # ==================== 第7章: 特殊状況 ====================
-            # ルール 101-140: 流し満貫・途中流局・特殊宣言
+            # ルール 111-150: 流し満貫・途中流局・特殊宣言
             
             {
-                "id": "R101",
+                "id": "R111",
                 "name": "流し満貫可能性・幺九牌多数",
                 "condition": "turn >= 8 AND terminal_count >= 10 AND NOT has_honor_in_hand",
                 "action": Judgment.PUSH,
@@ -179,7 +184,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R102",
+                "id": "R112",
                 "name": "流し満貫可能性・字牌多数",
                 "condition": "turn >= 10 AND honor_count >= 8 AND NOT has_simple_in_hand",
                 "action": Judgment.PUSH,
@@ -189,7 +194,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R103",
+                "id": "R113",
                 "name": "四開槓・他家宣言",
                 "condition": "kan_count_total >= 4 AND declared_by_other",
                 "action": Judgment.FOLD,
@@ -199,7 +204,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 9
             },
             {
-                "id": "R104",
+                "id": "R114",
                 "name": "四開槓・自宣言可能性",
                 "condition": "self_kan_count >= 3 AND can_kan AND NOT other_riichi",
                 "action": Judgment.BALANCE,
@@ -209,7 +214,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 6
             },
             {
-                "id": "R105",
+                "id": "R115",
                 "name": "四開槓・他家リーチ後",
                 "condition": "kan_count_total >= 3 AND other_riichi",
                 "action": Judgment.FOLD,
@@ -219,7 +224,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R106",
+                "id": "R116",
                 "name": "九種九牌・1巡目",
                 "condition": "turn == 1 AND unique_terminal_honor >= 9",
                 "action": Judgment.FOLD,
@@ -229,7 +234,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 9
             },
             {
-                "id": "R107",
+                "id": "R117",
                 "name": "九種九牌・親番",
                 "condition": "turn == 1 AND unique_terminal_honor >= 9 AND is_dealer",
                 "action": Judgment.BALANCE,
@@ -239,7 +244,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 7
             },
             {
-                "id": "R108",
+                "id": "R118",
                 "name": "九種九牌・国士可能性",
                 "condition": "turn == 1 AND unique_terminal_honor >= 9 AND can_kokushi",
                 "action": Judgment.PUSH,
@@ -249,7 +254,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R109",
+                "id": "R119",
                 "name": "三家和・可能性",
                 "condition": "other_players_riichi_count >= 2 AND shanten == 0",
                 "action": Judgment.DEFENSIVE,
@@ -259,7 +264,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 7
             },
             {
-                "id": "R110",
+                "id": "R120",
                 "name": "三家和・回避",
                 "condition": "other_players_riichi_count >= 2 AND can_ron_multiple",
                 "action": Judgment.FOLD,
@@ -269,7 +274,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R111",
+                "id": "R121",
                 "name": "ダブルロン・可能性",
                 "condition": "two_players_riichi AND shanten == 0 AND can_ron_both",
                 "action": Judgment.BALANCE,
@@ -279,7 +284,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 7
             },
             {
-                "id": "R112",
+                "id": "R122",
                 "name": "ダブルロン・回避",
                 "condition": "two_players_riichi AND can_ron_both AND risk_high",
                 "action": Judgment.FOLD,
@@ -289,7 +294,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 6
             },
             {
-                "id": "R113",
+                "id": "R123",
                 "name": "槍槓・可能性",
                 "condition": "other_kan_declared AND can_chankan",
                 "action": Judgment.AGGRESSIVE,
@@ -299,7 +304,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 9
             },
             {
-                "id": "R114",
+                "id": "R124",
                 "name": "槍槓・回避",
                 "condition": "self_kan_declared AND other_tenpai",
                 "action": Judgment.DEFENSIVE,
@@ -309,7 +314,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R115",
+                "id": "R125",
                 "name": "天和・親番1巡目",
                 "condition": "is_dealer AND turn == 1 AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -319,7 +324,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R116",
+                "id": "R126",
                 "name": "地和・子番1巡目",
                 "condition": "NOT is_dealer AND turn == 1 AND shanten == 0",
                 "action": Judgment.AGGRESSIVE,
@@ -329,7 +334,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R117",
+                "id": "R127",
                 "name": "大三元可能性・イーシャンテン",
                 "condition": "can_daisangen AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -339,7 +344,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R118",
+                "id": "R128",
                 "name": "大三元可能性・リャンシャンテン",
                 "condition": "can_daisangen AND shanten == 2",
                 "action": Judgment.PUSH,
@@ -349,7 +354,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R119",
+                "id": "R129",
                 "name": "小三元可能性・イーシャンテン",
                 "condition": "can_shosangen AND shanten <= 1",
                 "action": Judgment.PUSH,
@@ -359,7 +364,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R120",
+                "id": "R130",
                 "name": "字一色可能性・イーシャンテン",
                 "condition": "can_tsuiso AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -369,7 +374,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R121",
+                "id": "R131",
                 "name": "字一色可能性・リャンシャンテン",
                 "condition": "can_tsuiso AND shanten == 2",
                 "action": Judgment.PUSH,
@@ -379,7 +384,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R122",
+                "id": "R132",
                 "name": "緑一色可能性・イーシャンテン",
                 "condition": "can_ryuiso AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -389,7 +394,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R123",
+                "id": "R133",
                 "name": "緑一色可能性・リャンシャンテン",
                 "condition": "can_ryuiso AND shanten == 2",
                 "action": Judgment.PUSH,
@@ -399,7 +404,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R124",
+                "id": "R134",
                 "name": "九蓮宝燈可能性・イーシャンテン",
                 "condition": "can_churen AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -409,7 +414,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R125",
+                "id": "R135",
                 "name": "四暗刻可能性・イーシャンテン",
                 "condition": "can_suanko AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -419,7 +424,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R126",
+                "id": "R136",
                 "name": "四暗刻可能性・リャンシャンテン",
                 "condition": "can_suanko AND shanten == 2",
                 "action": Judgment.PUSH,
@@ -429,7 +434,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 8
             },
             {
-                "id": "R127",
+                "id": "R137",
                 "name": "四暗刻単騎・テンパイ",
                 "condition": "can_suanko_tanki AND shanten == 0",
                 "action": Judgment.AGGRESSIVE,
@@ -439,7 +444,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R128",
+                "id": "R138",
                 "name": "大四喜可能性・イーシャンテン",
                 "condition": "can_daisuushi AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
@@ -449,7 +454,7 @@ class GeneralMahjongRuleEngine:
                 "priority": 10
             },
             {
-                "id": "R129",
+                "id": "R139",
                 "name": "小四喜可能性・イーシャンテン",
                 "condition": "can_shosuushi AND shanten <= 1",
                 "action": Judgment.AGGRESSIVE,
