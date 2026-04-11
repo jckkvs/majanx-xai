@@ -26,6 +26,8 @@ from server.engines.opponent_reader import OpponentReader
 from server.engines.paradigm_engine import ParadigmEngine
 from server.engines.boundary_detector import BoundaryDetector
 from server.engines.output_formatter import OutputFormatter
+from server.ensemble_ai import EnsembleAI
+from server.core.explanation.generator import ExplanationGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,7 @@ class TriplePayload:
     interpret: Dict[str, Any]
     reading: Dict[str, Any]
     four_layer: Dict[str, Any]   # 4層統合出力（新規）
+    complete_explanation: Dict[str, Any] # 階層的説明（Spec v3.0）
     meta: Dict[str, Any]
 
 class Orchestrator:
@@ -51,6 +54,8 @@ class Orchestrator:
         self.paradigm = paradigm or ParadigmEngine()
         self.boundary = boundary or BoundaryDetector()
         self.formatter = formatter or OutputFormatter()
+        self.ensemble_ai = EnsembleAI()
+        self.explanation_gen = ExplanationGenerator()
 
     async def run(self, features: Any, ai_idx: int, ai_prob: float,
                   ai_tile: str, ctx: Dict, model: Any = None) -> TriplePayload:
@@ -73,11 +78,36 @@ class Orchestrator:
 
         # ═══ Step 2: 3エンジン並列実行 ═══
         t1 = asyncio.to_thread(self.xai.analyze, features, ai_idx, ai_prob, model)
-        t2 = asyncio.to_thread(self.strat.judge, ctx)
+        # t2 = asyncio.to_thread(self.strat.judge, ctx) # Legacy
         t3 = asyncio.to_thread(self.interp.interpret, ai_tile, ai_prob, ctx)
+        
+        # New Professional Core Recommendation
+        t_core = asyncio.to_thread(self.ensemble_ai.recommend, gs, ctx.get("_hand", []), seat)
 
-        r1, r2, r3 = await asyncio.gather(t1, t2, t3)
+        r1, r3, r_core = await asyncio.gather(t1, t3, t_core)
         lat_engines = (time.perf_counter() - start) * 1000
+        
+        # 整合性のために legacy strat result をシミュレート/変換
+        r2_tile = r_core["tile"]
+        r2_judgment = "PROFESSIONAL_AI_CHOICE"
+        shanten = r_core["shanten"]
+        ukeire = r_core["ukeire"]
+
+        # Legacy Compatibility Mock
+        class MockR2:
+            def __init__(self, tile, reasoning):
+                self.tile = tile
+                self.reasoning = reasoning
+                self.judgment = "PROFESSIONAL"
+                self.strategy_type = "PROFESSIONAL"
+                self.confidence = 0.95
+                self.scores = {"attack": 1.0, "defense": 1.0}
+                self.triggered_rules = []
+                self.han_evaluation = 0
+                self.tile_scores = {}
+            def to_dict(self): return {} # Dummy
+        
+        r2 = MockR2(r2_tile, r_core.get("reasoning", ""))
 
         # ═══ Step 3: 境界条件検出 ═══
         recommended_tile = r2.tile  # 戦略エンジンの推奨牌を基準に
@@ -132,15 +162,15 @@ class Orchestrator:
                 "keywords": r1.keywords
             },
             strategy={
-                "tile": r2.tile,
-                "judgment": r2.judgment,
-                "type": r2.strategy_type,
-                "scores": r2.scores,
-                "rules": r2.triggered_rules,
-                "han_evaluation": r2.han_evaluation,
-                "reasoning": r2.reasoning,
-                "confidence": r2.confidence,
-                "tile_scores": r2.tile_scores,
+                "tile": r2_tile,
+                "judgment": r2_judgment,
+                "type": "PROFESSIONAL",
+                "shanten": shanten,
+                "ukeire": ukeire,
+                "discard_options": r_core.get("discard_options", {}),
+                "reasoning": r_core.get("reasoning", ""),
+                "latency_ms": r_core.get("latency_ms", 0),
+                "integrated_confidence": r2.confidence
             },
             interpret={
                 "tile": r3.tile,
@@ -154,6 +184,16 @@ class Orchestrator:
             },
             reading=reading_out,
             four_layer=four_layer.to_dict(),
+            complete_explanation=self.explanation_gen.generate(
+                ctx.get("_gs_mock", {}), 
+                r2_tile, 
+                {
+                    "shanten": shanten,
+                    "ukeire": ukeire,
+                    "paradigm": paradigm_result.to_dict(),
+                    "integrated_confidence": avg_conf
+                }
+            ).dict(),
             meta={
                 "consistency": consistency,
                 "note": note,

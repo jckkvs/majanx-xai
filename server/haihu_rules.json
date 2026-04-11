@@ -1,11 +1,47 @@
 [
   {
-    "pattern_id": "1m_2m_3m_4p_5p_6p_7s",
-    "situation_desc": "手牌パターン: 1m_2m_3m_4p_5p_6p_7s_8s_9s_E_N_S_W_1m...",
-    "recommended_tile": "1m",
+    "pattern_id": "e3b0c44298fc1c14",
+    "situation_desc": "",
+    "recommended_tile": "unknown",
     "probability": 1.0,
-    "reasoning": "この手牌では1m切りが圧倒的（100.0%）。成功率は0.0%と低め。",
-    "success_rate": 0.0,
-    "source_haihu_id": "dummy"
+    "reasoning": "過去166509回の同局面で、unknown切りが166509回（100.0%）選択され、和了率は18.9%でした。",
+    "success_rate": 0.18937715078464226,
+    "sample_size": 166509
+  },
+  {
+    "pattern_id": "1fcc94c76a4de360",
+    "situation_desc": "2m_3m_3p_4m_4p_4s_5m_5p_5s_6m_6p_6s_7m_8m",
+    "recommended_tile": "6p",
+    "probability": 0.36363636363636365,
+    "reasoning": "過去11回の同局面で、6p切りが4回（36.4%）選択され、和了率は45.5%でした。",
+    "success_rate": 0.45454545454545453,
+    "sample_size": 11
+  },
+  {
+    "pattern_id": "dcb11130f2adbc4a",
+    "situation_desc": "2m_2p_3m_3p_4m_4p_5p_6p_7p_7s_8p_8s_9p_9s",
+    "recommended_tile": "6p",
+    "probability": 0.36363636363636365,
+    "reasoning": "過去11回の同局面で、6p切りが4回（36.4%）選択され、和了率は18.2%でした。",
+    "success_rate": 0.18181818181818182,
+    "sample_size": 11
+  },
+  {
+    "pattern_id": "95283847692ed009",
+    "situation_desc": "1m_1p_1s_2m_2p_2s_3m_3p_3s_4m_4s_5m_6m_7m",
+    "recommended_tile": "4s",
+    "probability": 0.5,
+    "reasoning": "過去10回の同局面で、4s切りが5回（50.0%）選択され、和了率は30.0%でした。",
+    "success_rate": 0.3,
+    "sample_size": 10
+  },
+  {
+    "pattern_id": "5057df89e6044fef",
+    "situation_desc": "2m_2m_3p_3s_4m_4p_4s_5m_5p_5s_6p_6s_7s_8s",
+    "recommended_tile": "3p",
+    "probability": 0.6,
+    "reasoning": "過去10回の同局面で、3p切りが6回（60.0%）選択され、和了率は10.0%でした。",
+    "success_rate": 0.1,
+    "sample_size": 10
   }
 ]

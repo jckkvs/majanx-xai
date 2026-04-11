@@ -9,3 +9,5 @@ torch
 mahjong
 PyYAML
 gTTS
+pytest
+httpx

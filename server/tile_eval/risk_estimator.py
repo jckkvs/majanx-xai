@@ -1,155 +1,117 @@
-"""
-牌単位の放銃リスク推定モジュール
-現物・筋牌・壁牌・リーチタイミングを考慮して0.0〜1.0のリスクスコアを返す
-"""
+# server/tile_eval/risk_estimator.py
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set, Optional
+from functools import lru_cache
+import json
 
-
-@dataclass
+@dataclass(frozen=True)
 class RiskScore:
-    """牌の放銃リスク評価結果"""
-    tile_id: str
-    danger: float          # 総合危険度 (0.0=安全, 1.0=極危険)
-    genbutsu: bool         # 現物かどうか
-    suji: bool             # 筋牌かどうか
-    kabe: bool             # 壁判定（残り0枚の隣接牌）
-    reasoning: str
-
-
-@dataclass
-class RiskContext:
-    """リスク推定コンテキスト"""
-    turn: int
-    riichi_players: List[int]       # リーチ宣言済みプレイヤー座席
-    discarded_tiles: Dict[int, List[str]]  # seat -> [捨牌ID]
-    visible_tile_counts: Dict[str, int]    # 牌ID -> 見えている枚数
-    current_seat: int
-
+    deal_in_probability: float  # 0.0 (完全安全) 〜 1.0 (確定放銃)
+    danger_level: str           # "safe" | "caution" | "danger" | "fatal"
+    primary_factor: str         # 判定根拠ラベル
 
 class RiskEstimator:
-    """牌ごとの放銃リスクを推定するエンジン"""
-
-    # 全34種の牌ID
-    ALL_TILES = (
-        [f"{n}{s}" for s in "mps" for n in range(1, 10)]
-        + [f"{n}z" for n in range(1, 8)]
-    )
-
-    def estimate_all(self, tiles: List[str], ctx: RiskContext) -> Dict[str, RiskScore]:
-        """手牌中の各牌のリスクを推定"""
-        return {t: self.estimate(t, ctx) for t in set(tiles)}
-
-    def estimate(self, tile_id: str, ctx: RiskContext) -> RiskScore:
-        """単一牌のリスクを推定"""
-        base_id = tile_id.replace('r', '')
-
-        # リーチ者がいなければリスクは低い
-        if not ctx.riichi_players:
-            return RiskScore(tile_id=tile_id, danger=0.1, genbutsu=False,
-                             suji=False, kabe=False, reasoning="リーチ者なし")
-
-        max_danger = 0.0
-        worst_reasoning = ""
-        is_genbutsu = False
-        is_suji = False
-        is_kabe = False
-
-        for seat in ctx.riichi_players:
-            if seat == ctx.current_seat:
-                continue
-            discards = ctx.discarded_tiles.get(seat, [])
-            discard_bases = [d.replace('r', '') for d in discards]
-
-            # --- 現物チェック ---
-            if base_id in discard_bases:
-                is_genbutsu = True
-                continue  # この相手に対しては完全安全
-
-            # --- 字牌 ---
-            if 'z' in base_id:
-                visible = ctx.visible_tile_counts.get(base_id, 0)
-                if visible >= 3:
-                    is_kabe = True
-                    continue  # 壁: 残り1枚以下、ほぼ安全
-                danger = 0.4 + 0.05 * ctx.turn
-                worst_reasoning = f"{base_id}は字牌・無スジ"
-                max_danger = max(max_danger, min(danger, 0.85))
-                continue
-
-            # --- 筋牌チェック ---
-            num = int(base_id[0])
-            suit = base_id[1]
-            suji_safe = self._check_suji(num, suit, discard_bases)
-            if suji_safe:
-                is_suji = True
-                # 筋は比較的安全だが完全ではない
-                danger = 0.15 + 0.02 * max(0, ctx.turn - 6)
-                worst_reasoning = f"{base_id}は筋牌"
-                max_danger = max(max_danger, min(danger, 0.35))
-                continue
-
-            # --- 壁チェック ---
-            kabe_safe = self._check_kabe(num, suit, ctx.visible_tile_counts)
-            if kabe_safe:
-                is_kabe = True
-                danger = 0.1
-                worst_reasoning = f"{base_id}は壁牌"
-                max_danger = max(max_danger, danger)
-                continue
-
-            # --- 無筋（最も危険） ---
-            # ターンが進むほど危険度上昇
-            base_danger = 0.35
-            turn_factor = min(0.45, 0.03 * max(0, ctx.turn - 4))
-            # 中張牌（3-7）は待ちになりやすい
-            if 3 <= num <= 7:
-                center_penalty = 0.1
-            elif num in [2, 8]:
-                center_penalty = 0.05
-            else:
-                center_penalty = 0.0  # 端牌
-
-            danger = base_danger + turn_factor + center_penalty
-            worst_reasoning = f"{base_id}は無筋({ctx.turn}巡目)"
-            max_danger = max(max_danger, min(danger, 0.95))
-
-        # 現物判定（全リーチ者に対して現物ならdanger=0）
-        if is_genbutsu and max_danger == 0.0:
-            return RiskScore(tile_id=tile_id, danger=0.0, genbutsu=True,
-                             suji=is_suji, kabe=is_kabe, reasoning="全リーチ者の現物")
-
-        return RiskScore(
-            tile_id=tile_id,
-            danger=round(max_danger, 3),
-            genbutsu=is_genbutsu,
-            suji=is_suji,
-            kabe=is_kabe,
-            reasoning=worst_reasoning or "標準リスク"
-        )
-
-    @staticmethod
-    def _check_suji(num: int, suit: str, discards: List[str]) -> bool:
-        """筋牌かどうかを判定"""
-        if num <= 3:
-            return f"{num + 3}{suit}" in discards
-        elif num >= 7:
-            return f"{num - 3}{suit}" in discards
-        else:  # 4-6: 両方の筋が切れていること
-            return f"{num - 3}{suit}" in discards and f"{num + 3}{suit}" in discards
-
-    @staticmethod
-    def _check_kabe(num: int, suit: str, visible: Dict[str, int]) -> bool:
-        """壁牌（隣接牌が4枚見え）かどうかを判定"""
-        # 隣接する牌が全て見えていれば壁 = その牌で待つことは不可能
-        neighbors = []
-        if num > 1:
-            neighbors.append(f"{num - 1}{suit}")
-        if num < 9:
-            neighbors.append(f"{num + 1}{suit}")
-
-        for n in neighbors:
-            if visible.get(n, 0) >= 4:
+    """牌の危険度を局所的な牌理・統計・状況から推定するモジュール"""
+    
+    SUJI_MAP = {
+        1: {4, 7}, 2: {5, 8}, 3: {6, 9},
+        4: {1, 7}, 5: {2, 8}, 6: {3, 9},
+        7: {1, 4}, 8: {2, 5}, 9: {3, 6}
+    }
+    
+    TERMINAL_NUMBERS = {'1', '9'}
+    HONOR_TILES = {'1z', '2z', '3z', '4z', '5z', '6z', '7z'}
+    
+    @classmethod
+    @lru_cache(maxsize=512)
+    def evaluate(
+        cls,
+        tile: str,
+        river_str: str,
+        riichi_player_count: int,
+        turn: int,
+        visible_counts_str: str
+    ) -> RiskScore:
+        """
+        牌の危険度評価
+        
+        Args:
+            tile: 評価対象牌 (例: "3m")
+            river_str: 河の文字列結合 (例: "1m5s2p...")
+            riichi_player_count: リーチ宣言者数
+            turn: 現在巡目
+            visible_counts_str: 牌ごとの表示枚数JSON文字列
+        """
+        risk_val = 0.0
+        factors = []
+        
+        visible_counts = json.loads(visible_counts_str)
+        river_set = set(river_str[i:i+2] for i in range(0, len(river_str), 2))
+        
+        # 1. 現物判定
+        if tile in river_set:
+            return RiskScore(0.0, "safe", "現物")
+            
+        # 2. スジ判定
+        is_suji_safe = cls._check_suji(tile, river_set)
+        if is_suji_safe:
+            risk_val += 0.05
+            factors.append("スジ")
+            
+        # 3. ターム・字牌判定
+        is_terminal_or_honor = cls._is_terminal_or_honor(tile)
+        if is_terminal_or_honor:
+            risk_val += 0.15
+            factors.append("端牌/字牌")
+            
+        # 4. カベ判定 (簡易: 4枚見えていれば安全度上昇)
+        remaining = 4 - visible_counts.get(tile, 0)
+        if remaining <= 1:
+            risk_val += 0.10
+            factors.append("カベ")
+            
+        # 5. リーチ他家による危険度スケーリング
+        if riichi_player_count > 0:
+            risk_val += 0.30 * riichi_player_count
+            if turn >= 8 and not is_terminal_or_honor:
+                risk_val += 0.15
+                factors.append("リーチ後中張")
+            if turn >= 12:
+                risk_val += 0.10
+                factors.append("終盤リーチ")
+                
+        # 6. 正規化 (0.0 〜 1.0)
+        risk_val = max(0.0, min(1.0, risk_val))
+        
+        # 7. 危険度レベル分類
+        level = cls._classify_level(risk_val)
+        primary = factors[0] if factors else "統計ベース"
+        
+        return RiskScore(risk_val, level, primary)
+        
+    @classmethod
+    def _check_suji(cls, tile: str, river_set: Set[str]) -> bool:
+        if len(tile) < 2 or tile[0] in ['z']:
+            return False
+        num = int(tile[1])
+        if not (1 <= num <= 9):
+            return False
+        suji_targets = cls.SUJI_MAP.get(num, set())
+        for s in suji_targets:
+            if f"{tile[0]}{s}" in river_set:
                 return True
         return False
+        
+    @classmethod
+    def _is_terminal_or_honor(cls, tile: str) -> bool:
+        if len(tile) < 2:
+            return False
+        return tile in cls.HONOR_TILES or tile[1] in cls.TERMINAL_NUMBERS
+        
+    @classmethod
+    def _classify_level(cls, risk: float) -> str:
+        if risk < 0.15: return "safe"
+        if risk < 0.35: return "caution"
+        if risk < 0.65: return "danger"
+        return "fatal"
