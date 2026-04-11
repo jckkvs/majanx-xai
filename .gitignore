@@ -9,3 +9,17 @@ server/data_ingestion/__pycache__/
 tests/__pycache__/
 server/data_ingestion/analysis_results.json
 .DS_Store
+
+# Resolving git slowness issues
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.env
+.DS_Store
+
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.env
