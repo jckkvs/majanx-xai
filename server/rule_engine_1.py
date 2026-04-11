@@ -25,6 +25,7 @@ class RuleResult:
     rule_id: str
     source: str
     priority: int  # 1-10 (10が最優先)
+    tile_selection: str = "balanced"  # 追加: スコア評価用戦略タグ
 
 class GeneralMahjongRuleEngine:
     """一般麻雀知識ベースのルールエンジン（300ルール）"""

@@ -2,40 +2,25 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Dependencies
-.venv/
-venv/
-node_modules/
-
-# Build artifacts
-dist/
-build/
-target/
-
-# Coverage
-.coverage
-coverage/
-htmlcov/
-
-# OS
+haihu_example/
+haihu/
+server/__pycache__/
+server/ai_adapters/__pycache__/
+server/data_ingestion/__pycache__/
+tests/__pycache__/
+server/data_ingestion/analysis_results.json
 .DS_Store
-Thumbs.db
-```
+
+# Resolving git slowness issues
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.env
+.DS_Store
+
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.env

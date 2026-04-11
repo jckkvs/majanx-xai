@@ -4,11 +4,9 @@ MVP用: 簡易辞書ステートを利用するゲームループ
 """
 from enum import Enum
 from server.core.deterministic_deck import DeterministicDeck
-from server.core.agari_validator import AgariValidator, FuritenState
-from server.core.score_calculator import ScoreCalculator
-from server.core.yaku_identifier import YakuIdentifier
-from server.utils.mahjong_logic import hand_to_34
-from server.models import tile_from_str
+from server.core.mahjong_engine import MahjongEngine, MahjongGameState
+from server.core.deterministic_deck import DeterministicDeck
+from server.models import tile_from_str, GameState as MJGameState, PlayerState as MJPlayerState, TileSuit, Wind
 
 class Player:
     def __init__(self):
@@ -105,8 +103,31 @@ class GameLoop:
         
     def _get_state_snapshot(self) -> dict:
         player_hand_tiles = [tile_from_str(t) for t in self.players[0].hand]
+        from server.utils.mahjong_logic import hand_to_34
         hand_34 = hand_to_34(player_hand_tiles)
         
+        # MahjongEngine を使用した評価 (Player 0 視点)
+        m_gs = MahjongGameState(
+            hand_34=hand_34,
+            river=sum(self.discards, []),
+            visible_counts={}, #TODO: 正確なカウントの実装
+            turn=self.turn_count,
+            riichi_players={i for i, f in enumerate(self.riichi_flags) if f},
+            honba=self.honba,
+            riichi_sticks=sum(self.riichi_flags),
+            is_dealer=(self.turn_idx == 0) # 簡易化
+        )
+        eval_res = MahjongEngine.evaluate_discard(m_gs)
+        
+        # 危険度マップの作成
+        river_danger_map = []
+        for p_idx in range(4):
+            p_discards = []
+            for d_str in self.discards[p_idx]:
+                # 簡易判定
+                p_discards.append({"tile": d_str, "danger": 0.0})
+            river_danger_map.append(p_discards)
+
         return {
             "type": "state_update",
             "game_state": self.state.name,
@@ -114,12 +135,11 @@ class GameLoop:
             "turn": self.turn_count,
             "hand": self.players[0].hand,
             "hand_34": hand_34,
-            "discards": self.discards,
+            "river_danger": river_danger_map,
+            "shanten": eval_res["shanten"],
+            "ukeire": eval_res["ukeire"],
             "dora_indicator": self.deck.dora_indicator,
-            "riichi_sticks": sum(self.riichi_flags),
             "scores": self.scores,
-            "honba": self.honba,
-            "riichi_flags": self.riichi_flags,
             "available_actions": [
                 {"type": "discard", "tiles": list(set(self.players[0].hand))}
             ] if self.turn_idx == 0 and self.state == self.STATE.DISCARDING else []

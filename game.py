@@ -1,190 +1,149 @@
-#!/usr/bin/env python3
-"""
-Majan MVP - 最小実行可能麻雀ゲームエンジン
-使用方法: python game.py
-アクセス: http://localhost:8000
-"""
-
-import asyncio
-import random
-import uvicorn
+# game.py
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from typing import List, Optional
+from fastapi.staticfiles import StaticFiles
+import asyncio
 import json
+import random
+from typing import List, Dict, Optional
+from core.rules.mahjong_engine import MahjongRuleEngine
+from server.endpoints.inference import router as inference_router, suggest_move, InferenceRequest
 
-# --- 定数 ---
-TILE_MAP = {
-    **{i: f"{i+1}m" for i in range(9)},
-    **{i+9: f"{i+1}p" for i in range(9)},
-    **{i+18: f"{i+1}s" for i in range(9)},
-    **{i+27: h for i, h in enumerate(['E','S','W','N','P','F','C'])}
-}
+app = FastAPI()
+app.include_router(inference_router)
 
-def parse_tile(val: int) -> str:
-    base = val & 0x3F
-    return TILE_MAP.get(base, "?")
+# プロジェクト構造に合わせて静的ファイルをマウント (Optional)
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# --- ゲーム状態 ---
+rule_engine = MahjongRuleEngine()
+
+class Player:
+    def __init__(self, ws: Optional[WebSocket], seat: int, is_human: bool = False):
+        self.ws = ws
+        self.seat = seat
+        self.is_human = is_human
+        self.hand: List[str] = []
+        self.river: List[str] = []
+        self.score = 25000
+
 class GameState:
     def __init__(self):
-        self.reset()
-    
-    def reset(self):
-        tiles = list(range(136))
-        random.shuffle(tiles)
-        self.hands = [sorted(tiles[i*13:(i+1)*13]) for i in range(4)]
-        self.wall = tiles[52:]
-        self.discards = [[] for _ in range(4)]
-        self.current_player = 0
-        self.last_tile = None
-        self.active = True
+        self.players: Dict[int, Player] = {}
+        self.wall: List[str] = []
+        self.turn_seat: int = 0
+        self.dealer: int = 0
+        self.current_draw: Optional[str] = None
+        self.is_active: bool = False
+        self._lock = asyncio.Lock()
 
-    def draw(self) -> Optional[int]:
-        if not self.wall:
-            return None
-        tile = self.wall.pop()
-        self.hands[self.current_player].append(tile)
-        self.hands[self.current_player].sort()
-        return tile
+    def init_wall(self) -> None:
+        suits = ['m', 'p', 's']
+        wall = [f"{n}{s}" for s in suits for n in range(1, 10)] * 4
+        wall += [f"{n}z" for n in range(1, 8)] * 4
+        random.shuffle(wall)
+        self.wall = wall
 
-    def discard(self, player: int, tile: int) -> bool:
-        if player != self.current_player:
-            return False
-        try:
-            self.hands[player].remove(tile)
-            self.discards[player].append(tile)
-            self.last_tile = tile
-            self.current_player = (player + 1) % 4
-            return True
-        except:
-            return False
+    def deal_initial(self) -> None:
+        for seat in range(4):
+            p = self.players[seat]
+            p.hand = self.wall[seat*13 : (seat+1)*13]
+        self.current_draw = self.wall.pop()
+        self.is_active = True
 
-    def to_dict(self) -> dict:
-        return {
-            "hands": [[parse_tile(t) for t in h] for h in self.hands],
-            "discards": [[parse_tile(t) for t in d] for d in self.discards],
-            "current": self.current_player,
-            "wall": len(self.wall),
-            "last": parse_tile(self.last_tile) if self.last_tile else None
-        }
-
-game = GameState()
-
-# --- WebSocket管理 ---
-class Manager:
-    def __init__(self):
-        self.conns: List[WebSocket] = []
-    
-    async def connect(self, ws: WebSocket):
-        await ws.accept()
-        self.conns.append(ws)
-    
-    def disconnect(self, ws: WebSocket):
-        if ws in self.conns:
-            self.conns.remove(ws)
-    
-    async def broadcast(self, msg: dict):
-        for c in self.conns:
+    async def process_human_discard(self, seat: int, tile: str) -> Dict:
+        """人間の打牌を厳密に検証・状態更新"""
+        async with self._lock:
+            if not self.is_active:
+                return {"error": "Game not active"}
+            if seat != self.turn_seat:
+                return {"error": "Not your turn"}
+            
+            p = self.players[seat]
+            # 手牌または自摸牌からのみ打牌可能
+            if tile == self.current_draw:
+                self.current_draw = None
+            elif tile in p.hand:
+                p.hand.remove(tile)
+            else:
+                return {"error": f"Tile {tile} not in hand"}
+            
+            p.river.append(tile)
+            self.turn_seat = (seat + 1) % 4
+            self.current_draw = self.wall.pop()
+            
+            # 向聴数計算（デバッグ/解説用）
+            shanten = rule_engine.get_shanten(p.hand)
+            
+            # AI推論トリガー
+            ai_suggestion = None
             try:
-                await c.send_json(msg)
-            except:
-                pass
+                from server.endpoints.inference import get_registry
+                reg = get_registry()
+                ai_state = {
+                    "hand": p.hand,
+                    "river": p.river,
+                    "turn": self.turn_seat,
+                    "draw": self.current_draw
+                }
+                req_data = InferenceRequest(state=ai_state, engine="ensemble")
+                ai_result = await asyncio.wait_for(
+                    suggest_move(req_data, reg=reg),
+                    timeout=3.0
+                )
+                ai_suggestion = {
+                    "move": ai_result.recommended_move,
+                    "confidence": ai_result.confidence,
+                    "metadata": ai_result.metadata
+                }
+            except Exception as e:
+                print(f"[AI Error] {e}")
 
-mgr = Manager()
+            return {
+                "status": "ok",
+                "next_turn": self.turn_seat,
+                "your_shanten": shanten,
+                "current_draw": self.current_draw,
+                "ai_suggestion": ai_suggestion
+            }
 
-# --- ゲームループ ---
-async def loop():
-    while True:
-        if not game.active:
-            await asyncio.sleep(1)
-            continue
-        
-        tile = game.draw()
-        if tile is None:
-            await mgr.broadcast({"type": "end", "reason": "wall_empty"})
-            game.active = False
-            continue
-        
-        await mgr.broadcast({"type": "update", "state": game.to_dict()})
-        await asyncio.sleep(1.0)  # 簡易思考時間
-        
-        # 簡易自動打牌（ツモ切り）
-        hand = game.hands[game.current_player]
-        if hand:
-            game.discard(game.current_player, hand[-1])
-            await mgr.broadcast({
-                "type": "discarded",
-                "player": game.current_player,
-                "tile": parse_tile(hand[-1])
-            })
+game_state = GameState()
 
-# --- FastAPI ---
-app = FastAPI()
+@app.websocket("/ws/game/{room_id}")
+async def game_ws(websocket: WebSocket, room_id: str):
+    await websocket.accept()
+    
+    # MVP: 座席0を人間プレイヤーとして登録
+    seat = 0
+    game_state.players[seat] = Player(websocket, seat, is_human=True)
+    for i in range(1, 4):
+        game_state.players[i] = Player(None, i, is_human=False)  # AI仮配置
+    
+    if len(game_state.players) == 4:
+        game_state.init_wall()
+        game_state.deal_initial()
+        await websocket.send_json({
+            "type": "game_start",
+            "hand": game_state.players[seat].hand,
+            "draw": game_state.current_draw,
+            "turn": game_state.turn_seat
+        })
 
-@app.on_event("startup")
-async def startup():
-    asyncio.create_task(loop())
-
-@app.get("/")
-async def index():
-    return HTMLResponse(HTML)
-
-@app.websocket("/ws")
-async def ws_endpoint(ws: WebSocket):
-    await mgr.connect(ws)
     try:
         while True:
-            data = await ws.receive_json()
-            if data.get("type") == "discard":
-                # 人間プレイヤーの打牌処理（簡易）
-                pass
+            data = await websocket.receive_json()
+            action = data.get("action")
+            
+            if action == "discard":
+                result = await game_state.process_human_discard(seat, data["tile"])
+                await websocket.send_json({"type": "discard_result", **result})
+                
+                if result.get("status") == "ok":
+                    # Priority 2 でここにAI推論トリガーを挿入
+                    pass
+                    
     except WebSocketDisconnect:
-        mgr.disconnect(ws)
-
-HTML = """
-<!DOCTYPE html>
-<html><head><title>Majan MVP</title>
-<style>
-body{background:#1a472a;color:#fff;font-family:sans-serif;text-align:center}
-#board{width:90vw;max-width:800px;height:70vh;margin:20px auto;background:#2d6b42;border-radius:10px;position:relative}
-.player{position:absolute;padding:8px;background:rgba(0,0,0,0.3);border-radius:5px}
-#p0{bottom:10px;left:50%;transform:translateX(-50%)}
-#p1{left:10px;top:50%;transform:translateY(-50%)}
-#p2{top:10px;left:50%;transform:translateX(-50%)}
-#p3{right:10px;top:50%;transform:translateY(-50%)}
-.tile{display:inline-block;width:28px;height:38px;background:#fff;color:#000;margin:2px;border-radius:3px;line-height:38px;cursor:pointer}
-.tile:hover{transform:translateY(-3px)}
-.tile.selected{border:2px solid gold;background:#ffe}
-#info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.6);padding:15px;border-radius:8px}
-</style></head><body>
-<h1>🀄 Majan MVP</h1>
-<div id="board">
-  <div id="info">Connecting...</div>
-  <div id="p0" class="player">You</div>
-  <div id="p1" class="player">P1</div>
-  <div id="p2" class="player">P2</div>
-  <div id="p3" class="player">P3</div>
-</div>
-<script>
-const ws=new WebSocket(`ws://${location.host}/ws`);
-ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.type==='update')render(d.state);};
-function render(s){
-  document.getElementById('info').innerHTML=`Wall:${s.wall}<br>Last:${s.last||'-'}`;
-  for(let i=0;i<4;i++){
-    const el=document.getElementById(`p${i}`);
-    el.querySelectorAll('.tile').forEach(t=>t.remove());
-    s.hands[i].forEach(tile=>{
-      const t=document.createElement('div');
-      t.className='tile'+(i===0?' interactive':'');
-      t.textContent=tile;
-      if(i===0)t.onclick=()=>ws.send(JSON.stringify({type:'discard',tile}));
-      el.appendChild(t);
-    });
-  }
-}
-</script></body></html>
-"""
+        if seat in game_state.players:
+            del game_state.players[seat]
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import uvicorn
+    uvicorn.run("game:app", host="0.0.0.0", port=8000, reload=True)

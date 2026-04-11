@@ -55,8 +55,8 @@ export class LocalProgressEngine {
 
   private _updateDivision(): void {
     const thresholds: [number, string][] = [
-      [2000, '魂天'], [1700, '七段'], [1400, '六段'],
-      [1100, '五段'], [800, '四段'], [500, '三段'], [0, '二段']
+      [3000, '魂天'], [2400, '雀聖'], [1800, '雀豪'],
+      [1200, '雀傑'], [600, '雀士'], [0, '初心']
     ];
     this.data.rank.division = thresholds.find(([p]) => this.data.rank.points >= p)![1] as string;
   }

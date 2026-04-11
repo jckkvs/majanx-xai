@@ -159,7 +159,8 @@ class PriorityWeightAdapter:
 
         1. 戦略タグからベース重みを取得
         2. ターンフェーズ調整を適用
-        3. 正規化して返す
+        3. 動的コンテキスト（順位・点差・他家リーチ等）による補正
+        4. 正規化して返す
         """
         # 1. ベース重み
         base = self.get_strategy_weights(strategy_tag)
@@ -169,5 +170,35 @@ class PriorityWeightAdapter:
         adjustments = self.get_turn_adjustments(phase)
         adjusted = base.scale(adjustments)
 
-        # 3. 正規化
+        # 3. コンテキスト（点差、順位、他家状況）による動的調整
+        # 点差補正：ビハインド時は打点・形勢重視（価値重視）
+        if context.score_diff < -4000:
+            adjusted.shape *= 1.2
+            adjusted.ukeire *= 0.8
+            adjusted.form *= 1.1
+
+        # 順位補正：トップ目でオーラスや終盤なら安全重視
+        if context.rank == 1 and context.remaining_rounds <= 4:
+            adjusted.risk *= 1.3
+            adjusted.honor *= 1.2
+            adjusted.ukeire *= 0.8
+
+        # リーチ対応：他家からリーチが入っている場合、リスク（安全度）の重みを急増
+        if context.riichi_count > 0:
+            adjusted.risk *= (1.5 + 0.5 * context.riichi_count)
+            adjusted.honor *= 1.2
+            adjusted.ukeire *= 0.7  # 速度を落として守備へ
+
+        # 親番補正：親の攻撃力を高める（リスクをいとわない）
+        if context.is_dealer:
+            adjusted.shape *= 1.1
+            adjusted.ukeire *= 1.1
+            adjusted.risk *= 0.8
+
+        # 本場補正：本場が多い場合はアガリ率重視（速度重視）
+        if context.honba >= 2:
+            adjusted.ukeire *= 1.1
+            adjusted.shape *= 0.9
+
+        # 4. 正規化
         return adjusted.normalize()

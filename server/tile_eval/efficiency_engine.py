@@ -10,8 +10,9 @@ from .shape_evaluator import ShapeEvaluator, ShapeScore, EvalContext
 from .ukeire_calculator import UkeireCalculator, UkeireResult
 from .honor_evaluator import HonorEvaluator, HonorScore, HonorContext
 from .weight_adapter import PriorityWeightAdapter, ExtendedWeightVector, WeightContext
-from .risk_estimator import RiskEstimator, RiskScore, RiskContext
+from .risk_estimator import RiskEstimator, RiskScore
 from .form_analyzer import FormAnalyzer, FormScore, FormContext
+import json
 
 @dataclass
 class TileEvaluation:
@@ -54,15 +55,12 @@ class TileEfficiencyEngine:
         visible = context.visible_tiles
         ukeire_calc = UkeireCalculator(visible)
         
-        # 4. リスク推定
-        risk_ctx = RiskContext(
-            turn=context.turn,
-            riichi_players=context.riichi_seats,
-            discarded_tiles=context.discarded_tiles_by_seat,
-            visible_tile_counts=visible,
-            current_seat=context.current_seat,
-        )
-        risk_scores = self.risk_estimator.estimate_all(hand, risk_ctx)
+        # 4. リスク推定用情報の準備
+        visible_json = json.dumps(visible)
+        river_str = ""
+        for seat, tiles in context.discarded_tiles_by_seat.items():
+            river_str += "".join(tiles)
+        riichi_count = len(context.riichi_seats)
         
         # 5. 形勢判断
         form_ctx = FormContext(
@@ -107,8 +105,14 @@ class TileEfficiencyEngine:
                 )
                 honor = self.honor_eval.evaluate(tile, hand.count(tile), honor_ctx)
             
-            # リスクスコア
-            risk = risk_scores.get(tile)
+            # リスクスコア (P1 新しい RiskEstimator)
+            risk = RiskEstimator.evaluate(
+                tile=tile,
+                river_str=river_str,
+                riichi_player_count=riichi_count,
+                turn=context.turn,
+                visible_counts_str=visible_json
+            )
             
             # 総合スコア計算（5次元重み）
             final = self._calc_final_score(shape, ukeire, honor, risk, form_score, weights, context)
@@ -155,8 +159,8 @@ class TileEfficiencyEngine:
         honor_val = min(1.0, honor.total_score / 2.0) if honor else 0.0
 
         # リスク安全度 (risk): danger が高い = 切りたい = 保持価値は低い
-        # → 安全度 = 1 - danger を保持価値とする
-        risk_val = (1.0 - risk.danger) if risk else 0.5
+        # → 安全度 = 1 - deal_in_probability を保持価値とする
+        risk_val = (1.0 - risk.deal_in_probability) if risk else 0.5
 
         # 形勢スコア (form): 攻勢度が高いほど攻撃的な牌の保持価値が上がる
         # 攻撃的な牌 = shape/ukeire価値が高い牌 → formは攻撃牌のブースト係数として作用
@@ -208,11 +212,11 @@ class TileEfficiencyEngine:
         
         # リスク評価
         if risk:
-            if risk.genbutsu:
+            if risk.primary_factor == "現物":
                 parts.append(f"{tile}は現物で安全")
-            elif risk.danger >= 0.6:
-                parts.append(f"{tile}は危険度{risk.danger:.0%}")
-            elif risk.suji:
+            elif risk.deal_in_probability >= 0.6:
+                parts.append(f"{tile}は危険度{risk.deal_in_probability:.0%}")
+            elif "スジ" in risk.primary_factor:
                 parts.append(f"{tile}は筋牌")
         
         # 状況補足
