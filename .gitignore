@@ -1,26 +1,74 @@
 ```
-# Python
-__pycache__/
+# Compiled and build artifacts
 *.pyc
-haihu_example/
-haihu/
-server/__pycache__/
-server/ai_adapters/__pycache__/
-server/data_ingestion/__pycache__/
-tests/__pycache__/
-server/data_ingestion/analysis_results.json
-.DS_Store
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-# Resolving git slowness issues
+# Dependencies
 node_modules/
-frontend/node_modules/
-dist/
-frontend/dist/
+venv/
+.venv/
 .env
-.DS_Store
+.env.local
+.env.*
 
-node_modules/
-frontend/node_modules/
-frontend/dist/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Build directories
 dist/
-.env
+build/
+target/
+.gradle/
+
+# Python specific
+.mypy_cache/
+.pytest_cache/
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```

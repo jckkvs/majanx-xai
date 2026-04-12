@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MajanX-XAI - 雀魂風 UI テスト</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0a0e17 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Noto Sans JP', sans-serif;
+            color: #e8edf5;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #d4a853, #f0c96b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .test-section {
+            background: rgba(26, 36, 54, 0.5);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid rgba(212, 168, 83, 0.15);
+        }
+
+        .test-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #d4a853;
+            border-bottom: 1px solid rgba(212, 168, 83, 0.3);
+            padding-bottom: 8px;
+        }
+
+        /* 牌コンテナ */
+        .tile-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        /* 牌の基本スタイル - 改善版 */
+        .tile {
+            width: 60px;
+            height: 84px;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 6px;
+            user-select: none;
+            
+            /* 立体感の追加 */
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* 高光沢エフェクト */
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.5) 0%,
+                rgba(255, 255, 255, 0.15) 50%,
+                transparent 100%
+            );
+            border-radius: 6px 6px 50% 50%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* 牌の側面表現 */
+        .tile::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 2px;
+            right: 2px;
+            height: 6px;
+            background: linear-gradient(
+                to bottom,
+                rgba(200, 200, 200, 0.8) 0%,
+                rgba(150, 150, 150, 0.6) 100%
+            );
+            border-radius: 2px;
+            filter: blur(1px);
+            z-index: -1;
+        }
+
+        /* ホバー時のエフェクト - 雀魂風 */
+        .tile:hover {
+            transform: translateY(-12px) scale(1.08);
+            box-shadow: 
+                0 16px 32px rgba(0, 0, 0, 0.5),
+                0 0 24px rgba(212, 168, 83, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            z-index: 100;
+            filter: brightness(1.15);
+        }
+
+        /* 選択時 */
+        .tile.selected {
+            transform: translateY(-16px) scale(1.1);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.6),
+                0 0 32px rgba(212, 168, 83, 0.8),
+                0 0 64px rgba(212, 168, 83, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            filter: brightness(1.2);
+        }
+
+        /* AI 推奨牌 */
+        .tile.ai-recommended {
+            animation: aiPulse 2s ease-in-out infinite;
+            border: 2px solid rgba(72, 199, 142, 0.8);
+        }
+
+        @keyframes aiPulse {
+            0%, 100% {
+                box-shadow: 
+                    0 4px 8px rgba(0, 0, 0, 0.4),
+                    0 0 16px rgba(72, 199, 142, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                box-shadow: 
+                    0 4px 8px rgba(0, 0, 0, 0.4),
+                    0 0 32px rgba(72, 199, 142, 0.9),
+                    0 0 64px rgba(72, 199, 142, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        /* 字牌表示 */
+        .tile-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tile.manzu .tile-content { color: #d32f2f; }
+        .tile.pinzu .tile-content { color: #1976d2; }
+        .tile.souzu .tile-content { color: #388e3c; }
+        .tile.jihai .tile-content { color: #212121; }
+
+        /* 萬子 */
+        .manzu { background: linear-gradient(135deg, #fef9f3 0%, #f5f0e8 100%); }
+        
+        /* 筒子 */
+        .pinzu { background: linear-gradient(135deg, #fef9f3 0%, #f5f0e8 100%); }
+        
+        /* 索子 */
+        .souzu { background: linear-gradient(135deg, #fef9f3 0%, #f5f0e8 100%); }
+        
+        /* 字牌 */
+        .jihai { background: linear-gradient(135deg, #fef9f3 0%, #f5f0e8 100%); }
+
+        /* 打牌アニメーション */
+        @keyframes discardFly {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) translateX(30px) rotate(20deg) scale(0.8);
+            }
+        }
+
+        .tile.discard-animate {
+            animation: discardFly 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* 摸球アニメーション */
+        @keyframes tsumoBounce {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8);
+            }
+            50% {
+                transform: translateY(-10px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .tile.tsumo-animate {
+            animation: tsumoBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* リーチ演出 */
+        .reach-indicator {
+            position: relative;
+        }
+
+        .reach-indicator::after {
+            content: 'リーチ';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #d4a853, #f0c96b);
+            color: #1a1a2e;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(212, 168, 83, 0.5);
+            animation: reachGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes reachGlow {
+            0%, 100% {
+                box-shadow: 0 4px 16px rgba(212, 168, 83, 0.5);
+            }
+            50% {
+                box-shadow: 0 4px 24px rgba(212, 168, 83, 0.8), 0 0 32px rgba(212, 168, 83, 0.4);
+            }
+        }
+
+        /* コントロールボタン */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #d4a853, #f0c96b);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212, 168, 83, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(26, 36, 54, 0.8);
+            color: #e8edf5;
+            border: 1px solid rgba(212, 168, 83, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(26, 36, 54, 1);
+            border-color: #d4a853;
+        }
+
+        /* レジェンド */
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-tile {
+            width: 40px;
+            height: 56px;
+            border-radius: 4px;
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: #8898b5;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🀄 雀魂風 UI テスト</h1>
+
+    <!-- テスト 1: 基本牌表示 -->
+    <div class="test-section">
+        <h2>テスト 1: 基本牌表示 + ホバーエフェクト</h2>
+        <div class="tile-container" id="basic-tiles"></div>
+        <p class="info-text">牌にマウスを乗せてホバーエフェクトを確認してください</p>
+    </div>
+
+    <!-- テスト 2: AI 推奨表示 -->
+    <div class="test-section">
+        <h2>テスト 2: AI 推奨牌ハイライト</h2>
+        <div class="tile-container" id="ai-tiles"></div>
+        <p class="info-text">緑色のパルスアニメーションが AI 推奨牌です</p>
+    </div>
+
+    <!-- テスト 3: アニメーション -->
+    <div class="test-section">
+        <h2>テスト 3: 打牌アニメーション</h2>
+        <div class="tile-container" id="anim-tiles"></div>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="playDiscardAnim()">打牌アニメ再生</button>
+            <button class="btn btn-secondary" onclick="resetTiles()">リセット</button>
+        </div>
+        <p class="info-text">「打牌アニメ再生」ボタンで打牌アニメーションを実行</p>
+    </div>
+
+    <!-- テスト 4: リーチ表示 -->
+    <div class="test-section">
+        <h2>テスト 4: リーチ表示</h2>
+        <div class="tile-container" id="reach-tiles"></div>
+        <p class="info-text">最初の牌にリーチインジケーターが表示されます</p>
+    </div>
+
+    <script>
+        // 牌データ
+        const tiles = [
+            { type: 'manzu', value: '一', label: '1m' },
+            { type: 'manzu', value: '二', label: '2m' },
+            { type: 'manzu', value: '三', label: '3m' },
+            { type: 'manzu', value: '四', label: '4m' },
+            { type: 'manzu', value: '五', label: '5m' },
+            { type: 'pinzu', value: '一', label: '1p' },
+            { type: 'pinzu', value: '二', label: '2p' },
+            { type: 'pinzu', value: '三', label: '3p' },
+            { type: 'souzu', value: '一', label: '1s' },
+            { type: 'souzu', value: '二', label: '2s' },
+            { type: 'jihai', value: '東', label: 'E' },
+            { type: 'jihai', value: '南', label: 'S' },
+            { type: 'jihai', value: '西', label: 'W' },
+            { type: 'jihai', value: '北', label: 'N' },
+        ];
+
+        // 基本牌表示
+        function renderBasicTiles() {
+            const container = document.getElementById('basic-tiles');
+            container.innerHTML = '';
+            
+            tiles.forEach((tile, i) => {
+                const el = document.createElement('div');
+                el.className = `tile ${tile.type}`;
+                el.innerHTML = `<div class="tile-content">${tile.value}</div>`;
+                el.title = tile.label;
+                
+                // クリックで選択状態
+                el.addEventListener('click', () => {
+                    el.classList.toggle('selected');
+                });
+                
+                container.appendChild(el);
+            });
+        }
+
+        // AI 推奨牌表示
+        function renderAITiles() {
+            const container = document.getElementById('ai-tiles');
+            container.innerHTML = '';
+            
+            tiles.slice(0, 8).forEach((tile, i) => {
+                const el = document.createElement('div');
+                el.className = `tile ${tile.type}`;
+                if (i < 3) {
+                    el.classList.add('ai-recommended');
+                }
+                el.innerHTML = `<div class="tile-content">${tile.value}</div>`;
+                el.title = tile.label + (i < 3 ? ' (AI 推奨)' : '');
+                
+                container.appendChild(el);
+            });
+        }
+
+        // アニメーション用牌表示
+        function renderAnimTiles() {
+            const container = document.getElementById('anim-tiles');
+            container.innerHTML = '';
+            
+            tiles.slice(0, 10).forEach((tile, i) => {
+                const el = document.createElement('div');
+                el.className = `tile ${tile.type}`;
+                el.dataset.index = i;
+                el.innerHTML = `<div class="tile-content">${tile.value}</div>`;
+                el.title = tile.label;
+                
+                container.appendChild(el);
+            });
+        }
+
+        // 打牌アニメーション再生
+        function playDiscardAnim() {
+            const tiles = document.querySelectorAll('#anim-tiles .tile');
+            tiles.forEach((tile, i) => {
+                setTimeout(() => {
+                    tile.classList.add('discard-animate');
+                }, i * 150);
+            });
+        }
+
+        // リセット
+        function resetTiles() {
+            renderAnimTiles();
+        }
+
+        // リーチ表示
+        function renderReachTiles() {
+            const container = document.getElementById('reach-tiles');
+            container.innerHTML = '';
+            
+            tiles.slice(0, 5).forEach((tile, i) => {
+                const el = document.createElement('div');
+                el.className = `tile ${tile.type}${i === 0 ? ' reach-indicator' : ''}`;
+                el.innerHTML = `<div class="tile-content">${tile.value}</div>`;
+                el.title = tile.label + (i === 0 ? ' (リーチ)' : '');
+                
+                container.appendChild(el);
+            });
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBasicTiles();
+            renderAITiles();
+            renderAnimTiles();
+            renderReachTiles();
+        });
+    </script>
+</body>
+</html>
