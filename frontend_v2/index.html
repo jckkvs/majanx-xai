@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MajanX-XAI v2 — 麻雀対戦</title>
+    <meta name="description" content="MajanX-XAI: AI搭載リーチ麻雀対戦プラットフォーム">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static_v2/css/variables.css">
+    <link rel="stylesheet" href="/static_v2/css/animations.css">
+    <link rel="stylesheet" href="/static_v2/css/layout.css">
+    <link rel="stylesheet" href="/static_v2/css/tiles.css">
+</head>
+<body>
+    <!-- ロード画面 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">雀</div>
+            <h1>MAJANX<span class="xai">-XAI</span></h1>
+            <p id="loading-msg">サーバーに接続中...</p>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="game-screen" class="game-screen hidden">
+        <!-- ヘッダー -->
+        <header class="top-bar">
+            <div class="round-info">
+                <span class="round-wind" id="round-display">東1局</span>
+                <span class="round-honba" id="honba-display">0本場</span>
+                <span class="remain-tiles">残 <b id="remain-count">--</b></span>
+            </div>
+            <div class="score-row">
+                <div class="score-chip you" id="score-0"><span class="sc-name">自家</span><span class="sc-val" id="score-val-0">25,000</span></div>
+                <div class="score-chip" id="score-1"><span class="sc-name">下家</span><span class="sc-val" id="score-val-1">25,000</span></div>
+                <div class="score-chip" id="score-2"><span class="sc-name">対面</span><span class="sc-val" id="score-val-2">25,000</span></div>
+                <div class="score-chip" id="score-3"><span class="sc-name">上家</span><span class="sc-val" id="score-val-3">25,000</span></div>
+            </div>
+        </header>
+
+        <!-- メインボード -->
+        <main class="board">
+            <!-- 対面 (上) -->
+            <section class="opp-area opp-toimen" id="player-2">
+                <div class="opp-label"><span class="opp-wind" id="wind-2">南</span><span>対面</span></div>
+                <div class="opp-hand-horiz" id="hand-2"></div>
+                <div class="opp-melds" id="melds-2"></div>
+            </section>
+
+            <!-- 上家 (左) -->
+            <section class="side-opp side-opp-left" id="player-3">
+                <div class="opp-label"><span class="opp-wind" id="wind-3">西</span><span>上家</span></div>
+                <div class="opp-hand-vert opp-vert" id="hand-3"></div>
+                <div class="opp-melds" id="melds-3"></div>
+            </section>
+
+            <!-- 雀卓中央 -->
+            <section class="table-center">
+                <div class="river-zone">
+                    <div class="river-row" id="river-2"></div>
+                    <div class="river-mid">
+                        <div class="river-col" id="river-3"></div>
+                        <div class="center-shield" id="center-info">
+                            <div class="shield-compass">
+                                <span class="compass-dir" id="compass-n">北</span>
+                                <div class="compass-mid">
+                                    <span class="compass-dir" id="compass-w">西</span>
+                                    <div class="compass-center">
+                                        <div class="shield-round" id="shield-round">東1局</div>
+                                        <div class="shield-remain">残 <span id="shield-remain">--</span></div>
+                                        <div class="dora-mini">
+                                            <span class="dora-mini-label">ドラ</span>
+                                            <div id="dora-tiles" class="dora-tiles"></div>
+                                        </div>
+                                    </div>
+                                    <span class="compass-dir" id="compass-e">東</span>
+                                </div>
+                                <span class="compass-dir" id="compass-s">南</span>
+                            </div>
+                        </div>
+                        <div class="river-col" id="river-1"></div>
+                    </div>
+                    <div class="river-row" id="river-0"></div>
+                </div>
+                <div class="turn-indicator">
+                    <span id="game-message">対局準備中...</span>
+                </div>
+            </section>
+
+            <!-- 下家 (右) -->
+            <section class="side-opp side-opp-right" id="player-1">
+                <div class="opp-label"><span class="opp-wind" id="wind-1">東</span><span>下家</span></div>
+                <div class="opp-hand-vert opp-vert" id="hand-1"></div>
+                <div class="opp-melds" id="melds-1"></div>
+            </section>
+        </main>
+
+        <!-- AI推奨表示エリア -->
+        <div id="ai-recommendations"></div>
+
+        <!-- 手牌 + コントロール -->
+        <footer class="my-area" id="player-0">
+            <div class="my-melds-zone" id="melds-0"></div>
+            <div class="hand-container" id="hand-0"></div>
+            <div class="my-controls">
+                <button class="ctrl-btn" id="btn-riichi" disabled>リーチ</button>
+                <button class="ctrl-btn primary" id="btn-tsumo" disabled>打牌</button>
+                <button class="ctrl-btn accent-kan" id="btn-kan" disabled>カン</button>
+                <button class="ctrl-btn" id="btn-ron" disabled>ロン</button>
+                <button class="ctrl-btn ghost" id="btn-menu" title="設定">⚙</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 設定パネル -->
+    <div id="settings-overlay" class="settings-overlay hidden"></div>
+    <div id="settings-panel" class="settings-panel hidden">
+        <h2>⚙ 設定</h2>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">自動理牌</div>
+                <div class="setting-desc">ONで自動ソート。OFFでドラッグ並べ替え</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="setting-autoripai" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">ダブルクリック打牌</div>
+                <div class="setting-desc">ONで確認後に打牌（デフォルト: ワンクリック）</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="setting-doubleclick">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">AI推奨表示</div>
+                <div class="setting-desc">AI推奨牌をハイライト表示</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="setting-ai-highlight" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div>
+                <div class="setting-label">CPU強さ</div>
+                <div class="setting-desc">0%=ランダム ～ 100%=最強</div>
+            </div>
+            <div class="setting-slider">
+                <input type="range" id="setting-cpu-strength" class="strength-slider" min="0" max="100" value="75">
+                <span class="strength-val" id="cpu-strength-val">75%</span>
+            </div>
+        </div>
+        <button class="settings-close" id="settings-close">閉じる</button>
+    </div>
+
+    <!-- カン選択モーダル -->
+    <div id="kan-modal" class="modal hidden">
+        <div class="modal-card">
+            <h2>暗槓を選択</h2>
+            <div class="modal-actions" id="kan-choices"></div>
+            <button class="modal-btn" id="kan-cancel">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- 和了モーダル -->
+    <div id="win-modal" class="modal hidden">
+        <div class="modal-card win-card">
+            <h1 class="win-title" id="win-title">和了!</h1>
+            <div class="win-details" id="win-details"></div>
+            <button class="modal-btn accent" onclick="closeWinModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Scripts (order matters: tile-map → renderer → game-client) -->
+    <script src="/static_v2/js/tile-map.js"></script>
+    <script src="/static_v2/js/renderer.js"></script>
+    <script src="/static_v2/js/game-client.js"></script>
+</body>
+</html>

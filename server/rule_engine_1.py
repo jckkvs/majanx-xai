@@ -2229,49 +2229,19 @@ class GeneralMahjongRuleEngine:
         }
     
     def _check_condition(self, condition: str, game_state: Dict, hand_info: Dict) -> bool:
-        """条件文字列を評価（簡易パーサー実装）"""
-        import re
+        """条件文字列を評価（evalを用いた実装）"""
+        class SafeDict(dict):
+            def __missing__(self, key):
+                return 0
+        variables = SafeDict({**game_state, **hand_info})
         
-        # 変数マッピング
-        variables = {**game_state, **hand_info}
-        
-        # 条件式をトークン化 (簡易版)
-        tokens = re.split(r'\s+(AND|OR|NOT)\s+|\s*[()]\s*', condition)
-        
+        # AND/OR/NOT を Pythonの演算子に置換
+        expr = condition.replace(" AND ", " and ").replace(" OR ", " or ").replace(" NOT ", " not ")
+        if expr.startswith("NOT "):
+            expr = "not " + expr[4:]
+            
         try:
-            # 非常に簡易的な実装（実際にはASTやevalを用いた安全な構文解析が必要）
-            for token in tokens:
-                if not token or token in ("AND", "OR", "NOT"): continue
-                
-                if '==' in token:
-                    var, val = token.split('==')
-                    if variables.get(var.strip()) == int(val.strip().replace("'", "").replace('"', '')):
-                        return True
-                elif '>=' in token:
-                    var, val = token.split('>=')
-                    var_val = variables.get(var.strip(), 0)
-                    if isinstance(var_val, (int, float)) and var_val >= int(val.strip()):
-                        return True
-                elif '<=' in token:
-                    var, val = token.split('<=')
-                    var_val = variables.get(var.strip(), 0)
-                    if isinstance(var_val, (int, float)) and var_val <= int(val.strip()):
-                        return True
-                elif '<' in token:
-                    var, val = token.split('<')
-                    var_val = variables.get(var.strip(), 0)
-                    if isinstance(var_val, (int, float)) and var_val < int(val.strip()):
-                        return True
-                elif '>' in token:
-                    var, val = token.split('>')
-                    var_val = variables.get(var.strip(), 0)
-                    if isinstance(var_val, (int, float)) and var_val > int(val.strip()):
-                        return True
-                else:
-                    # ただの変数名（フラグ）
-                    if variables.get(token.strip()):
-                        return True
-            return False
+            return bool(eval(expr, {"__builtins__": {}}, variables))
         except Exception:
             return False
     

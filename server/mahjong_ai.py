@@ -166,6 +166,18 @@ class LatestOSSMahjongAI:
             if not isinstance(output, tuple) and not hasattr(output, 'logits') and isinstance(self.model, nn.Module):
                 probabilities = output[0]
 
+        # マスキング処理 (手牌にない牌は候補から除外)
+        probabilities = probabilities.clone()
+        tile_decoder = self.encoder._get_tile_mapping()
+        valid_indices = set()
+        for t in hand_tiles:
+            if t in tile_decoder:
+                valid_indices.add(tile_decoder[t])
+                
+        for i in range(len(probabilities)):
+            if i not in valid_indices:
+                probabilities[i] = -1.0 # 除外
+
         # 確率の高い順にソート
         top_k = min(5, len(probabilities))
         top_values, top_indices = torch.topk(probabilities, top_k)

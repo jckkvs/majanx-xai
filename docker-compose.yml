@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  majanx-xai:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models_cache:/app/models_cache
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - MODEL_CACHE_DIR=/app/models_cache
+      - APP_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/inference/models/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -6,6 +6,7 @@ import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from server.ws_handler import ws_manager
 from server.game_loop import GameLoop
@@ -23,6 +24,8 @@ except Exception as e:
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static_v2", StaticFiles(directory="frontend_v2"), name="static_v2")
+app.mount("/tiles", StaticFiles(directory="design/majang-hai"), name="tiles")
 
 game = GameLoop()
 
@@ -43,6 +46,27 @@ async def request_ai_suggestion(current_game):
 async def get_index():
     with open("static/index.html", "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
+
+@app.get("/v2")
+async def get_index_v2():
+    with open("frontend_v2/index.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+# ── Settings API ──────────────────────────────────────
+class SettingsUpdate(BaseModel):
+    cpu_strength: float | None = None
+
+@app.get("/api/settings")
+async def get_settings():
+    from server.config import CPU_STRENGTH
+    return {"cpu_strength": CPU_STRENGTH}
+
+@app.post("/api/settings")
+async def update_settings(body: SettingsUpdate):
+    import server.config as cfg
+    if body.cpu_strength is not None:
+        cfg.CPU_STRENGTH = max(0.0, min(1.0, body.cpu_strength))
+    return {"cpu_strength": cfg.CPU_STRENGTH}
 
 @app.websocket("/ws_ui")
 async def websocket_ui_endpoint(ws: WebSocket):
@@ -106,6 +130,16 @@ async def websocket_ui_endpoint(ws: WebSocket):
                         ai_res = await request_ai_suggestion(game)
                         if ai_res:
                             await ws_manager.broadcast(ai_res)
+
+                elif action == "kan":
+                    tile = data.get("tile")
+                    snapshot = game.process_ankan(0, tile)
+                    await ws_manager.broadcast(snapshot)
+                    # カン後もAI推奨を送信
+                    if game.state == game.STATE.DISCARDING and game.turn_idx == 0:
+                        ai_res = await request_ai_suggestion(game)
+                        if ai_res:
+                            await ws_manager.broadcast(ai_res)
     except WebSocketDisconnect:
         ws_manager.disconnect(player_id)
     except Exception as e:
@@ -115,3 +149,4 @@ async def websocket_ui_endpoint(ws: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=True)
+

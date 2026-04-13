@@ -1,6 +1,6 @@
 /* ============================================================
-   MAJANX-XAI - 麻雀対戦UI v4
-   雀魂風: 中央河 + Nyanco牌 + アニメーション
+   MAJANX-XAI - 麻雀対戦UI v6
+   雀魂風: 立体牌 + 中央河 + カン + ドラッグ理牌
    ============================================================ */
 
 *, *::before, *::after {
@@ -34,10 +34,12 @@
     --color-tile-hover: #fffdf5;
     --color-tile-selected: #ffeaa0;
 
-    --tw: 60px;
-    --th: 84px;
-    --tw-sm: 28px;
-    --th-sm: 38px;
+    --tw: 54px;
+    --th: 74px;
+    --tw-sm: 26px;
+    --th-sm: 36px;
+    --tw-opp: 20px;
+    --th-opp: 30px;
     --radius: 8px;
     --font: 'Noto Sans JP', -apple-system, sans-serif;
     --font-tile: 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
@@ -161,22 +163,54 @@ html, body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 4px 10px;
-    gap: 3px;
+    padding: 3px 10px;
+    gap: 0;
     min-height: 0;
     overflow: hidden;
 }
 
-/* ─── 対面手牌 (上) ──────────────────────── */
+/* ═══════════════════════════════════════════
+   相手の手牌 — 雀魂風 3D裏面立牌
+   ═══════════════════════════════════════════ */
+
+/* ── 裏向き牌 (3D立体グリーン) ──────────── */
+.tile-back-3d {
+    width: var(--tw-opp);
+    height: var(--th-opp);
+    background: linear-gradient(180deg, #4a8b6f 0%, #3a7259 40%, #2e5a47 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 2px solid #1d3d30;
+    border-right: 1px solid #1d3d30;
+    border-radius: 3px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        1px 2px 3px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+    position: relative;
+}
+.tile-back-3d::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px; right: 3px; bottom: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1px;
+}
+
+/* ツモ牌（隙間あき） */
+.tile-back-3d.tsumo-gap {
+    margin-left: 6px !important;
+}
+
+/* ── 対面の手牌 (水平一列) ──────────────── */
 .opp-area {
-    background: rgba(26, 36, 54, 0.5);
+    background: rgba(26, 36, 54, 0.4);
     border-radius: var(--radius);
-    padding: 4px 10px;
+    padding: 4px 12px;
     border: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
     overflow: hidden;
 }
@@ -191,22 +225,51 @@ html, body {
     background: var(--color-accent-gold); color: var(--color-bg-primary);
     font-weight: 900; font-size: 0.65rem;
 }
-.opp-hand {
-    display: flex; flex-direction: row; gap: 2px; flex-wrap: wrap; flex-shrink: 0;
+.opp-hand-horizontal {
+    display: flex; flex-direction: row; gap: 1px; flex-shrink: 0;
+}
+.opp-melds {
+    display: flex; flex-direction: row; gap: 4px; margin-left: auto;
 }
 
-/* ── 裏向き牌 (Green) ──────────────────── */
-.tile-back {
-    width: var(--tw-sm); height: var(--th-sm);
-    background: linear-gradient(135deg, #2e5547, #3a6b5a 50%, #2e5547);
-    border: none; border-radius: 4px;
-    box-shadow: 1px 1px 0px #1d3d30, 2px 2px 4px rgba(0, 0, 0, 0.35);
-    flex-shrink: 0; position: relative;
+/* ── 上家/下家 (縦配置) ────────────────── */
+.side-opp {
+    width: 50px;
+    flex-shrink: 0;
+    background: rgba(26, 36, 54, 0.4);
+    border-radius: var(--radius);
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
 }
-.tile-back::after {
-    content: '';
-    position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 2px;
+.opp-hand-vertical {
+    display: flex; flex-direction: column; gap: 1px; align-items: center;
+}
+.opp-hand-vertical .tile-back-3d {
+    width: var(--th-opp);
+    height: var(--tw-opp);
+}
+/* 上家：90度回転牌 */
+.side-opp-left .tile-back-3d.tsumo-gap {
+    margin-left: 0 !important;
+    margin-top: 6px !important;
+}
+.side-opp-right .tile-back-3d.tsumo-gap {
+    margin-left: 0 !important;
+    margin-top: 6px !important;
+}
+
+.side-opp .opp-label {
+    flex-direction: row;
+    justify-content: center;
+}
+.side-opp .opp-melds {
+    flex-direction: column;
+    margin-left: 0;
+    margin-top: auto;
 }
 
 /* ─── 中段 ───────────────────────────────── */
@@ -219,22 +282,6 @@ html, body {
     overflow: hidden;
 }
 
-/* ─── サイドパネル (上家/下家) ────────────── */
-.side-opp {
-    width: 80px;
-    flex-shrink: 0;
-    background: rgba(26, 36, 54, 0.5);
-    border-radius: var(--radius);
-    padding: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    overflow: hidden;
-}
-.side-opp .opp-hand { flex-wrap: wrap; gap: 1px; }
-.side-opp .tile-back { width: 22px; height: 30px; }
-
 /* ─── 雀卓中央 ───────────────────────────── */
 .table-center {
     flex: 1;
@@ -242,99 +289,128 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     background: radial-gradient(ellipse at center,
         var(--color-bg-table-felt) 0%,
         var(--color-bg-table) 60%,
         var(--color-bg-table-border) 100%);
     border: 2px solid var(--color-bg-table-border);
     border-radius: 10px;
-    padding: 8px;
+    padding: 6px;
     min-height: 0;
     overflow: hidden;
+    position: relative;
 }
 
-/* ─── 河ゾーン (十字配置) ────────────────── */
-.river-zone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-    max-width: 420px;
+/* 雀卓のダイヤモンド装飾線 */
+.table-center::before {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 60%;
+    border: 1px solid rgba(212, 168, 83, 0.08);
+    transform: rotate(45deg);
+    pointer-events: none;
 }
-.river-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 2px;
-    min-height: var(--th-sm);
-    max-width: 260px;
-}
-.river-mid {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    justify-content: center;
-}
-.river-col {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: var(--tw-sm);
-    max-height: 120px;
-    flex-wrap: wrap;
-    align-content: center;
-}
-/* 対面の河: 上段 (向きはそのまま、読みやすく) */
-.river-toimen { }
-/* 上家の河: 左側 (90度回転) */
-.river-kamicha { }
-/* 下家の河: 右側 */
-.river-shimocha { }
 
-/* ─── 中央盾 ─────────────────────────────── */
+/* ─── 中央盾 (コンパス) ───────────────────── */
 .center-shield {
     background: linear-gradient(145deg, #2d3748, #1a202c);
     border: 2px solid #4a5568;
     border-radius: 10px;
-    padding: 8px 14px;
+    padding: 6px 10px;
     text-align: center;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    min-width: 90px;
+}
+.shield-compass {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-width: 100px;
+    gap: 2px;
+}
+.compass-n, .compass-s, .compass-e, .compass-w {
+    font-size: 0.6rem;
+    font-weight: 900;
+    color: var(--color-text-muted);
+    transition: color 0.3s;
+}
+.compass-n.active, .compass-s.active, .compass-e.active, .compass-w.active {
+    color: var(--color-accent-gold);
+    text-shadow: 0 0 8px rgba(212, 168, 83, 0.6);
+}
+.compass-mid-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.compass-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
 }
 .shield-round {
-    font-size: 1rem; font-weight: 900;
+    font-size: 0.85rem; font-weight: 900;
     color: var(--color-accent-blue);
 }
 .shield-remain {
-    font-size: 0.75rem; color: var(--color-accent-gold);
+    font-size: 0.7rem; color: var(--color-accent-gold);
 }
 .shield-remain span { font-weight: 700; }
 .dora-mini {
     display: flex; align-items: center; gap: 4px;
 }
 .dora-mini-label {
-    font-size: 0.6rem; color: var(--color-accent-gold); font-weight: 700;
+    font-size: 0.55rem; color: var(--color-accent-gold); font-weight: 700;
 }
 .dora-tiles { display: flex; gap: 3px; }
 
+/* ─── 河ゾーン (十字配置) ────────────────── */
+.river-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    max-width: 480px;
+}
+.river-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1px;
+    min-height: var(--th-sm);
+    max-width: 180px;  /* 6枚 × (26px+1px) ≈ 162px */
+    width: 180px;
+}
+.river-mid {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+}
+.river-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: var(--tw-sm);
+    max-height: 120px;
+    flex-wrap: wrap;
+    align-content: center;
+}
+
 /* ─── ターンインジケーター ────────────────── */
 .turn-indicator {
-    padding: 4px 16px;
+    padding: 3px 14px;
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(4px);
 }
 #game-message {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--color-accent-gold);
     white-space: nowrap;
@@ -345,7 +421,7 @@ html, body {
     position: relative;
     width: var(--tw-sm);
     height: var(--th-sm);
-    border-radius: 4px;
+    border-radius: 3px;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -371,16 +447,22 @@ html, body {
 /* 最新捨て牌ハイライト */
 .river-tile.last-discard {
     box-shadow:
-        0 0 6px rgba(212, 168, 83, 0.5),
-        0 0 12px rgba(212, 168, 83, 0.3),
+        0 0 6px rgba(212, 168, 83, 0.6),
+        0 0 14px rgba(212, 168, 83, 0.35),
         1px 1px 0px var(--color-tile-side);
     border: 1.5px solid var(--color-accent-gold);
-    filter: brightness(1.15) drop-shadow(0 0 4px rgba(212, 168, 83, 0.8));
+    filter: brightness(1.15);
     z-index: 10;
+    animation: lastDiscardPulse 1.5s ease-in-out infinite;
 }
 .river-tile.tile-sprite.last-discard {
     border: 1.5px solid var(--color-accent-gold);
-    border-radius: 4px;
+    border-radius: 3px;
+}
+
+@keyframes lastDiscardPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(212, 168, 83, 0.5), 1px 1px 0 var(--color-tile-side); }
+    50%      { box-shadow: 0 0 14px rgba(212, 168, 83, 0.8), 0 0 24px rgba(212, 168, 83, 0.3), 1px 1px 0 var(--color-tile-side); }
 }
 
 @keyframes tilePlace {
@@ -393,50 +475,63 @@ html, body {
     flex-shrink: 0;
     background: linear-gradient(0deg, rgba(10, 14, 23, 0.96), rgba(18, 26, 42, 0.85));
     border-top: 1px solid rgba(212, 168, 83, 0.15);
-    padding: 8px 16px 12px;
+    padding: 6px 16px 10px;
     display: flex;
     flex-direction: row;
     align-items: flex-end;
     justify-content: center;
-    gap: 14px;
-    min-height: 90px;
+    gap: 10px;
+    min-height: 88px;
 }
 .my-hand {
     display: flex;
     flex-direction: row;
-    gap: 3px;
+    gap: 2px;
     align-items: flex-end;
+    position: relative;
 }
 #hand-0 {
   display: flex;
-  align-items: flex-start; /* 上揃え */
+  align-items: flex-start;
   justify-content: center;
   flex-wrap: nowrap;
-  padding: 10px 0;
+  padding: 6px 0;
+  position: relative;
+}
+.my-melds {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: flex-end;
+}
+.meld-group {
+    display: flex;
+    gap: 1px;
+    padding: 2px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
 }
 
 /* ─── 牌 (Nyanco Style) ─────────────────── */
 .tile {
-  width: 60px;
-  height: 84px;
+  width: var(--tw);
+  height: var(--th);
   background-image: url('../img/majang-hai.png');
   background-repeat: no-repeat;
-  background-size: 540px 336px;
-  
-  /* 垂直位置を厳密に固定 */
+  background-size: 540px 296px;
+
   display: inline-block;
   vertical-align: top !important;
   position: relative;
   top: 0 !important;
-  margin: 2px;
+  margin: 1px;
   border-radius: 4px;
-  
-  /* フレックスボックスでの配置を無効化 */
+
   flex-shrink: 0;
   flex-grow: 0;
-  
+
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 1px 1px 0px #ccc, 2px 3px 5px rgba(0, 0, 0, 0.25);
   font-family: var(--font-tile);
   font-size: 1rem;
@@ -478,13 +573,13 @@ html, body {
     box-shadow: none !important;
 }
 
-/* Y positions (4 rows: 0, 33.3%, 66.6%, 100%) */
-.row-0 { background-position-y: 0% !important; }
-.row-1 { background-position-y: 33.333% !important; }
-.row-2 { background-position-y: 66.666% !important; }
-.row-3 { background-position-y: 100% !important; }
+/* Y positions (4 rows) */
+.row-0 { background-position-y: 4px !important; }
+.row-1 { background-position-y: calc(33.333% + 4px) !important; }
+.row-2 { background-position-y: calc(66.666% + 4px) !important; }
+.row-3 { background-position-y: calc(100% + 4px) !important; }
 
-/* X positions (10 cols: 0, 11.1%, 22.2%, ..., 100%) */
+/* X positions (10 cols) */
 .col-0 { background-position-x: 0% !important; }
 .col-1 { background-position-x: 11.111% !important; }
 .col-2 { background-position-x: 22.222% !important; }
@@ -496,98 +591,29 @@ html, body {
 .col-8 { background-position-x: 88.888% !important; }
 .col-9 { background-position-x: 100% !important; }
 
-/* AI Recommendations */
-#ai-recommendations {
-    display: none;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 15px;
-    margin: 0 0 10px 0;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    flex-wrap: wrap;
+/* ─── ドラッグ&ドロップ ─────────────────── */
+.tile.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+    z-index: 100;
 }
-
-.ai-rec-box {
-    background: linear-gradient(135deg, rgba(66, 165, 245, 0.2), rgba(30, 136, 229, 0.2));
-    border: 2px solid var(--color-accent-blue);
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-    min-width: 80px;
-    transition: transform 0.2s;
+.tile.drag-over {
+    border-left: 3px solid var(--color-accent-gold) !important;
+    transform: translateX(4px);
 }
-
-.ai-rec-box.alt {
-    background: linear-gradient(135deg, rgba(126, 87, 194, 0.2), rgba(106, 27, 154, 0.2));
-    border-color: var(--color-accent-purple);
-    opacity: 0.8;
+.tile.drag-handle {
+    cursor: grab;
 }
-
-.ai-rec-box:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(66, 165, 245, 0.3);
-}
-
-.ai-rec-title {
-    font-size: 0.7rem;
-    color: var(--color-accent-blue);
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.ai-rec-tile {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--color-text-primary);
-    margin: 5px 0;
-}
-
-.ai-rec-prob {
-    font-size: 0.85rem;
-    color: var(--color-accent-gold);
-    font-weight: bold;
-}
-
-.ai-analysis-box {
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid var(--color-accent-green);
-    border-radius: 8px;
-    padding: 10px;
-    min-width: 150px;
-    max-width: 250px;
-}
-
-.ai-analysis-title {
-    font-size: 0.75rem;
-    color: var(--color-accent-green);
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.ai-analysis-text {
-    font-size: 0.8rem;
-    color: var(--color-text-primary);
-    line-height: 1.4;
-}
-
-.tile.ai-recommended {
-    box-shadow: 0 0 10px var(--color-accent-blue) !important;
-    animation: aiHighlight 1.5s ease-in-out infinite;
-}
-
-@keyframes aiHighlight {
-    0%, 100% { box-shadow: 0 0 5px var(--color-accent-blue) !important; }
-    50% { box-shadow: 0 0 20px var(--color-accent-blue), 0 0 30px var(--color-accent-gold) !important; }
+.tile.drag-handle:active {
+    cursor: grabbing;
 }
 
 /* 自摸牌はコンテナの右外側に配置 */
 .tile.tsumo-tile {
   position: absolute;
-  left: calc(100% + 20px); /* 13牌の右端から20px離す */
+  left: calc(100% + 16px);
   top: 0;
-  margin: 0 !important;   /* flexのマージンを無効化 */
+  margin: 0 !important;
   box-shadow: 0 4px 8px rgba(0,0,0,0.4);
   z-index: 10;
 }
@@ -614,13 +640,15 @@ html, body {
     z-index: 15;
     transform: translateY(-4px);
 }
-.tile.recommended::before {
-    content: '★';
-    position: absolute; top: -12px; right: -4px;
-    font-size: 14px; color: var(--color-accent-green);
-    text-shadow: 0 0 8px rgba(72, 199, 142, 0.9);
-    pointer-events: none;
-    animation: starBounce 1.8s ease-in-out infinite;
+
+.tile.ai-recommended {
+    box-shadow: 0 0 10px var(--color-accent-blue) !important;
+    animation: aiHighlight 1.5s ease-in-out infinite;
+}
+
+@keyframes aiHighlight {
+    0%, 100% { box-shadow: 0 0 5px var(--color-accent-blue) !important; }
+    50% { box-shadow: 0 0 20px var(--color-accent-blue), 0 0 30px var(--color-accent-gold) !important; }
 }
 
 /* ─── コントロール ───────────────────────── */
@@ -657,6 +685,14 @@ html, body {
     background: linear-gradient(135deg, var(--color-accent-gold-bright), #f7d98a);
     box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
 }
+.ctrl-btn.accent-kan {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    border-color: transparent; color: #fff;
+}
+.ctrl-btn.accent-kan:hover:not(:disabled) {
+    background: linear-gradient(135deg, #a855f7, #c084fc);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}
 .ctrl-btn.ghost {
     background: transparent;
     border-color: rgba(255, 255, 255, 0.08);
@@ -674,7 +710,7 @@ html, body {
     border-radius: 16px;
     padding: 24px 32px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-    min-width: 320px;
+    min-width: 340px;
     animation: modalPop 0.3s ease-out;
 }
 .settings-panel h2 {
@@ -770,40 +806,38 @@ html, body {
     0%, 100% { box-shadow: 0 0 12px rgba(72, 199, 142, 0.6), 0 0 24px rgba(72, 199, 142, 0.3), 0 2px 3px rgba(0,0,0,0.3); }
     50%      { box-shadow: 0 0 18px rgba(72, 199, 142, 0.8), 0 0 36px rgba(72, 199, 142, 0.5), 0 2px 3px rgba(0,0,0,0.3); }
 }
-@keyframes starBounce {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-3px) scale(1.15); }
-}
 
 /* ─── レスポンシブ ───────────────────────── */
 @media (max-width: 1100px) {
-    :root { --tw: 42px; --th: 58px; --tw-sm: 24px; --th-sm: 34px; }
-    .side-opp { width: 70px; }
+    :root { --tw: 42px; --th: 58px; --tw-sm: 22px; --th-sm: 30px; --tw-opp: 18px; --th-opp: 26px; }
+    .side-opp { width: 44px; }
 }
 @media (max-width: 800px) {
-    :root { --tw: 36px; --th: 50px; --tw-sm: 22px; --th-sm: 30px; }
-    .side-opp { width: 60px; }
+    :root { --tw: 36px; --th: 50px; --tw-sm: 20px; --th-sm: 28px; --tw-opp: 16px; --th-opp: 22px; }
+    .side-opp { width: 38px; }
     .top-bar { flex-direction: column; gap: 3px; padding: 3px 8px; }
     .score-row { flex-wrap: wrap; justify-content: center; }
 }
 
-/* 5パターン推奨パネル */
+/* ═══════════════════════════════════════════
+   5パターン推奨パネル
+   ═══════════════════════════════════════════ */
 #ai-recommendations {
   display: none;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-  margin: 16px 0;
-  padding: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 10px;
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .rec-panel {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  padding: 16px;
-  font-size: 0.9rem;
+  padding: 12px;
+  font-size: 0.85rem;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -816,8 +850,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -825,49 +859,50 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: var(--color-accent-blue);
   color: white;
   border-radius: 50%;
   font-weight: bold;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .panel-title {
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--color-text-primary);
 }
 
 .panel-body {
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .rec-tile {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: bold;
   text-align: center;
-  margin: 12px 0;
-  padding: 8px;
+  margin: 8px 0;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
 }
 
 .rec-prob {
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--color-accent-gold);
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .rec-judgment {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 4px;
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
 }
 
 .rec-judgment.push {
@@ -885,40 +920,51 @@ html, body {
   color: #ffa726;
 }
 
+.rec-judgment.defensive {
+  background: rgba(239, 83, 80, 0.2);
+  color: #ef9a9a;
+}
+
+.rec-judgment.aggressive {
+  background: rgba(102, 187, 106, 0.2);
+  color: #a5d6a7;
+}
+
 .rec-reasoning {
-  margin: 12px 0;
-  padding: 8px;
+  margin: 8px 0;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.05);
   border-left: 3px solid var(--color-accent-blue);
   border-radius: 4px;
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .rec-alternatives,
 .rec-rules,
 .rec-rule-refs {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px dashed rgba(255, 255, 255, 0.2);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .rec-rules ul {
-  margin: 8px 0;
-  padding-left: 20px;
+  margin: 6px 0;
+  padding-left: 18px;
 }
 
 .rec-rules li {
-  margin: 4px 0;
+  margin: 3px 0;
 }
 
 .rec-consistency {
-  margin-top: 8px;
-  padding: 8px;
+  margin-top: 6px;
+  padding: 6px;
   background: rgba(171, 71, 188, 0.2);
   border-radius: 4px;
   text-align: center;
   font-weight: bold;
   color: #ab47bc;
+  font-size: 0.85rem;
 }
