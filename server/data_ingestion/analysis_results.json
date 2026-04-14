@@ -1,0 +1,19 @@
+{
+  "total_games": 10021,
+  "total_kyokus": 101640,
+  "total_reaches": 73764,
+  "total_naki": 236051,
+  "total_agari_tsumo": 26539,
+  "total_agari_ron": 64330,
+  "total_ryuukyoku": 11175,
+  "total_discards": 4933142,
+  "total_tsumo_turns": 4746892,
+  "metrics": {
+    "avg_reach_per_kyoku": 0.7257378984651712,
+    "avg_naki_per_kyoku": 2.322422274695002,
+    "agari_tsumo_rate_per_kyoku": 0.261107831562377,
+    "agari_ron_rate_per_kyoku": 0.6329201101928374,
+    "ryuukyoku_rate": 0.10994687131050768,
+    "tsumo_win_ratio": 0.29205458347089247
+  }
+}

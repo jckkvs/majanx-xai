@@ -1,4 +1,14 @@
 ```
 __pycache__/
 *.pyc
+
+# Data and Logs
+server/haihu_rules.db
+logs/
+server/data_ingestion/logs/
+haihu_example/
+
+# OS files
+.DS_Store
+Thumbs.db
 ```

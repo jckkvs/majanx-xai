@@ -1,0 +1,12 @@
+{
+  "name": "MajanX-XAI",
+  "short_name": "MajanX",
+  "description": "AI解説付き麻雀学習支援アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d1a",
+  "theme_color": "#4ecca3",
+  "icons": [
+    { "src": "/vite.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
