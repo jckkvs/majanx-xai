@@ -50,7 +50,7 @@ class MahjongGame {
             this.ws.close();
         }
         const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const url = `${proto}//${location.host}/ws_ui?new_game=true`;
+        const url = `ws://localhost:8001/ws_ui?new_game=true`;
         this.setLoading('サーバーに接続中...');
         this.ws = new WebSocket(url);
 

@@ -203,7 +203,7 @@ window.callPass = function() {
 
 // WebSocket Initialization
 function connect() {
-  ws = new WebSocket("ws://127.0.0.1:8000/ws_ui");
+  ws = new WebSocket("ws://localhost:8001/ws_ui");
   
   ws.onopen = () => {
     console.log("WebSocket connected.");

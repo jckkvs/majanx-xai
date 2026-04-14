@@ -33,15 +33,14 @@ class GameClient {
 
     async _initSettings() {
         try {
-            const res = await fetch('/api/settings');
+            const res = await fetch('http://localhost:8001/api/settings');
             this.settings = await res.json();
         } catch (e) {
             console.error('[Settings] Load error:', e);
         }
 
         // 簡易的な WebSocket による設定更新購読（settings.html 側で更新時に送信）
-        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        this.settingsWs = new WebSocket(`${protocol}//${location.host}/ws_ui`);
+        this.settingsWs = new WebSocket(`ws://localhost:8001/ws_ui`);
         window.settingsWs = this.settingsWs; // settings.html から送信するため
         this.settingsWs.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -72,13 +71,12 @@ class GameClient {
      * WebSocket接続
      */
     connect(replaySessionId = null) {
-        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        let url = `${protocol}//${location.host}/ws_ui`;
+        let url = `ws://localhost:8001/ws_ui`;
         
         if (replaySessionId) {
             this.isReplay = true;
             this.replaySessionId = replaySessionId;
-            url = `${protocol}//${location.host}/ws/replay/${replaySessionId}`;
+            url = `ws://localhost:8001/ws/replay/${replaySessionId}`;
         }
 
         this.ws = new WebSocket(url);

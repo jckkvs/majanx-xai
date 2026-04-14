@@ -38,7 +38,7 @@ class MahjongGame {
             this.ws.close();
         }
         const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const url = `${proto}//${location.host}/ws_ui?new_game=true`;
+        const url = `ws://localhost:8001/ws_ui?new_game=true`;
         Renderer.setLoadingMsg('サーバーに接続中...');
         this.ws = new WebSocket(url);
 
@@ -329,7 +329,7 @@ class MahjongGame {
 
     async loadCpuStrength() {
         try {
-            const res = await fetch('/api/settings');
+            const res = await fetch('http://localhost:8001/api/settings');
             const data = await res.json();
             const slider = document.getElementById('setting-cpu-strength');
             const valEl = document.getElementById('cpu-strength-val');
@@ -342,7 +342,7 @@ class MahjongGame {
 
     async updateCpuStrength(value) {
         try {
-            await fetch('/api/settings', {
+            await fetch('http://localhost:8001/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cpu_strength: value / 100 }),

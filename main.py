@@ -15,6 +15,7 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+from fastapi.middleware.cors import CORSMiddleware
 from server.middleware.security import setup_security
 from server.endpoints.inference import router as inference_router
 from server.endpoints.stats import router as stats_router
@@ -41,6 +42,15 @@ app = FastAPI(title="MajanX-XAI", lifespan=lifespan)
 setup_security(app)
 app.add_middleware(MetricsMiddleware)
 
+# CORS設定 (フロントエンドからの接続を許可)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 開発環境のため
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ルーターマウント
 app.include_router(inference_router)
 app.include_router(stats_router)
@@ -53,22 +63,31 @@ from core.explanation.generator import ExplanationGenerator
 review_module.registry = EngineRegistry(HFModelManager())
 review_module.explainer = ExplanationGenerator()
 
+# 静的ファイル（画像など）のサーブ
+if Path("design").exists():
+    app.mount("/design", StaticFiles(directory="design"), name="design")
+    print("✅ Design files mounted at /design")
+# V2互換用エイリアス
+if Path("design/majang-hai").exists():
+    app.mount("/tiles", StaticFiles(directory="design/majang-hai"), name="tiles")
+    print("✅ Tiles mounted at /tiles")
+
 def run_http_server(port, directory):
     """指定されたディレクトリをサーブする簡易 HTTP サーバー"""
     if not os.path.exists(directory):
+        print(f"⚠️ Warning: Directory {directory} not found.")
         return
 
-    original_dir = os.getcwd()
+    class CustomHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=directory, **kwargs)
+
     try:
-        os.chdir(directory)
-        handler = http.server.SimpleHTTPRequestHandler
-        with socketserver.TCPServer(("", port), handler) as httpd:
+        with socketserver.TCPServer(("", port), CustomHandler) as httpd:
             print(f"✅ Serving {directory} at http://localhost:{port}")
             httpd.serve_forever()
     except Exception as e:
-        print(f"❌ Error serving {directory}: {e}")
-    finally:
-        os.chdir(original_dir)
+        print(f"❌ Error serving {directory} on port {port}: {e}")
 
 if __name__ == "__main__":
     print("🚀 MajanX-XAI Multi-Server Starting...")
