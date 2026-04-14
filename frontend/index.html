@@ -1,22 +1,916 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MajanX-XAI</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4ecca3">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀解説 AI システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            height: 100vh;
+        }
+
+        .game-area {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .table {
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(145deg, #2d5016 0%, #1a3009 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* 他家の表示 */
+        .other-player {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid #4a4a4a;
+        }
+
+        .other-player.top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .other-player.left {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .other-player.right {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .player-score {
+            background: #ffd700;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .tile-count {
+            display: flex;
+            gap: 2px;
+        }
+
+        .tile-back {
+            width: 20px;
+            height: 28px;
+            background: linear-gradient(145deg, #4a4a4a 0%, #2a2a2a 100%);
+            border: 1px solid #6a6a6a;
+            border-radius: 3px;
+        }
+
+        /* 自家の手牌 */
+        .self-hand {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .tile {
+            width: 40px;
+            height: 56px;
+            background: #fff;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
+
+        .tile:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile.selected {
+            transform: translateY(-15px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.6);
+            border: 2px solid #ffd700;
+        }
+
+        .tile.tsumo {
+            margin-left: 10px;
+            animation: drawTile 0.3s ease-out;
+        }
+
+        @keyframes drawTile {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 河 */
+        .discard-area {
+            position: absolute;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 3px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .discard-area.self {
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .discard-area.top {
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .discard-area.left {
+            left: 80px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        .discard-area.right {
+            right: 80px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+
+        .discard-tile {
+            width: 25px;
+            height: 35px;
+            background: #fff;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* ドラ表示 */
+        .dora-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+
+        .dora-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #ffd700;
+        }
+
+        /* コントロールパネル */
+        .control-panel {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-button {
+            padding: 12px 24px;
+            background: linear-gradient(145deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .action-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-button.riichi {
+            background: linear-gradient(145deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .action-button.tsumo {
+            background: linear-gradient(145deg, #2196F3 0%, #1976D2 100%);
+        }
+
+        /* 情報パネル */
+        .info-panel {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+
+        .game-info {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .info-label {
+            color: #aaa;
+        }
+
+        .info-value {
+            font-weight: bold;
+        }
+
+        /* AI 解説エリア */
+        .ai-analysis {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4CAF50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ai-recommendation {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .recommended-tile {
+            width: 50px;
+            height: 70px;
+            background: #fff;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #000;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(76, 175, 80, 0.8);
+            }
+        }
+
+        .ai-reason {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .ai-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .stat-value.attack {
+            color: #f44336;
+        }
+
+        .multiple-rules {
+            margin-top: 15px;
+        }
+
+        .rule-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .rule-name {
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 5px;
+        }
+
+        .rule-description {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .alternatives {
+            margin-top: 15px;
+        }
+
+        .alternative-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+
+        .alt-tile {
+            width: 30px;
+            height: 42px;
+            background: #fff;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .alt-reason {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* 場況表示 */
+        .round-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .round-info {
+            display: flex;
+            gap: 15px;
+        }
+
+        .round-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .wind-indicator {
+            width: 30px;
+            height: 30px;
+            background: #ffd700;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        /* メッセージ表示 */
+        .message-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .message-box {
+            background: #fff;
+            color: #000;
+            padding: 30px 50px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .message-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .message-button {
+            padding: 12px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- スタート画面 -->
+        <div v-if="!gameStarted" class="message-overlay">
+            <div class="message-box">
+                <div class="message-title">🀄 麻雀解説 AI システム</div>
+                <p>CPU と対戦しながら、AI の解説で学べる麻雀アプリ</p>
+                <button class="message-button" @click="startGame">ゲーム開始</button>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div v-else class="game-container">
+            <!-- ゲームエリア -->
+            <div class="game-area">
+                <div class="table">
+                    <!-- 場況表示 -->
+                    <div class="round-display">
+                        <div class="round-info">
+                            <div class="round-item">
+                                <span>{{ gameState.round_name }}</span>
+                            </div>
+                            <div class="round-item">
+                                <span>{{ gameState.honba }}本場</span>
+                            </div>
+                            <div class="round-item">
+                                <span>供託：{{ gameState.kyoutaku }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 上家 -->
+                    <div class="other-player top">
+                        <div class="player-info">
+                            <span class="player-name">上家</span>
+                            <span class="player-score">{{ gameState.scores.kamicha }}</span>
+                        </div>
+                        <div class="tile-count">
+                            <div v-for="i in gameState.kamicha_tiles_count" :key="i" class="tile-back"></div>
+                        </div>
+                    </div>
+
+                    <!-- 左家 -->
+                    <div class="other-player left">
+                        <div class="player-info">
+                            <span class="player-name">対面</span>
+                            <span class="player-score">{{ gameState.scores.toimen }}</span>
+                        </div>
+                        <div class="tile-count">
+                            <div v-for="i in gameState.toimen_tiles_count" :key="i" class="tile-back"></div>
+                        </div>
+                    </div>
+
+                    <!-- 右家 -->
+                    <div class="other-player right">
+                        <div class="player-info">
+                            <span class="player-name">下家</span>
+                            <span class="player-score">{{ gameState.scores.shimocha }}</span>
+                        </div>
+                        <div class="tile-count">
+                            <div v-for="i in gameState.shimocha_tiles_count" :key="i" class="tile-back"></div>
+                        </div>
+                    </div>
+
+                    <!-- ドラ表示 -->
+                    <div class="dora-indicator">
+                        <span class="dora-label">ドラ</span>
+                        <div v-for="dora in gameState.dora_indicators" :key="dora.tile.name" class="tile">
+                            {{ dora.tile.name }}
+                        </div>
+                    </div>
+
+                    <!-- 河 -->
+                    <div class="discard-area top">
+                        <div v-for="tile in gameState.kamicha_discards" :key="tile.name" class="discard-tile">
+                            {{ tile.name }}
+                        </div>
+                    </div>
+
+                    <div class="discard-area left">
+                        <div v-for="tile in gameState.toimen_discards" :key="tile.name" class="discard-tile">
+                            {{ tile.name }}
+                        </div>
+                    </div>
+
+                    <div class="discard-area right">
+                        <div v-for="tile in gameState.shimocha_discards" :key="tile.name" class="discard-tile">
+                            {{ tile.name }}
+                        </div>
+                    </div>
+
+                    <div class="discard-area self">
+                        <div v-for="tile in gameState.jikaze_discards" :key="tile.name" class="discard-tile">
+                            {{ tile.name }}
+                        </div>
+                    </div>
+
+                    <!-- 自家の手牌 -->
+                    <div class="self-hand">
+                        <div v-for="(tile, index) in gameState.jikaze_tiles"
+                             :key="index"
+                             class="tile"
+                             :class="{ selected: selectedTileIndex === index, tsumo: index === gameState.jikaze_tiles.length - 1 && gameState.phase === 'discarding' }"
+                             @click="selectTile(index)">
+                            {{ tile.name }}
+                        </div>
+                    </div>
+
+                    <!-- コントロールパネル -->
+                    <div class="control-panel">
+                        <button class="action-button tsumo" @click="drawTile" :disabled="gameState.phase !== 'drawing'">
+                            ツモ
+                        </button>
+                        <button class="action-button" @click="discardSelected" :disabled="selectedTileIndex === null || gameState.phase !== 'discarding'">
+                            打牌
+                        </button>
+                        <button class="action-button riichi" @click="declareRiichi" :disabled="!canRiichi">
+                            リーチ
+                        </button>
+                        <button class="action-button" @click="sortHand" class="sort-hand-btn">
+                            リーパイ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 情報パネル -->
+            <div class="info-panel">
+                <div class="panel-title">📊 局情報</div>
+                <div class="game-info">
+                    <div class="info-row">
+                        <span class="info-label">場風</span>
+                        <span class="info-value">{{ getWindName(gameState.bakaze) }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">自風</span>
+                        <span class="info-value">{{ getWindName(gameState.jikaze) }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">残り牌</span>
+                        <span class="info-value">{{ gameState.wall_remaining }}枚</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">フェーズ</span>
+                        <span class="info-value">{{ getPhaseName(gameState.phase) }}</span>
+                    </div>
+                </div>
+
+                <div class="panel-title">🤖 AI 解説</div>
+                <div class="ai-analysis" v-if="aiAnalysis.recommended_tile">
+                    <div class="ai-recommendation">
+                        <div class="recommended-tile">
+                            {{ aiAnalysis.recommended_tile.name }}
+                        </div>
+                        <div class="ai-reason">
+                            {{ aiAnalysis.reason }}
+                        </div>
+                    </div>
+
+                    <div class="ai-stats">
+                        <div class="stat-box">
+                            <div class="stat-label">攻め値</div>
+                            <div class="stat-value attack">{{ aiAnalysis.attack_value?.toFixed(0) }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">守り値</div>
+                            <div class="stat-value">{{ aiAnalysis.defense_value?.toFixed(0) }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">期待得点</div>
+                            <div class="stat-value">{{ aiAnalysis.expected_score?.toFixed(0) }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">和了率</div>
+                            <div class="stat-value">{{ aiAnalysis.win_rate?.toFixed(1) }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="multiple-rules" v-if="aiAnalysis.multiple_rules.length > 0">
+                        <div class="panel-title" style="font-size: 14px; margin-top: 15px;">複数の考え方</div>
+                        <div v-for="(rule, index) in aiAnalysis.multiple_rules" :key="index" class="rule-item">
+                            <div class="rule-name">{{ rule.name }} ({{ rule.priority }})</div>
+                            <div class="rule-description">{{ rule.description }}</div>
+                        </div>
+                    </div>
+
+                    <div class="alternatives" v-if="aiAnalysis.alternative_tiles.length > 0">
+                        <div class="panel-title" style="font-size: 14px; margin-top: 15px;">代替案</div>
+                        <div v-for="(alt, index) in aiAnalysis.alternative_tiles" :key="index" class="alternative-item">
+                            <div class="alt-tile">{{ alt.tile.name }}</div>
+                            <div class="alt-reason">{{ alt.reason }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(console.error);
-        });
-      }
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    gameStarted: false,
+                    ws: null,
+                    gameState: {
+                        round_name: 'E1',
+                        honba: 0,
+                        kyoutaku: 0,
+                        bakaze: 'east',
+                        jikaze: 'east',
+                        jikaze_tiles: [],
+                        kamicha_tiles_count: 13,
+                        shimocha_tiles_count: 13,
+                        toimen_tiles_count: 13,
+                        kamicha_discards: [],
+                        shimocha_discards: [],
+                        toimen_discards: [],
+                        jikaze_discards: [],
+                        dora_indicators: [],
+                        scores: {
+                            jikaze: 25000,
+                            kamicha: 25000,
+                            shimocha: 25000,
+                            toimen: 25000
+                        },
+                        current_player: 'jikaze',
+                        last_discard: null,
+                        wall_remaining: 70,
+                        phase: 'waiting',
+                        tsumo_tile: null,
+                        riichi_declarations: {}
+                    },
+                    aiAnalysis: {
+                        recommended_tile: null,
+                        reason: '',
+                        alternative_tiles: [],
+                        attack_value: 0,
+                        defense_value: 0,
+                        expected_score: 0,
+                        win_rate: 0,
+                        multiple_rules: []
+                    },
+                    selectedTileIndex: null,
+                    canRiichi: false
+                };
+            },
+            computed: {
+                canRiichi() {
+                    // リーチ可能か判定
+                    if (!this.gameState || this.gameState.phase !== 'discarding') {
+                        return false;
+                    }
+
+                    // 既にリーチしていないか
+                    if (this.gameState.riichi_declarations?.jikaze) {
+                        return false;
+                    }
+
+                    // 点数が 4000 点以上あるか
+                    if (this.gameState.scores?.jikaze < 4000) {
+                        return false;
+                    }
+
+                    // ツモ牌があるか（配牌直後でないか）
+                    if (!this.gameState.tsumo_tile) {
+                        return false;
+                    }
+
+                    // 手牌が 14 枚あるか
+                    if (this.gameState.jikaze_tiles.length !== 14) {
+                        return false;
+                    }
+
+                    // TODO: 実際の聴牌判定
+                    // 現在は簡易的に「門前なら OK」とする
+                    return true;
+                }
+            },
+            methods: {
+                startGame() {
+                    this.gameStarted = true;
+                    this.connectWebSocket();
+                },
+                connectWebSocket() {
+                    const wsUrl = `ws://${window.location.host}/ws`;
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        // ゲーム初期化をリクエスト
+                        this.ws.send(JSON.stringify({
+                            type: 'init_game',
+                            data: { round_name: 'E1', bakaze: 'east', jikaze: 'east' }
+                        }));
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        this.handleMessage(message);
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                    };
+
+                    this.ws.onclose = () => {
+                        console.log('WebSocket closed');
+                        setTimeout(() => this.connectWebSocket(), 3000);
+                    };
+                },
+                handleMessage(message) {
+                    switch (message.type) {
+                        case 'game_state':
+                            this.gameState = message.data;
+                            break;
+                        case 'ai_analysis':
+                            this.aiAnalysis = message.data;
+                            break;
+                    }
+                },
+                selectTile(index) {
+                    this.selectedTileIndex = index;
+                },
+                sortHand() {
+                    // 手牌をソートする（リーパイ）
+                    if (this.gameState && this.gameState.jikaze_tiles) {
+                        const tiles = [...this.gameState.jikaze_tiles];
+
+                        // 牌の順序定義：萬子 → 筒子 → 索子 → 字牌（東西南北 白發中）
+                        const tileOrder = {
+                            '1m': 1, '2m': 2, '3m': 3, '4m': 4, '5m': 5, '6m': 6, '7m': 7, '8m': 8, '9m': 9,
+                            '1p': 11, '2p': 12, '3p': 13, '4p': 14, '5p': 15, '6p': 16, '7p': 17, '8p': 18, '9p': 19,
+                            '1s': 21, '2s': 22, '3s': 23, '4s': 24, '5s': 25, '6s': 26, '7s': 27, '8s': 28, '9s': 29,
+                            'E': 31, 'S': 32, 'W': 33, 'N': 34,
+                            'P': 35, 'F': 36, 'C': 37
+                        };
+
+                        tiles.sort((a, b) => {
+                            const orderA = tileOrder[a.name] || 99;
+                            const orderB = tileOrder[b.name] || 99;
+                            return orderA - orderB;
+                        });
+
+                        // ソート後の手牌で表示を更新
+                        this.gameState.jikaze_tiles = tiles;
+                    }
+                },
+                drawTile() {
+                    if (this.ws && this.gameState.phase === 'drawing') {
+                        this.ws.send(JSON.stringify({
+                            type: 'draw_tile'
+                        }));
+                    }
+                },
+                discardSelected() {
+                    if (this.ws && this.selectedTileIndex !== null) {
+                        this.ws.send(JSON.stringify({
+                            type: 'discard',
+                            data: { tile_index: this.selectedTileIndex }
+                        }));
+                        this.selectedTileIndex = null;
+                    }
+                },
+                declareRiichi() {
+                    if (this.ws && this.canRiichi) {
+                        this.ws.send(JSON.stringify({
+                            type: 'declare_riichi'
+                        }));
+                    }
+                },
+                getWindName(wind) {
+                    const windMap = {
+                        east: '東',
+                        south: '南',
+                        west: '西',
+                        north: '北'
+                    };
+                    return windMap[wind] || wind;
+                },
+                getPhaseName(phase) {
+                    const phaseMap = {
+                        waiting: '待機中',
+                        dealing: '配牌中',
+                        drawing: '摸牌中',
+                        discarding: '打牌中',
+                        calling: '鳴き選択',
+                        ron: '和了選択',
+                        game_end: '局終了'
+                    };
+                    return phaseMap[phase] || phase;
+                }
+            },
+            mounted() {
+                // ページロード時に接続
+            }
+        }).mount('#app');
     </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+</body>
 </html>
