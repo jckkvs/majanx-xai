@@ -1,4 +1,4 @@
-# Python cache files
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -9,47 +9,28 @@ venv/
 .venv/
 .env
 .env.local
-.env.*
-
-# Logs and temporary files
-*.log
-*.tmp
-*.swp
-
-# Editors
-.vscode/
-.idea/
+*.env.*
 
 # Build artifacts
-dist/
 build/
-target/
+dist/
+*.egg-info/
 
-# Coverage reports
+# Logs
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Coverage
 .coverage
 coverage/
 htmlcov/
 
-# Compression files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# OS
+.DS_Store
+Thumbs.db
