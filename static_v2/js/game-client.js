@@ -60,10 +60,15 @@ class MahjongGame {
 
     /* ── Message Router ────────────────────── */
     onMessage(d) {
+        // Handle all message types
         if (d.type === 'state_update') {
             this.onState(d);
         } else if (d.type === 'five_pattern_recommendation') {
             this.onAIRecommendation(d.data);
+        } else if (d.type === 'waiting_next_round') {
+            Renderer.showMsg('次局の開始を待っています...');
+        } else if (d.type === 'hora' || d.type === 'agari') {
+            this.showWinModal(d);
         }
     }
 
@@ -97,9 +102,6 @@ class MahjongGame {
         if (d.game_state === 'ROUND_END') {
             Renderer.showMsg('流局');
             this.setControls(false);
-        } else if (d.game_state === 'WIN_MODAL' || d.game_state === 'AGARI') {
-             // Handle WIN state if sent by backend
-             this.showWinModal(d);
         } else if (this.isMyTurn) {
             Renderer.showMsg('あなたの番です');
             this.setControls(true);
@@ -113,10 +115,22 @@ class MahjongGame {
     /* ── WIN Modal ────────────────────────── */
     showWinModal(data) {
         const modal = document.getElementById('win-modal');
+        const titleEl = document.getElementById('win-title');
         const details = document.getElementById('win-details');
         if (!modal || !details) return;
 
-        details.innerHTML = '対局終了。結果を確認してください。';
+        const winner = data.winner !== undefined ? data.winner : (this.gameState ? this.gameState.current_player : 0);
+        const names = ['自家', '下家', '対面', '上家'];
+
+        titleEl.textContent = (winner === this.playerId) ? '和了 (Win)!' : '放銃 (Loss)...';
+        
+        let html = `<p><b>${names[winner]}</b> の和了です。</p>`;
+        if (data.hand_value) {
+            html += `<p>役: ${data.hand_value.yaku?.join(', ') || 'なし'}</p>`;
+            html += `<p>点数: ${data.hand_value.score || data.score || '--'}点</p>`;
+        }
+        
+        details.innerHTML = html;
         modal.classList.remove('hidden');
     }
 
@@ -410,7 +424,11 @@ class MahjongGame {
 }
 
 /* ── Global ────────────────────────────── */
-function closeWinModal() { document.getElementById('win-modal')?.classList.add('hidden'); }
+function closeWinModal() {
+    document.getElementById('win-modal')?.classList.add('hidden');
+}
 
 let game;
-document.addEventListener('DOMContentLoaded', () => { game = new MahjongGame(); });
+document.addEventListener('DOMContentLoaded', () => {
+    game = new MahjongGame();
+});

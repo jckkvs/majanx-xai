@@ -374,7 +374,7 @@ html, body {
 .shield-round {
     font-size: clamp(0.65rem, 1vmin, 1rem);
     font-weight: 900;
-    color: var(--accent-gold);
+    color: var(--accent-blue);
 }
 
 .shield-remain {
