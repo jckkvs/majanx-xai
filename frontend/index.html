@@ -117,42 +117,39 @@
         }
 
         .tile {
-            width: 40px;
-            height: 56px;
-            background: #fff;
-            border-radius: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
+            width: 32px;
+            height: 48px;
+            background-color: #fff;
+            background-size: cover;
+            background-position: center;
+            border-radius: 3px;
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
             user-select: none;
+            border: 1px solid #ccc;
         }
 
         .tile:hover {
-            transform: translateY(-10px);
+            transform: translateY(-8px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
         }
 
         .tile.selected {
-            transform: translateY(-15px);
+            transform: translateY(-12px);
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.6);
             border: 2px solid #ffd700;
         }
 
         .tile.tsumo {
-            margin-left: 10px;
+            margin-left: 8px;
             animation: drawTile 0.3s ease-out;
         }
 
         @keyframes drawTile {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(15px);
             }
             to {
                 opacity: 1;
@@ -196,16 +193,13 @@
         }
 
         .discard-tile {
-            width: 25px;
-            height: 35px;
-            background: #fff;
-            border-radius: 3px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
+            width: 20px;
+            height: 30px;
+            background-color: #fff;
+            background-size: cover;
+            background-position: center;
+            border-radius: 2px;
+            border: 1px solid #ddd;
         }
 
         /* ドラ表示 */
@@ -324,26 +318,22 @@
         }
 
         .recommended-tile {
-            width: 50px;
-            height: 70px;
-            background: #fff;
+            width: 40px;
+            height: 60px;
+            background-color: #fff;
+            background-size: cover;
+            background-position: center;
             border-radius: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 32px;
-            font-weight: bold;
-            color: #000;
             box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% {
-                box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+                box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
             }
             50% {
-                box-shadow: 0 0 30px rgba(76, 175, 80, 0.8);
+                box-shadow: 0 0 25px rgba(76, 175, 80, 0.8);
             }
         }
 
@@ -421,16 +411,13 @@
         }
 
         .alt-tile {
-            width: 30px;
-            height: 42px;
-            background: #fff;
-            border-radius: 3px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #000;
+            width: 24px;
+            height: 36px;
+            background-color: #fff;
+            background-size: cover;
+            background-position: center;
+            border-radius: 2px;
+            border: 1px solid #ddd;
         }
 
         .alt-reason {
@@ -579,33 +566,28 @@
                     <!-- ドラ表示 -->
                     <div class="dora-indicator">
                         <span class="dora-label">ドラ</span>
-                        <div v-for="dora in gameState.dora_indicators" :key="dora.tile.name" class="tile">
-                            {{ dora.tile.name }}
+                        <div v-for="dora in gameState.dora_indicators" :key="dora.tile.name" class="tile" :style="{ backgroundImage: 'url(' + getTileUrl(dora.tile.name) + ')' }">
                         </div>
                     </div>
 
                     <!-- 河 -->
                     <div class="discard-area top">
-                        <div v-for="tile in gameState.kamicha_discards" :key="tile.name" class="discard-tile">
-                            {{ tile.name }}
+                        <div v-for="tile in gameState.kamicha_discards" :key="tile.name" class="discard-tile" :style="{ backgroundImage: 'url(' + getTileUrl(tile.name) + ')' }">
                         </div>
                     </div>
 
                     <div class="discard-area left">
-                        <div v-for="tile in gameState.toimen_discards" :key="tile.name" class="discard-tile">
-                            {{ tile.name }}
+                        <div v-for="tile in gameState.toimen_discards" :key="tile.name" class="discard-tile" :style="{ backgroundImage: 'url(' + getTileUrl(tile.name) + ')' }">
                         </div>
                     </div>
 
                     <div class="discard-area right">
-                        <div v-for="tile in gameState.shimocha_discards" :key="tile.name" class="discard-tile">
-                            {{ tile.name }}
+                        <div v-for="tile in gameState.shimocha_discards" :key="tile.name" class="discard-tile" :style="{ backgroundImage: 'url(' + getTileUrl(tile.name) + ')' }">
                         </div>
                     </div>
 
                     <div class="discard-area self">
-                        <div v-for="tile in gameState.jikaze_discards" :key="tile.name" class="discard-tile">
-                            {{ tile.name }}
+                        <div v-for="tile in gameState.jikaze_discards" :key="tile.name" class="discard-tile" :style="{ backgroundImage: 'url(' + getTileUrl(tile.name) + ')' }">
                         </div>
                     </div>
 
@@ -615,8 +597,8 @@
                              :key="index"
                              class="tile"
                              :class="{ selected: selectedTileIndex === index, tsumo: index === gameState.jikaze_tiles.length - 1 && gameState.phase === 'discarding' }"
+                             :style="{ backgroundImage: 'url(' + getTileUrl(tile.name) + ')' }"
                              @click="selectTile(index)">
-                            {{ tile.name }}
                         </div>
                     </div>
 
@@ -663,8 +645,7 @@
                 <div class="panel-title">🤖 AI 解説</div>
                 <div class="ai-analysis" v-if="aiAnalysis.recommended_tile">
                     <div class="ai-recommendation">
-                        <div class="recommended-tile">
-                            {{ aiAnalysis.recommended_tile.name }}
+                        <div class="recommended-tile" :style="{ backgroundImage: 'url(' + getTileUrl(aiAnalysis.recommended_tile.name) + ')' }">
                         </div>
                         <div class="ai-reason">
                             {{ aiAnalysis.reason }}
@@ -701,7 +682,7 @@
                     <div class="alternatives" v-if="aiAnalysis.alternative_tiles.length > 0">
                         <div class="panel-title" style="font-size: 14px; margin-top: 15px;">代替案</div>
                         <div v-for="(alt, index) in aiAnalysis.alternative_tiles" :key="index" class="alternative-item">
-                            <div class="alt-tile">{{ alt.tile.name }}</div>
+                            <div class="alt-tile" :style="{ backgroundImage: 'url(' + getTileUrl(alt.tile.name) + ')' }"></div>
                             <div class="alt-reason">{{ alt.reason }}</div>
                         </div>
                     </div>
@@ -794,6 +775,26 @@
                 }
             },
             methods: {
+                getTileUrl(name) {
+                    if (!name || name === '?') return '';
+                    
+                    // Honor Tiles
+                    const honors = {
+                        'E': 'ji_e', 'S': 'ji_s', 'W': 'ji_w', 'N': 'ji_n',
+                        'P': 'no', 'F': 'ji_h', 'C': 'ji_c'
+                    };
+                    if (honors[name]) return `/tiles/p_${honors[name]}_0.gif`;
+
+                    // Numbered Tiles (e.g., 1m, 5p, 9s)
+                    const num = name.charAt(0);
+                    const suit = name.charAt(1);
+                    const suitMap = { 'm': 'ms', 'p': 'ps', 's': 'ss' };
+                    
+                    if (suitMap[suit]) {
+                        return `/tiles/p_${suitMap[suit]}${num}_0.gif`;
+                    }
+                    return '';
+                },
                 startGame() {
                     this.gameStarted = true;
                     this.connectWebSocket();

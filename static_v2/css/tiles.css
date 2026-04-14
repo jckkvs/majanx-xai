@@ -1,0 +1,100 @@
+/* ============================================================
+   MajanX-XAI v2 — Premium Tile Styles
+   ============================================================ */
+
+/* ── Common Base ──────────────────────────── */
+.tile-base {
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: var(--tile-face);
+    border-radius: 3px;
+    box-shadow: 
+        1px 1px 0px var(--tile-side),
+        1px 3px 6px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+/* Glass Sheen Effect */
+.tile-base::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px; right: 2px; height: 35%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+    border-radius: 2px 2px 0 0;
+    pointer-events: none;
+}
+
+/* ── Player Hand ──────────────────────────── */
+.hand-tile {
+    width: var(--tile-w);
+    height: var(--tile-h);
+    cursor: pointer;
+    transition: transform 0.15s var(--ease-in-out), box-shadow 0.15s;
+    user-select: none;
+}
+
+.hand-tile:hover {
+    transform: translateY(-8px);
+    filter: brightness(1.05);
+    box-shadow: 2px 6px 12px rgba(0,0,0,0.4);
+}
+
+.hand-tile.selected {
+    transform: translateY(-16px);
+    box-shadow: 0 0 15px var(--accent-gold), 3px 10px 15px rgba(0,0,0,0.4);
+    filter: brightness(1.1);
+}
+
+.hand-tile.ai-recommended {
+    animation: aiHighlight 1.5s infinite;
+}
+
+/* ── River (Discards) ─────────────────────── */
+.river-tile {
+    width: var(--tile-w-sm);
+    height: var(--tile-h-sm);
+    animation: tilePlace 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Current Discard Marker */
+.river-tile.last-discard {
+    border: 2px solid var(--accent-gold);
+    box-shadow: 0 0 15px var(--accent-gold);
+    z-index: 10;
+}
+
+.river-tile.last-discard::before {
+    content: '▼';
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--accent-gold);
+    font-size: 14px;
+    text-shadow: 0 0 5px rgba(0,0,0,1);
+    animation: turnPulse 1.5s infinite;
+}
+
+/* ── Opponent Backs (3D) ───────────────────── */
+.tile-back-3d {
+    width: var(--tile-w-opp);
+    height: var(--tile-h-opp);
+    background: linear-gradient(135deg, #2a5a47 0%, #1a3a2a 100%);
+    border-radius: 2px;
+    border-bottom: 2px solid #0d1a14;
+    border-right: 1px solid #0d1a14;
+    box-shadow: 1px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Rotate for side players */
+.opp-vert .tile-back-3d {
+    width: var(--tile-h-opp);
+    height: var(--tile-w-opp);
+}
+
+/* Vertical Melds */
+.meld-tile {
+    width: var(--tile-w-sm);
+    height: var(--tile-h-sm);
+}

@@ -1,44 +1,8 @@
-# Compiled and build artifacts
-*.pyc
+# Python
 __pycache__/
-*.o
-*.obj
-dist/
-build/
-
-# Dependencies
-.venv/
-venv/
-node_modules/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Python specific
-*.pyc
-__pycache__/
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -56,11 +20,29 @@ wheels/
 .installed.cfg
 *.egg
 
-# Pytest
-.pytest_cache/
+# Environment
+.venv/
+venv/
+env/
+ENV/
 
-# Mypy
-.mypy_cache/
-
-# VSCode
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MajanX-XAI Data & Logs
+server/haihu_rules.db
+logs/
+server/data_ingestion/logs/
+haihu_example/
+kifu_data/
+models_cache/
