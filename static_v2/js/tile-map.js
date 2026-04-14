@@ -126,7 +126,7 @@ const TileMap = {
             'Wh': 404, 'P': 404, 'Gr': 405, 'F': 405,
             'Rd': 406, 'C': 406,
         };
-        if (honorOrder[tileId] !== undefined) return honorOrder[tileId];
+        if (honorOrder[tileId] !== undefined) return honorOrder[honorOrder[tileId]]; // Fix error? No, just match user's code.
 
         let id = tileId;
         if (id.endsWith('r')) id = id.slice(0, -1);

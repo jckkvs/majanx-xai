@@ -36,7 +36,7 @@ const Renderer = {
         let tiles = [...hand];
         let tsumoTile = null;
 
-        // Separate tsumo tile (14th tile = hand has 3n+2 tiles)
+        // Separate tsumo tile (14th tile)
         if (tiles.length % 3 === 2) {
             tsumoTile = tiles.pop();
         }
@@ -78,7 +78,7 @@ const Renderer = {
         const { isMyTurn, isRecommended, onTileClick, isTsumo } = options;
         const d = document.createElement('div');
         d.className = 'hand-tile';
-        this.applyTileImage(d, tile, 0);
+        this.applyTileImage(d, tile, 0); // Self hand is always face-on
 
         if (isRecommended) d.classList.add('ai-recommended');
         if (isTsumo) d.dataset.tsumo = 'true';
@@ -118,8 +118,9 @@ const Renderer = {
      */
     renderRivers(discards, prevCounts) {
         const newCounts = [0, 0, 0, 0];
-        // Orientations: 0=hand, 2=self-discard, 3=right-discard, 1=top-discard, 4=left-discard
-        const orientations = [2, 3, 1, 4];
+        // Orientation Map: 0:P0, 1:P1, 2:P2, 3:P3
+        // P0 -> _2, P1 -> _3, P2 -> _1, P3 -> _4
+        const orientationMap = [2, 3, 1, 4];
 
         for (let p = 0; p < 4; p++) {
             const el = document.getElementById(`river-${p}`);
@@ -133,8 +134,7 @@ const Renderer = {
             arr.forEach((t, idx) => {
                 const d = document.createElement('div');
                 d.className = 'river-tile';
-                // Orientation Patch: using the correct suffix for river tiles
-                this.applyTileImage(d, t, orientations[p]);
+                this.applyTileImage(d, t, orientationMap[p]);
                 if (idx === arr.length - 1) d.classList.add('last-discard');
                 if (idx >= prev) d.style.animation = 'tilePlace 0.25s ease-out';
                 el.appendChild(d);
@@ -169,7 +169,7 @@ const Renderer = {
     },
 
     /**
-     * Turn highlight on score chips + compass
+     * Turn highlight
      */
     renderTurnHighlight(cp) {
         for (let i = 0; i < 4; i++) {
@@ -236,6 +236,7 @@ const Renderer = {
                     }
                     group.appendChild(t);
                 });
+                group.style.opacity = '1';
                 el.appendChild(group);
             });
         }
@@ -256,8 +257,8 @@ const Renderer = {
         if (el) el.textContent = msg;
     },
 
-    showMsg(text) {
+    showMsg(msg) {
         const el = document.getElementById('game-message');
-        if (el) el.textContent = text;
-    },
+        if (el) el.textContent = msg;
+    }
 };

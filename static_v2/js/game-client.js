@@ -97,6 +97,9 @@ class MahjongGame {
         if (d.game_state === 'ROUND_END') {
             Renderer.showMsg('流局');
             this.setControls(false);
+        } else if (d.game_state === 'WIN_MODAL' || d.game_state === 'AGARI') {
+             // Handle WIN state if sent by backend
+             this.showWinModal(d);
         } else if (this.isMyTurn) {
             Renderer.showMsg('あなたの番です');
             this.setControls(true);
@@ -105,6 +108,16 @@ class MahjongGame {
             Renderer.showMsg(`${names[d.current_player]}思考中...`);
             this.setControls(false);
         }
+    }
+
+    /* ── WIN Modal ────────────────────────── */
+    showWinModal(data) {
+        const modal = document.getElementById('win-modal');
+        const details = document.getElementById('win-details');
+        if (!modal || !details) return;
+
+        details.innerHTML = '対局終了。結果を確認してください。';
+        modal.classList.remove('hidden');
     }
 
     /* ── Render Hand (delegates to Renderer) ─ */
@@ -361,6 +374,13 @@ class MahjongGame {
         document.getElementById('settings-close')?.addEventListener('click', () => this.toggleSettings());
         document.getElementById('settings-overlay')?.addEventListener('click', () => this.toggleSettings());
 
+        // Win Modal buttons
+        document.getElementById('btn-next-kyoku')?.addEventListener('click', () => {
+            this.ws.send(JSON.stringify({ type: 'join' })); // Restart/Next
+            closeWinModal();
+        });
+        document.getElementById('btn-close-win')?.addEventListener('click', () => closeWinModal());
+
         // CPU strength slider
         const slider = document.getElementById('setting-cpu-strength');
         const valEl = document.getElementById('cpu-strength-val');
@@ -380,6 +400,7 @@ class MahjongGame {
                 const panel = document.getElementById('settings-panel');
                 if (panel && !panel.classList.contains('hidden')) this.toggleSettings();
                 document.getElementById('kan-modal')?.classList.add('hidden');
+                closeWinModal();
             }
             if (e.key === 'Enter' && this.selectedTile && this.doubleClickMode) {
                 this.doDiscard(this.selectedTile);
