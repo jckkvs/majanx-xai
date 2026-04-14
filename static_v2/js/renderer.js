@@ -1,95 +1,263 @@
 /**
  * MajanX-XAI v2 — Renderer
+ * DOM rendering using individual tile images
  */
 
 const Renderer = {
+    /**
+     * Apply tile image as background to an element
+     */
     applyTileImage(el, tileId, orientation = 0) {
         const url = TileMap.getImageUrl(tileId, orientation);
         if (url) {
             el.style.backgroundImage = `url('${url}')`;
-            el.classList.add('tile-base');
-            if (TileMap.isRedDora(tileId)) el.classList.add('red-dora');
+            if (TileMap.isRedDora(tileId)) {
+                el.classList.add('red-dora');
+            }
         }
     },
 
+    /**
+     * Render player's hand into container.
+     */
     renderHand(containerId, hand, options = {}) {
         const el = document.getElementById(containerId);
-        if (!el) return;
+        if (!el) return [];
         el.innerHTML = '';
 
-        const tiles = [...hand];
-        let tsumo = null;
-        if (tiles.length % 3 === 2) tsumo = tiles.pop();
+        const {
+            isMyTurn = false,
+            autoRipai = true,
+            customOrder = null,
+            recommendedTiles = new Set(),
+            onTileClick = null,
+        } = options;
 
-        tiles.sort((a, b) => TileMap.sortKey(a) - TileMap.sortKey(b));
+        let tiles = [...hand];
+        let tsumoTile = null;
 
-        tiles.forEach((t, i) => {
-            const d = this._createTile(t, i, options);
+        // Separate tsumo tile (14th tile = hand has 3n+2 tiles)
+        if (tiles.length % 3 === 2) {
+            tsumoTile = tiles.pop();
+        }
+
+        // Sort normal tiles
+        if (autoRipai) {
+            tiles.sort((a, b) => TileMap.sortKey(a) - TileMap.sortKey(b));
+        } else if (customOrder && customOrder.length === tiles.length) {
+            tiles = [...customOrder];
+        }
+
+        // Render normal tiles
+        tiles.forEach((tile, i) => {
+            const d = this._createHandTile(tile, i, {
+                isMyTurn, onTileClick,
+                isRecommended: recommendedTiles.has(tile),
+            });
             el.appendChild(d);
         });
 
-        if (tsumo) {
+        // Tsumo separator + tile
+        if (tsumoTile) {
             const spacer = document.createElement('div');
-            spacer.style.width = '16px';
+            spacer.className = 'tsumo-separator';
             el.appendChild(spacer);
-            const d = this._createTile(tsumo, tiles.length, options);
+
+            const d = this._createHandTile(tsumoTile, tiles.length, {
+                isMyTurn, onTileClick,
+                isRecommended: recommendedTiles.has(tsumoTile),
+                isTsumo: true,
+            });
             el.appendChild(d);
         }
+
+        return tiles;
     },
 
-    _createTile(tile, idx, options) {
+    _createHandTile(tile, idx, options = {}) {
+        const { isMyTurn, isRecommended, onTileClick, isTsumo } = options;
         const d = document.createElement('div');
         d.className = 'hand-tile';
         this.applyTileImage(d, tile, 0);
-        d.onclick = () => options.onTileClick?.(idx, tile, d);
+
+        if (isRecommended) d.classList.add('ai-recommended');
+        if (isTsumo) d.dataset.tsumo = 'true';
+        d.dataset.idx = idx;
+        d.dataset.tile = tile;
+
+        if (isMyTurn && onTileClick) {
+            d.addEventListener('click', () => onTileClick(idx, tile, d));
+        }
         return d;
     },
 
-    renderRivers(discards) {
-        // Player orientations: 0:self(0), 1:right(3), 2:top(1), 3:left(4)
-        const orientations = [0, 3, 1, 4];
-        
-        for (let p = 0; p < 4; p++) {
-            const el = document.getElementById(`river-${p}`);
-            if (!el) continue;
-            el.innerHTML = '';
-            
-            const arr = discards[p] || [];
-            arr.forEach((t, i) => {
-                const d = document.createElement('div');
-                d.className = 'river-tile';
-                this.applyTileImage(d, t, orientations[p]);
-                if (p === 0 && i === arr.length - 1) d.classList.add('last-discard');
-                el.appendChild(d);
-            });
-        }
-    },
-
-    renderOpponents(handCounts) {
+    /**
+     * Render opponent hands (back tiles)
+     */
+    renderOpponents(handCounts, openMelds) {
         for (let p = 1; p <= 3; p++) {
             const el = document.getElementById(`hand-${p}`);
             if (!el) continue;
             el.innerHTML = '';
-            const count = handCounts[p] || 13;
-            for (let i = 0; i < count; i++) {
+
+            const tileCount = handCounts[p] || 13;
+
+            for (let j = 0; j < tileCount; j++) {
                 const b = document.createElement('div');
                 b.className = 'tile-back-3d';
+                if (j === tileCount - 1 && tileCount % 3 === 2) {
+                    b.classList.add('tsumo-gap');
+                }
                 el.appendChild(b);
             }
         }
     },
 
-    setTurn(cp) {
+    /**
+     * Render discard rivers
+     */
+    renderRivers(discards, prevCounts) {
+        const newCounts = [0, 0, 0, 0];
+        // Orientations: 0=hand, 2=self-discard, 3=right-discard, 1=top-discard, 4=left-discard
+        const orientations = [2, 3, 1, 4];
+
+        for (let p = 0; p < 4; p++) {
+            const el = document.getElementById(`river-${p}`);
+            if (!el) continue;
+
+            const arr = discards[p] || [];
+            const prev = prevCounts[p] || 0;
+            newCounts[p] = arr.length;
+
+            el.innerHTML = '';
+            arr.forEach((t, idx) => {
+                const d = document.createElement('div');
+                d.className = 'river-tile';
+                // Orientation Patch: using the correct suffix for river tiles
+                this.applyTileImage(d, t, orientations[p]);
+                if (idx === arr.length - 1) d.classList.add('last-discard');
+                if (idx >= prev) d.style.animation = 'tilePlace 0.25s ease-out';
+                el.appendChild(d);
+            });
+        }
+        return newCounts;
+    },
+
+    /**
+     * Render dora indicator
+     */
+    renderDora(indicator) {
+        const el = document.getElementById('dora-tiles');
+        if (!el) return;
+        el.innerHTML = '';
+        if (indicator) {
+            const d = document.createElement('div');
+            d.className = 'dora-tile';
+            this.applyTileImage(d, indicator, 0);
+            el.appendChild(d);
+        }
+    },
+
+    /**
+     * Render scores
+     */
+    renderScores(scores) {
+        scores.forEach((s, i) => {
+            const el = document.getElementById(`score-val-${i}`);
+            if (el) el.textContent = s.toLocaleString();
+        });
+    },
+
+    /**
+     * Turn highlight on score chips + compass
+     */
+    renderTurnHighlight(cp) {
         for (let i = 0; i < 4; i++) {
-            const el = document.getElementById(`score-${i}`);
-            el?.classList.toggle('active', i === cp);
-            const comp = document.getElementById(['compass-s','compass-e','compass-n','compass-w'][i]);
-            comp?.classList.toggle('active', i === cp);
+            const chip = document.getElementById(`score-${i}`);
+            if (chip) chip.classList.toggle('active', i === cp);
+        }
+        const compassMap = { 0: 'compass-s', 1: 'compass-e', 2: 'compass-n', 3: 'compass-w' };
+        ['compass-n', 'compass-s', 'compass-e', 'compass-w'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        const active = document.getElementById(compassMap[cp]);
+        if (active) active.classList.add('active');
+    },
+
+    /**
+     * Remaining tiles
+     */
+    renderRemaining(data) {
+        const remaining = Math.max(0, 136 - 14 - 52 - (data.turn || 0));
+        const el = document.getElementById('remain-count');
+        if (el) el.textContent = remaining;
+        const shieldEl = document.getElementById('shield-remain');
+        if (shieldEl) shieldEl.textContent = remaining;
+    },
+
+    /**
+     * Center shield
+     */
+    renderCenterShield(data) {
+        const roundEl = document.getElementById('shield-round');
+        if (!roundEl) return;
+        const winds = ['東', '南', '西', '北'];
+        const roundNum = data.round_number || 0;
+        const wind = winds[Math.floor(roundNum / 4)] || '東';
+        const num = (roundNum % 4) + 1;
+        const text = `${wind}${num}局`;
+        roundEl.textContent = text;
+
+        const topRound = document.getElementById('round-display');
+        if (topRound) topRound.textContent = text;
+    },
+
+    /**
+     * Open melds
+     */
+    renderMelds(openMelds) {
+        for (let p = 0; p < 4; p++) {
+            const el = document.getElementById(`melds-${p}`);
+            if (!el) continue;
+            el.innerHTML = '';
+
+            const melds = openMelds[p] || [];
+            melds.forEach(meld => {
+                const group = document.createElement('div');
+                group.className = 'meld-group';
+                meld.forEach(tile => {
+                    const t = document.createElement('div');
+                    if (p === 0) {
+                        t.className = 'meld-tile';
+                        this.applyTileImage(t, tile, 0);
+                    } else {
+                        t.className = 'tile-back-3d';
+                    }
+                    group.appendChild(t);
+                });
+                el.appendChild(group);
+            });
         }
     },
 
     showGame() {
-        document.getElementById('loading-screen')?.classList.add('fade-out');
-        document.getElementById('game-stage').classList.add('visible');
-    }
+        const ls = document.getElementById('loading-screen');
+        const gs = document.getElementById('game-screen');
+        if (ls && !ls.classList.contains('fade-out')) {
+            ls.classList.add('fade-out');
+            setTimeout(() => ls.classList.add('hidden'), 600);
+        }
+        if (gs) gs.classList.remove('hidden');
+    },
+
+    setLoadingMsg(msg) {
+        const el = document.getElementById('loading-msg');
+        if (el) el.textContent = msg;
+    },
+
+    showMsg(text) {
+        const el = document.getElementById('game-message');
+        if (el) el.textContent = text;
+    },
 };

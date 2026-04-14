@@ -1,57 +1,53 @@
 /* ============================================================
-   MajanX-XAI v2 — Premium Design System (JanTama Style)
+   MajanX-XAI v2 — Design System
+   vmin-based sizing for zoom-invariant layout
    ============================================================ */
 
 :root {
-    /* ── Colors (Deep & Sophisticated) ────────── */
-    --bg-primary:    #070b14;
-    --bg-secondary:  #0e1424;
-    --bg-card:       #161e31;
-    
-    /* Table Layers */
-    --bg-table:      #0e382d;
-    --bg-table-felt: #1a513f;
-    --bg-table-border: #2c1a12; /* Rich Wood */
+    /* ── Colors ──────────────────────────────── */
+    --bg-primary:    #0a0e17;
+    --bg-secondary:  #121a2a;
+    --bg-card:       #1a2436;
+    --bg-table:      #1a4a3a;
+    --bg-table-felt: #1b5e45;
+    --bg-table-border: #0d3326;
 
-    --text-primary:   #f0f4f8;
-    --text-secondary: #a0aec0;
-    --text-muted:     #4a5568;
+    --text-primary:   #e8edf5;
+    --text-secondary: #8898b5;
+    --text-muted:     #556380;
 
-    /* Accents */
-    --accent-gold:    #d4af37;
-    --accent-gold-hi: #f9d976;
-    --accent-gold-dim: #996515;
-    
-    --accent-red:     #c53030;
-    --accent-blue:    #3182ce;
-    --accent-green:   #38a169;
+    --accent-gold:    #d4a853;
+    --accent-gold-hi: #f0c96b;
+    --accent-red:     #e05252;
+    --accent-blue:    #4a8fe7;
+    --accent-green:   #48c78e;
+    --accent-purple:  #ab47bc;
 
-    /* Tiles */
-    --tile-face:   #faf7f2;
-    --tile-side:   #e2dad0;
-    --tile-back:   #22543d;
-    --tile-hover:  #ffffff;
+    --tile-face:   #f5f0e8;
+    --tile-side:   #d9d0c0;
+    --tile-back:   #2e5547;
+    --tile-hover:  #fffdf5;
+    --tile-select: #ffeaa0;
 
-    /* ── Sizing (Fixed Base for Stage) ──────── */
-    /* We use pixels for the stage internal layout, 
-       then scale the parent container. */
-    --stage-w: 1280px;
-    --stage-h: 720px;
+    /* ── Sizing (vmin-based, zoom-invariant) ── */
+    --tile-w:      clamp(32px, 5.4vmin, 60px);
+    --tile-h:      clamp(44px, 7.4vmin, 82px);
+    --tile-w-sm:   clamp(18px, 2.8vmin, 30px);
+    --tile-h-sm:   clamp(25px, 3.8vmin, 42px);
+    --tile-w-opp:  clamp(14px, 2.0vmin, 24px);
+    --tile-h-opp:  clamp(20px, 2.8vmin, 34px);
+    --gap-tsumo:   clamp(8px, 1.5vmin, 20px);
 
-    --tile-w: 52px;
-    --tile-h: 74px;
-    --tile-w-sm: 28px;
-    --tile-h-sm: 40px;
-    --tile-w-opp: 20px;
-    --tile-h-opp: 28px;
-    
-    --gap-tsumo: 16px;
+    /* ── Typography ──────────────────────────── */
+    --font-ui:   'Noto Sans JP', -apple-system, 'Segoe UI', sans-serif;
+    --font-tile: 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
 
-    /* ── Effects ────────────────────────────── */
-    --shadow-tile: 0 4px 8px rgba(0,0,0,0.4);
-    --shadow-glow: 0 0 20px rgba(212,175,55,0.3);
-    
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    /* ── Transitions ─────────────────────────── */
+    --ease: 0.2s ease;
+    --ease-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* ── Radius ───────────────────────────────── */
+    --radius-sm: 4px;
     --radius-md: 8px;
-    --radius-lg: 16px;
+    --radius-lg: 14px;
 }
