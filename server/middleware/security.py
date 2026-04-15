@@ -27,13 +27,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 def setup_security(app: FastAPI):
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:8080", "http://localhost:3000", "*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # CORSMiddleware は main.py で一括管理するためここでは削除
     app.add_middleware(RateLimitMiddleware)
     
     @app.middleware("http")

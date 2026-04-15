@@ -34,3 +34,9 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Data and Logs
+server/haihu_rules.db
+logs/
+server/data_ingestion/logs/
+haihu_example/

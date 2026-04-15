@@ -21,6 +21,8 @@ from server.endpoints.inference import router as inference_router
 from server.endpoints.stats import router as stats_router
 from server.endpoints.review import router as review_router
 from server.endpoints.game import router as game_router, game_state
+from server.endpoints.v2_game import router as v2_game_router
+from server.endpoints.settings import router as settings_router
 from core.kifu.logger import KifuLogger
 from core.inference.registry import EngineRegistry
 from core.models.hf_manager import HFModelManager
@@ -42,10 +44,16 @@ app = FastAPI(title="MajanX-XAI", lifespan=lifespan)
 setup_security(app)
 app.add_middleware(MetricsMiddleware)
 
-# CORS設定 (フロントエンドからの接続を許可)
+# CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 開発環境のため
+    allow_origins=[
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +64,8 @@ app.include_router(inference_router)
 app.include_router(stats_router)
 app.include_router(review_router)
 app.include_router(game_router)
+app.include_router(v2_game_router)
+app.include_router(settings_router)
 
 # 依存性注入
 import server.endpoints.review as review_module
